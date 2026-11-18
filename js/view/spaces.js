@@ -156,8 +156,8 @@
   shop.build = function () {
     if (this.scene) return;
     var env = V.getEnv('shop', 0, function () {
-      var sl = { weapon: [], armor: [], trinket: [{ x: 3.2, y: 0.81, z: -0.5 }], relic: { x: -2.65, y: 1.05, z: -0.55 } };
-      for (var i = 0; i < 5; i++) { sl.weapon.push({ x: 0.3 + (i - 2) * 0.62, y: 0.852, z: 2.9, flat: true, len: 2.05 }); sl.armor.push({ x: 0.3 + (i - 2) * 0.76, y: 0.95, z: -0.62 }); }
+      var sl = { weapon: [], armor: [], trinket: [{ x: 3.45, y: 0.81, z: -0.5 }], relic: { x: -2.95, y: 1.05, z: -0.55 } };
+      for (var i = 0; i < 5; i++) { sl.weapon.push({ x: 0.3 + (i - 2) * 0.72, y: 0.852, z: 2.74, flat: true, len: 1.9, tz: 0.36, sz: 0.3 }); sl.armor.push({ x: 0.3 + (i - 2) * 0.86, y: 0.95, z: -0.62, sx: 0.43, sy: 1.05 }); }
       return V.fallbackEnv({ pos: [0.3, 5.05, 7.65], look: [0.3, 0.9, 1.9], fov: 40 }, { slots: sl });
     });
     var st = V.makeStage(env); this.scene = st.scene; this.camera = st.camera; this.env = env; this.fov = st.fov;
@@ -179,7 +179,7 @@
       px.position.set(slot.x, wall ? slot.y : slot.y + bs.y / 2, slot.z + (wall ? 0.12 : 0)); px.userData.i = idx; self.scene.add(px);
       // điểm neo cho nút mua: hàng treo tường → một hàng ngang dưới giá; hàng trên bàn → mép bàn phía trước
       var an = wall ? new T.Vector3(slot.x, 0.76, slot.z + 0.2) : new T.Vector3(slot.x, slot.y - 0.07, slot.z + Math.max(0.34, bs.z / 2 + 0.14));
-      self.objs.push({ grp: grp, proxy: px, idx: idx, base: grp.position.clone(), wall: wall, s0: grp.scale.x, anchor: an });
+      self.objs.push({ grp: grp, proxy: px, idx: idx, base: grp.position.clone(), wall: wall, s0: grp.scale.x, anchor: an, sa: slot.sy != null ? new T.Vector3(slot.x + slot.sx, slot.y + slot.sy, slot.z) : new T.Vector3(slot.x + bs.x / 2 + 0.05, slot.y + bs.y - 0.02, slot.z) });
     }
     // Vũ khí nằm trên bàn: mặt lưỡi ngửa lên, cán ở mép bàn phía khách, mũi chĩa vào trong.
     function putFlat(inner, slot, idx, it) {
@@ -195,13 +195,13 @@
       holder.add(inner); holder.position.set(slot.x, slot.y, slot.z); self.scene.add(holder);
       var L = bs.z * s, W = Math.max(0.42, bs.x * kw + 0.14);
       var px = new T.Mesh(new T.BoxGeometry(W, 0.34, L + 0.12), invis); px.position.set(slot.x, slot.y + 0.14, slot.z - L / 2); px.userData.i = idx; self.scene.add(px);
-      self.objs.push({ grp: holder, proxy: px, idx: idx, base: holder.position.clone(), flat: true, s0: 1, anchor: new T.Vector3(slot.x, slot.y - 0.05, slot.z + 0.2) });
+      self.objs.push({ grp: holder, proxy: px, idx: idx, base: holder.position.clone(), flat: true, s0: 1, anchor: new T.Vector3(slot.x, slot.y - 0.05, slot.z + (slot.tz || 0.2)), sa: new T.Vector3(slot.x, slot.y + 0.01, slot.z + (slot.sz || 0.14)) });
     }
     for (i = 0; i < list.length; i++) {
-      if (list[i].sold) continue;
       var it = G.ITEMS[list[i].id], cat = it.slot === 'weapon' ? 'weapon' : (it.slot === 'trinket' ? 'trinket' : 'armor');
       var arr = sl[cat], slot = arr[used[cat]]; if (!slot) { slot = sl.armor[used.armor]; cat = 'armor'; if (!slot) continue; }
       used[cat]++;
+      if (list[i].sold) continue;   // ô của món đã bán để trống; các món khác đứng yên tại ô của mình
       var grp = V.Gear.display(it, 0, list[i].r || 0);
       if (slot.flat) putFlat(grp, slot, i, it);
       else { grp.scale.setScalar(1.2); if (it.slot === 'weapon') grp.rotation.z = PI / 2; put(grp, slot, false, i); }
@@ -228,7 +228,10 @@
   var ap2 = new T.Vector3(), asp2 = { x: 0, y: 0, behind: false };
   shop.anchors = function () {
     var out = []; if (V.cur !== this) return out;
-    for (var i = 0; i < this.objs.length; i++) { var o = this.objs[i]; ap2.copy(o.anchor); V.project(ap2, asp2); out.push({ i: o.idx, x: asp2.x, y: asp2.y }); }
+    for (var i = 0; i < this.objs.length; i++) {
+      var o = this.objs[i]; ap2.copy(o.anchor); V.project(ap2, asp2); out.push({ i: o.idx, x: asp2.x, y: asp2.y });
+      if (o.sa) { ap2.copy(o.sa); V.project(ap2, asp2); out.push({ i: 'st' + o.idx, x: asp2.x, y: asp2.y }); }
+    }
     return out;
   };
 

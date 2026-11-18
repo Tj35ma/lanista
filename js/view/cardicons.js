@@ -100,6 +100,38 @@
     m.box(0.46, 0.09, 0.32, P.leatherDark, { y: -0.53 }); m.box(0.3, 0.2, 0.3, V.TEAM[0].cloth, { y: -0.66 });
     return { ry: 0.3, rx: 0.08 };
   };
+  E.dmg = function (k) {   // lưỡi kiếm đâm trúng: sát thương
+    var hx = -0.46, hy = 0.56, a = -2.498, s = 1.15, ux = -Math.sin(a), uy = Math.cos(a), cx = hx + ux * 0.9 * s, cy = hy + uy * 0.9 * s, j;
+    for (j = 0; j < 9; j++) {
+      var an = j / 9 * PI * 2 + 0.2, R = j % 2 ? 0.24 : 0.4, w = 0.09;
+      k.d.tri([cx + Math.cos(an + 1.57) * w, cy + Math.sin(an + 1.57) * w, -0.04], [cx - Math.cos(an + 1.57) * w, cy - Math.sin(an + 1.57) * w, -0.04], [cx + Math.cos(an) * R, cy + Math.sin(an) * R, -0.04], j % 2 ? 0xd8481c : 0xf0a030);
+    }
+    k.d.add(new T.CircleGeometry(0.13, 8), 0xffe08a, { x: cx, y: cy, z: -0.035 });
+    sword(k, { x: hx, y: hy, rz: a, s: s });
+    return { ry: 0.12, rx: 0.06 };
+  };
+  E.armor = function (k) {   // tấm giáp ngực: giáp
+    var t = k.t, m = k.m, i;
+    t.loft([[-0.42, 0.25, 0.17], [-0.2, 0.27, 0.19], [0.1, 0.33, 0.21], [0.3, 0.34, 0.2], [0.42, 0.25, 0.15]], 8, P.bronze, null, 2);
+    m.cyl(0.11, 0.11, 0.02, 8, P.black, { y: 0.425 });
+    for (i = -1; i <= 1; i += 2) { m.box(0.1, 0.06, 0.3, P.leather, { x: i * 0.2, y: 0.44 }); t.ico(0.13, 1, P.bronzeLight, { x: i * 0.12, y: 0.17, z: 0.155, sz: 0.5 }); }
+    t.box(0.02, 0.4, 0.02, P.bronzeDark, { y: -0.14, z: 0.2 }); t.box(0.26, 0.02, 0.02, P.bronzeDark, { y: -0.08, z: 0.2 }); t.box(0.24, 0.02, 0.02, P.bronzeDark, { y: -0.22, z: 0.195 });
+    for (i = 0; i < 5; i++) m.box(0.09, 0.2, 0.03, i % 2 ? P.clothRed : P.leather, { x: -0.22 + i * 0.11, y: -0.53, z: 0.13 - Math.abs(i - 2) * 0.03 });
+    return { ry: 0.35, rx: 0.08 };
+  };
+  E.block = function (k) {   // khiên tròn: tỉ lệ chặn
+    roundShield(k, {}, 0.46, P.clothBlue);
+    return { ry: 0.3, rx: 0.06 };
+  };
+  E.wt = function (k) {   // quả cân sắt: cân nặng
+    var t = k.t;
+    t.cyl(0.25, 0.4, 0.56, 8, P.ironDark, { y: -0.18 });
+    t.cyl(0.42, 0.42, 0.07, 8, P.iron, { y: -0.47 }); t.cyl(0.27, 0.27, 0.06, 8, P.iron, { y: 0.12 });
+    t.cyl(0.07, 0.09, 0.12, 6, P.ironDark, { y: 0.2 });
+    t.torus(0.15, 0.045, 5, 12, P.iron, { y: 0.38 });
+    t.box(0.3, 0.035, 0.02, P.steel, { y: -0.12, z: 0.335 }); t.box(0.22, 0.035, 0.02, P.steel, { y: -0.24, z: 0.36 });
+    return { ry: 0.35, rx: 0.12 };
+  };
   E.aspd = function (k) {   // lưỡi kiếm vung nhanh: tốc độ đánh
     var bx = -0.3, by = -0.52, a = -0.62, s = 1.2, ux = -Math.sin(a), uy = Math.cos(a), nx = -uy, ny = ux, i;
     sword(k, { x: bx, y: by, rz: a, s: s });
@@ -310,7 +342,7 @@
     return (cache[key] = url);
   };
   // Icon của một chỉ số: str, agi, vit, hp, move, aspd.
-  var STAT = { str: 'str', agi: 'agi', vit: 'vit', hp: 'hp', move: 'fleet', aspd: 'aspd' };
+  var STAT = { str: 'str', agi: 'agi', vit: 'vit', hp: 'hp', move: 'fleet', aspd: 'aspd', dmg: 'dmg', armor: 'armor', block: 'block', wt: 'wt' };
   V.statIcon = function (key, size) { return V.cardIcon(STAT[key] || key, size || 28); };
   V.CARD_ICONS = E;
 })(window.G = window.G || {});

@@ -651,6 +651,7 @@
       if (!o.sold) {
         bindTip(r, function () { return itemTip(it, { price: o.price, g: selG, inst: o }); }, function () { vhl('shop', i); }, function () { vhl('shop', -1); });
         addTag('shop', i, null, 'rr' + (o.r || 0), o.price, s.gold >= o.price, '', buy, function () { return itemTip(it, { price: o.price, g: selG, inst: o }); });
+        addItemStats('shop', i, o);
       }
       elLeft.appendChild(r);
     });
@@ -895,6 +896,34 @@
     });
     col.style.visibility = 'hidden';
     elTags.appendChild(col); tagList.push({ el: col, key: 'st' + i, space: space, tf: 'translate(-100%, -50%)' });
+  }
+  // Cặp chỉ số luôn hiện cạnh một món hàng ở Lò rèn: giáp/chặn/sát thương + cân nặng (đã tính độ hiếm và phụ tố).
+  var ITEM_STAT = {
+    dmg: ['Sát thương', 'Mỗi đòn trúng, trước khi nhân với Sức mạnh của người cầm và trừ giáp của địch.'],
+    armor: ['Giáp', 'Giảm sát thương của những đòn trúng vào vùng món này che.'],
+    block: ['Chặn', 'Tỉ lệ đỡ hẳn một đòn đánh tới từ phía trước.'],
+    wt: ['Cân nặng', 'Tổng đồ càng nặng so với sức mang, người càng chậm cả tay lẫn chân.']
+  };
+  function addItemStats(space, i, inst) {
+    var it = G.ITEMS[inst.id], inf = G.instInfo(inst), rows = [];
+    if (it.slot === 'weapon') rows.push(['dmg', num(inf.dmg, 1) + (it.kind === 'twin' ? '×2' : '')]);
+    else if (it.slot === 'shield') rows.push(['block', pct(inf.block)]);
+    else if (it.slot !== 'trinket') rows.push(['armor', num(inf.armor, 1)]);
+    if (it.slot !== 'trinket' || inf.wt > 0) rows.push(['wt', num(inf.wt, 1)]);
+    if (!rows.length) return;   // phụ kiện không nặng gì thì không có gì để hiện
+    var col = h('div', 'tag3d statcol small' + (it.slot === 'weapon' ? ' row' : ''));
+    rows.forEach(function (R) {
+      var row = h('div', 'sc-row'), ic = h('div', 'sc-ic'), u = '', S = ITEM_STAT[R[0]];
+      try { u = G.V.statIcon(R[0], 44); } catch (e) { if (window.console) console.error(e); }
+      if (u) { var im = document.createElement('img'); im.src = u; im.draggable = false; im.alt = ''; ic.appendChild(im); }
+      add(row, ic, h('span', null, R[1]));
+      bindTip(row, function () { return '<div class="tt-h">' + esc(S[0]) + ' ' + esc(R[1]) + '</div><div>' + esc(S[1]) + '</div>'; }, function () { vhl(space, i); hlRow(i); }, function () { vhl(space, -1); hlRow(-1); });
+      col.appendChild(row);
+    });
+    col.style.visibility = 'hidden';
+    // vũ khí: hai ô nằm ngang trên bàn, sát mép trước, ngay trên nút giá; giáp: canh phải, cùng một hàng phía trên; phụ kiện: cạnh món
+    var tf = it.slot === 'weapon' ? 'translate(-50%, -100%)' : (it.slot === 'trinket' ? 'translate(0, 0)' : 'translate(-100%, 0)');
+    elTags.appendChild(col); tagList.push({ el: col, key: 'st' + i, space: space, tf: tf });
   }
   function tagLoop() {
     requestAnimationFrame(tagLoop);
