@@ -64,6 +64,7 @@
     var k = new V.Kit(), skin = L.skin, skinD = darken(skin, 0.86), hair = L.hair;
     var cloth = (this.team == null) ? L.cloth : V.TEAM[this.team].cloth;
     var helm = !!g.gear.head;
+    var bodyIt = G.itemOf(g.gear.body), covered = !!(bodyIt && bodyIt.look && bodyIt.look.m !== 'harness');   // giáp che kín thân (không phải đai da chéo)
     var skinL = darken(skin, 1.07), skinS = darken(skin, 0.76), trim = (this.team == null) ? darken(cloth, 0.7) : V.TEAM[this.team].trim;
     function rs(list, wx) { return list.map(function (r) { var w = wx || W; return [r[0] * S, r[1] * w, r[2] * w, (r[3] || 0) * w, (r[4] || 0) * w]; }); }
     n.flapF.position.set(0, 0.055 * S, 0.108 * W); n.flapB.position.set(0, 0.055 * S, -0.108 * W);
@@ -78,11 +79,13 @@
     var c = k.g('chest'), TR = V.torsoFor(D);
     c.loft(TR, 8, skin, null, 3, function (i) { return i === 3 ? skinL : skin; });
     c.loft(rs([[0.385, 0.058, 0.056, 0, -0.004], [0.475, 0.05, 0.052, 0, -0.004]]), 8, skin, null, 0);
+    if (!covered) {
     c.box(0.15 * W, 0.085 * S, 0.04 * W, skinL, { x: 0.083 * W, y: 0.262 * S, z: 0.103 * W, rx: -0.14, ry: 0.14 });
     c.box(0.15 * W, 0.085 * S, 0.04 * W, skinL, { x: -0.083 * W, y: 0.262 * S, z: 0.103 * W, rx: -0.14, ry: -0.14 });
     c.box(0.3 * W, 0.014 * S, 0.02 * W, skinS, { y: 0.348 * S, z: 0.072 * W });
     c.box(0.11 * W, 0.11 * S, 0.02 * W, skinS, { x: 0.075 * W, y: 0.27 * S, z: -0.103 * W, rx: 0.1 }); c.box(0.11 * W, 0.11 * S, 0.02 * W, skinS, { x: -0.075 * W, y: 0.27 * S, z: -0.103 * W, rx: 0.1 });
     if (g.body !== 'big') { c.box(0.012, 0.15 * S, 0.012, skinS, { y: 0.1 * S, z: 0.086 * W }); c.box(0.11 * W, 0.01, 0.012, skinS, { y: 0.13 * S, z: 0.087 * W }); c.box(0.1 * W, 0.01, 0.012, skinS, { y: 0.075 * S, z: 0.084 * W }); }
+    }
     // --- đầu: sọ, hàm, gò má
     var hd = k.g('head'), hw = S * (g.body === 'big' ? 1.04 : 1);
     hd.loft(rs([[0.008, 0.03, 0.036, 0, 0.034], [0.04, 0.06 * L.jaw, 0.068, 0, 0.014], [0.088, 0.074, 0.086, 0, 0.004], [0.135, 0.079, 0.094, 0, -0.004], [0.185, 0.071, 0.088, 0, -0.008], [0.224, 0.04, 0.052, 0, -0.01]], hw), 8, skin, null, 3);
@@ -114,7 +117,7 @@
       k.g('hand0').cyl(0.012, 0.012, 0.13 * W, 5, P.rope, { x: 0.06 * W, y: -0.04 * S, rz: PI / 2 });
     }
     // --- sẹo và băng vết thương
-    if (L.scar) c.box(0.012, 0.16 * S, 0.012, darken(skin, 0.7), { x: (L.scar - 2) * 0.06 * W, y: 0.24 * S, z: 0.125 * W, rz: 0.5 });
+    if (L.scar && !covered) c.box(0.012, 0.16 * S, 0.012, darken(skin, 0.7), { x: (L.scar - 2) * 0.06 * W, y: 0.24 * S, z: 0.125 * W, rz: 0.5 });
     for (i = 0; i < g.injuries.length; i++) {
       var I = G.INJURIES[g.injuries[i].id], bc = 0xd9d0bc;
       if (g.injuries[i].id === 'eye') { if (!helm) { hd.box(0.045 * S, 0.035 * S, 0.012, 0x1a1410, { x: 0.036 * S, y: 0.119 * S, z: 0.096 * S }); hd.box(0.2 * S, 0.012 * S, 0.19 * S, 0x1a1410, { y: 0.14 * S, z: 0.0, rz: 0.25 }); } }

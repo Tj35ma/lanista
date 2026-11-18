@@ -243,7 +243,8 @@
   };
   Bo.segment = function (k, D) {
     var g = k.g('chest', 'metal'), s = D.S, w = D.W * 1.14;
-    for (var i = 0; i < 6; i++) { var y = (0.02 + i * 0.055) * s, r = (0.14 + i * 0.0095) * w; g.cyl(r + 0.006, r, 0.06 * s, 6, i % 2 ? P.steel : 0x979b9e, { y: y, sz: 0.7 }); }
+    // sáu đai thép ôm theo đúng dáng thân (kể cả bụng to của người vạm vỡ), đai trên dưới so le cho ra nếp chồng
+    for (var i = 0; i < 6; i++) hull(g, D, i % 2 ? P.steel : 0x979b9e, i % 2 ? 0.1 : 0.135, i * 0.058 - 0.008, i * 0.058 + 0.066);
     for (var sd = -1; sd <= 1; sd += 2) for (var j = 0; j < 3; j++) g.box(0.13 * D.W, 0.02, (0.22 - j * 0.03) * D.W, P.steel, { x: sd * (0.15 + j * 0.035) * D.W, y: (0.385 - j * 0.03) * s, rz: -sd * (0.15 + j * 0.3) });
     pteruges(k.g('hips'), D, P.leather, 0.16);
   };
@@ -437,6 +438,22 @@
     try { fn(L); } finally { V.remap = null; }
   }
 
+  // Mũ và giáp thân dựng to hơn thân người một chút để đầu và ngực không lòi ra ngoài.
+  // Vì mũ/giáp dùng chung lưới với thân (cùng Kit), ta ghi lại số đỉnh trước khi dựng rồi chỉ phóng phần mới thêm.
+  var FIT = 1.15;
+  function markKit(k) { var m = {}; for (var key in k.m) m[key] = k.m[key].p.length; return m; }
+  function growKit(k, mark, slot, D) {
+    for (var key in k.m) {
+      var geo = k.m[key], p = geo.p, i0 = mark[key] || 0, node = key.split('|')[0], sx = FIT, sy = FIT, sz = FIT, py = 0;
+      if (p.length <= i0) continue;
+      if (slot === 'head') { if (node !== 'head') continue; py = 0.115 * D.S; }                      // quanh tâm sọ
+      else if (node === 'chest') py = 0.2 * D.S;                                                      // quanh giữa thân
+      else if (node === 'hips') sy = 1;                                                               // váy giáp: chỉ rộng ra, không dài thêm
+      else if (node !== 'armU0' && node !== 'armU1') continue;                                        // giáp vai: quanh khớp vai
+      for (var i = i0; i < p.length; i += 3) { p[i] *= sx; p[i + 1] = py + (p[i + 1] - py) * sy; p[i + 2] *= sz; }
+    }
+  }
+
   V.Gear = {
     build: function (k, g, D, team) {
       var inst = g.gear.weapon, it = G.itemOf(inst), q;
@@ -456,8 +473,10 @@
       ['head', 'body', 'arms', 'legs', 'trinket'].forEach(function (sl) {
         var ins = g.gear[sl], item = G.itemOf(ins);
         if (!item || !TB[sl][item.look.m]) return;
+        var mark = (sl === 'head' || sl === 'body') ? markKit(k) : null;
         withLook(item, function (L) { TB[sl][item.look.m](k, D, team, L); });
         adorn(k, sl, item, D, rarOf(ins));
+        if (mark) growKit(k, mark, sl, D);
       });
       // phụ tùng theo vũ khí
       if (kind === 'trident') { var n = k.g('hips'); n.fj = 0.2; n.ico(0.11, 0, P.rope, { x: 0.19 * D.W, y: -0.02, z: -0.02, sy: 1.3, sx: 0.6 }); }
