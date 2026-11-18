@@ -7,9 +7,9 @@
 
   // ---------------------------------------------------------------- Thể hình
   G.BODY = {
-    big: { name: 'Vạm vỡ', desc: 'To xác, khỏe và lì đòn, mang được nhiều nhưng chậm.', str: 6.3, agi: 2.7, vit: 6.3, cap: 8, radius: 0.44 },
-    bal: { name: 'Cân đối', desc: 'Không mạnh nhất, không nhanh nhất, nhưng không có điểm yếu.', str: 5.3, agi: 5.3, vit: 5.3, cap: 2, radius: 0.40 },
-    agi: { name: 'Nhanh nhẹn', desc: 'Gầy, dẻo và nhanh; khó trúng đòn nhưng mang được ít và dễ gục.', str: 4.5, agi: 8, vit: 4, cap: -3, radius: 0.37 }
+    big: { name: 'Vạm vỡ', desc: 'To xác, khỏe và lì đòn, mang được nhiều nhưng chậm.', str: 6.3, agi: 2.7, vit: 6.3, cap: 3, radius: 0.44 },
+    bal: { name: 'Cân đối', desc: 'Không mạnh nhất, không nhanh nhất, nhưng không có điểm yếu.', str: 5.3, agi: 5.3, vit: 5.3, cap: 0, radius: 0.40 },
+    agi: { name: 'Nhanh nhẹn', desc: 'Gầy, dẻo và nhanh; khó trúng đòn nhưng mang được ít và dễ gục.', str: 4.5, agi: 8, vit: 4, cap: -1, radius: 0.37 }
   };
 
   G.LOCS = ['head', 'body', 'arms', 'legs'];
@@ -214,6 +214,8 @@
   // ---------------------------------------------------------------- Vai của từng ô giáp, và giá tính từ chỉ số
   // Giáp thân: giáp dày nhất + máu.  Mũ: kháng hiệu ứng (choáng, lưới, chậm, chảy máu ngắn lại).
   // Giáp tay / găng: tốc độ đánh.     Chân / giày: tốc độ di chuyển.
+  A('b_studded', 'body', 3, 'Giáp da nạm đinh', 0, 0, 0, null, { m: 'leather', re: [[0x6b4a2f, 0x54392a], [0x4a3322, 0x7d7f82]] }, '');
+  A('b_gilded', 'body', 4, 'Áo lanh dát vàng', 0, 0, 0, null, { m: 'linen', re: [[0xcfc4a6, 0xe6dcc0], [0xd8cdb4, 0xdcb040], [0xb58a3c, 0xdcb040]] }, '');
   A('a_hermes', 'arms', 4, 'Bao tay Hermes', 0, 0, 0, null, { m: 'manica', re: [[0x6b4a2f, 0xdcb040], [0x4a3322, 0xa8824a]] }, '');
   A('l_runner', 'legs', 3, 'Giày chạy Cursor', 0, 0, 0, null, { m: 'sandal', v: 'run' }, '');
   A('l_mercury', 'legs', 4, 'Dép cánh Mercurius', 0, 0, 0, null, { m: 'sandal', v: 'wing', re: [[0x6b4a2f, 0xdcb040], [0x4a3322, 0xa8824a]] }, '');
@@ -231,52 +233,57 @@
     it.price = Math.max(4, Math.round(Math.max(1, pts) * TIER_GOLD[it.tier]));
   }
   // --- giáp thân
-  S('b_harness', 2.5, 1.5, { hpMul: 0.02 }, 'Hai dải da bắt chéo ngực.');
-  S('b_fur', 4, 2.6, { hpMul: 0.03 }, 'Ấm, hôi, đỡ được dao cùn.');
-  S('b_leather', 5, 4, { hpMul: 0.04 }, 'Da luộc sáp. Đỡ được dao, không đỡ nổi rìu.');
-  S('b_cardio', 6.5, 2.4, { hpMul: 0.03 }, 'Một đĩa đồng che tim: nhẹ nhất trong các loại giáp kim loại.');
-  S('b_quilt', 6.5, 3, { hpMul: 0.08, steady: 0.1 }, 'Đệm bông dày nuốt lực đòn đánh.');
-  S('b_linen', 8, 3.5, { hpMul: 0.05 }, 'Nhiều lớp lanh dán keo, kiểu Hy Lạp. Nhẹ so với sức che.');
-  S('b_hamata', 13, 9, { hpMul: 0.06 }, 'Áo vòng sắt đan. Nặng, nhưng dao kiếm khó xuyên.');
-  S('b_lamell', 13.5, 8.5, { hpMul: 0.05 }, 'Những lá đồng buộc dây da, kiểu phương Đông.');
-  S('b_squamata', 14, 10.5, { hpMul: 0.06, appeal: 1 }, 'Vảy đồng lấp lánh dưới nắng.');
-  S('b_segment', 20, 12.5, { hpMul: 0.08 }, 'Đai thép chồng lớp của lính lê dương. Nặng nhất, chắc nhất.');
-  S('b_muscle', 16.5, 9, { hpMul: 0.08, appeal: 2 }, 'Đồng đúc hình cơ bắp. Nhẹ hơn giáp tấm.');
-  S('b_plumata', 18, 9.5, { hpMul: 0.07, appeal: 2 }, 'Vảy bạc nhỏ như lông chim khâu trên áo lưới.');
+  S('b_harness', 2.5, 0.8, { hpMul: 0.02 }, 'Hai dải da bắt chéo ngực.');
+  S('b_fur', 4, 1.8, { hpMul: 0.03 }, 'Ấm, hôi, đỡ được dao cùn.');
+  S('b_leather', 5, 3.2, { hpMul: 0.04 }, 'Da luộc sáp. Đỡ được dao, không đỡ nổi rìu.');
+  S('b_cardio', 6.5, 1.8, { hpMul: 0.03 }, 'Một đĩa đồng che tim: nhẹ nhất trong các loại giáp kim loại.');
+  S('b_quilt', 6.5, 2.4, { hpMul: 0.08, steady: 0.1 }, 'Đệm bông dày nuốt lực đòn đánh.');
+  S('b_linen', 8, 3, { hpMul: 0.05 }, 'Nhiều lớp lanh dán keo, kiểu Hy Lạp. Nhẹ so với sức che.');
+  S('b_hamata', 13, 12.5, { hpMul: 0.06 }, 'Áo vòng sắt đan. Nặng, nhưng dao kiếm khó xuyên.');
+  S('b_lamell', 13.5, 10.5, { hpMul: 0.05 }, 'Những lá đồng buộc dây da, kiểu phương Đông.');
+  S('b_squamata', 14, 13.5, { hpMul: 0.06, appeal: 1 }, 'Vảy đồng lấp lánh dưới nắng.');
+  S('b_segment', 20, 17.5, { hpMul: 0.08 }, 'Đai thép chồng lớp của lính lê dương. Nặng nhất, chắc nhất.');
+  S('b_muscle', 16.5, 13, { hpMul: 0.08, appeal: 2 }, 'Đồng đúc hình cơ bắp. Nhẹ hơn giáp tấm.');
+  S('b_plumata', 18, 15, { hpMul: 0.07, appeal: 2 }, 'Vảy bạc nhỏ như lông chim khâu trên áo lưới.');
+  S('b_studded', 9.5, 3.6, { hpMul: 0.05 }, 'Da dày đóng đinh sắt: che được kha khá mà vẫn nhẹ, cho kẻ sống bằng đôi chân.');
+  S('b_gilded', 12, 4.4, { hpMul: 0.06, appeal: 1 }, 'Lanh chần nhiều lớp, viền dát vàng: thứ giáp nhẹ tốt nhất mà tiền mua được.');
   // --- mũ
-  S('h_cap', 2.5, 1, { resist: 0.08 }, 'Một miếng da bò khâu vội. Có còn hơn không.');
-  S('h_hide', 3, 1.2, { resist: 0.06 }, 'Da sói còn nguyên lông.');
-  S('h_legion', 5.5, 3, { resist: 0.15 }, 'Mũ lính cũ, che gáy và má.');
+  S('h_cap', 2.5, 0.6, { resist: 0.08 }, 'Một miếng da bò khâu vội. Có còn hơn không.');
+  S('h_hide', 3, 0.8, { resist: 0.06 }, 'Da sói còn nguyên lông.');
+  S('h_legion', 5.5, 3.2, { resist: 0.15 }, 'Mũ lính cũ, che gáy và má.');
   S('h_monte', 5, 2.6, { resist: 0.14 }, 'Mũ đồng chóp nhọn kiểu cũ của lính Cộng hòa.');
-  S('h_galea', 4.5, 2.5, { resist: 0.12, appeal: 1 }, 'Nhẹ hơn mũ sắt; chùm lông ngựa làm khán giả thích mắt.');
-  S('h_boeo', 4, 2, { resist: 0.1, dodge: 0.01 }, 'Vành rộng, tầm nhìn thoáng.');
-  S('h_secutor', 9, 4.5, { resist: 0.25, netRes: 0.6, dodge: -0.03 }, 'Kín mặt, nhẵn thín: lưới trượt đi. Tầm nhìn hẹp.');
-  S('h_murmillo', 8, 4, { resist: 0.22, appeal: 1, missileBlock: 0.12 }, 'Vành rộng che vai trước lao.');
+  S('h_galea', 4.5, 2, { resist: 0.12, appeal: 1 }, 'Nhẹ hơn mũ sắt; chùm lông ngựa làm khán giả thích mắt.');
+  S('h_boeo', 4, 1.2, { resist: 0.1, dodge: 0.01 }, 'Vành rộng, tầm nhìn thoáng.');
+  S('h_secutor', 9, 6, { resist: 0.25, netRes: 0.6, dodge: -0.03 }, 'Kín mặt, nhẵn thín: lưới trượt đi. Tầm nhìn hẹp.');
+  S('h_murmillo', 8, 5.2, { resist: 0.22, appeal: 1, missileBlock: 0.12 }, 'Vành rộng che vai trước lao.');
   S('h_gallic', 7.5, 3.6, { resist: 0.2, appeal: 1, moraleFight: 1 }, 'Hai chiếc sừng làm khán giả reo lên.');
-  S('h_provoc', 8.5, 4.2, { resist: 0.24, missileBlock: 0.08 }, 'Che mặt bằng tấm sắt đục lỗ.');
-  S('h_thraex', 11, 4, { resist: 0.3, appeal: 2 }, 'Đồng dát, mào sư tử đầu chim.');
-  S('h_attic', 9.5, 3.2, { resist: 0.26, appeal: 1, dodge: 0.01 }, 'Nhẹ, hở mặt, sáng loáng.');
+  S('h_provoc', 8.5, 5.6, { resist: 0.24, missileBlock: 0.08 }, 'Che mặt bằng tấm sắt đục lỗ.');
+  S('h_thraex', 11, 6.8, { resist: 0.3, appeal: 2 }, 'Đồng dát, mào sư tử đầu chim.');
+  S('h_attic', 9.5, 3, { resist: 0.26, appeal: 1, dodge: 0.01 }, 'Nhẹ, hở mặt, sáng loáng.');
   // --- giáp tay / găng
-  S('a_wrap', 1.5, 0.5, { aspd: 0.03 }, 'Vải thô quấn nhiều lớp, cổ tay vẫn nhẹ.');
-  S('a_bracer', 2.5, 0.8, { aspd: 0.02 }, 'Da dày buộc quanh cẳng tay.');
-  S('a_manica', 4, 1.5, { aspd: 0.04 }, 'Ống tay da chần che tay cầm vũ khí.');
-  S('a_galerus', 3.5, 2.5, { aspd: 0.03, deflect: 0.12, missileBlock: 0.15 }, 'Tấm đồng dựng trên vai: gạt được đòn ngay cả khi không có khiên.');
-  S('a_vambrace', 5, 2, { aspd: 0.07, crit: 0.03 }, 'Che cẳng tay, cổ tay vẫn linh hoạt.');
-  S('a_scale', 6.5, 3, { aspd: 0.05 }, 'Vảy đồng khâu trên da.');
-  S('a_spiked', 5.5, 3.2, { aspd: 0.04 }, 'Kẻ đánh cận chiến trúng người mang nó nhận lại 15% sát thương.');
-  S('a_plate', 9, 4, { aspd: 0.06 }, 'Đai thép chồng lớp từ vai đến cổ tay.');
-  S('a_hermes', 6.5, 2.2, { aspd: 0.11 }, 'Da mỏng dát vàng, nhẹ như không: cho kẻ sống bằng tốc độ ra đòn.');
+  S('a_wrap', 1.5, 0.3, { aspd: 0.03 }, 'Vải thô quấn nhiều lớp, cổ tay vẫn nhẹ.');
+  S('a_bracer', 2.5, 0.7, { aspd: 0.02 }, 'Da dày buộc quanh cẳng tay.');
+  S('a_manica', 4, 1.6, { aspd: 0.04 }, 'Ống tay da chần che tay cầm vũ khí.');
+  S('a_galerus', 3.5, 2.4, { aspd: 0.03, deflect: 0.12, missileBlock: 0.15 }, 'Tấm đồng dựng trên vai: gạt được đòn ngay cả khi không có khiên.');
+  S('a_vambrace', 5, 1.6, { aspd: 0.07, crit: 0.03 }, 'Che cẳng tay, cổ tay vẫn linh hoạt.');
+  S('a_scale', 6.5, 4.2, { aspd: 0.05 }, 'Vảy đồng khâu trên da.');
+  S('a_spiked', 5.5, 3.8, { aspd: 0.04 }, 'Kẻ đánh cận chiến trúng người mang nó nhận lại 15% sát thương.');
+  S('a_plate', 9, 5.8, { aspd: 0.06 }, 'Đai thép chồng lớp từ vai đến cổ tay.');
+  S('a_hermes', 6.5, 1.6, { aspd: 0.11 }, 'Da mỏng dát vàng, nhẹ như không: cho kẻ sống bằng tốc độ ra đòn.');
   // --- chân / giày
-  S('l_sandal', 0.5, 0.3, { moveMul: 0.08 }, 'Nhẹ tênh.');
-  S('l_wraps', 2, 1, { moveMul: 0.03 }, 'Vải quấn ống chân.');
-  S('l_boot', 3.5, 1.5, { moveMul: 0.06 }, 'Ôm chân, đi nhanh.');
-  S('l_caliga', 3, 1.2, { moveMul: 0.04, steady: 0.4 }, 'Đế đóng đinh bám cát.');
-  S('l_greave1', 4.5, 1.6, { moveMul: 0.04 }, 'Chỉ che chân trước: nhẹ bằng nửa.');
-  S('l_ocrea', 7, 3.2, { moveMul: 0.05 }, 'Ống đồng che từ gối xuống cổ chân.');
-  S('l_pteryg', 8, 3.8, { moveMul: 0.04, steady: 0.15 }, 'Sắt dày, có đệm gối: đứng vững hơn.');
-  S('l_runner', 3, 0.8, { moveMul: 0.12 }, 'Giày của người đưa thư: nhẹ và bám.');
-  S('l_ocrea2', 10.5, 5, { moveMul: 0.06, appeal: 1 }, 'Che cả đùi, chạm nổi.');
-  S('l_mercury', 5, 1, { moveMul: 0.14, dodge: 0.02 }, 'Dép có cánh, như của thần Mercurius.');
+  S('l_sandal', 0.5, 0.2, { moveMul: 0.08 }, 'Nhẹ tênh.');
+  S('l_wraps', 2, 0.6, { moveMul: 0.03 }, 'Vải quấn ống chân.');
+  S('l_boot', 3.5, 1.1, { moveMul: 0.06 }, 'Ôm chân, đi nhanh.');
+  S('l_caliga', 3, 1.3, { moveMul: 0.04, steady: 0.4 }, 'Đế đóng đinh bám cát.');
+  S('l_greave1', 4.5, 2.2, { moveMul: 0.04 }, 'Chỉ che chân trước: nhẹ bằng nửa.');
+  S('l_ocrea', 7, 4.6, { moveMul: 0.05 }, 'Ống đồng che từ gối xuống cổ chân.');
+  S('l_pteryg', 8, 5.6, { moveMul: 0.04, steady: 0.15 }, 'Sắt dày, có đệm gối: đứng vững hơn.');
+  S('l_runner', 3, 0.6, { moveMul: 0.12 }, 'Giày của người đưa thư: nhẹ và bám.');
+  S('l_ocrea2', 10.5, 7.2, { moveMul: 0.06, appeal: 1 }, 'Che cả đùi, chạm nổi.');
+  S('l_mercury', 5, 0.8, { moveMul: 0.14, dodge: 0.02 }, 'Dép có cánh, như của thần Mercurius.');
+
+  // --- khiên: khiên to che nhiều thì nặng hẳn, khiên nhỏ nhẹ hẳn
+  (function () { var SW = { s_hide: 1.6, s_pelta: 2.0, s_parma: 3.0, s_plank: 3.5, s_thureos: 5.5, s_clipeus: 7.5, s_hoplon: 8, s_scutum: 10.5, s_tower: 13 }; for (var k in SW) if (items[k]) items[k].wt = SW[k]; })();
 
   // ---------------------------------------------------------------- Năm độ hiếm
   // dmg/arm: hệ số sát thương vũ khí / giáp; wt: hệ số trọng lượng; blk: cộng thêm chặn cho khiên; aff: số phụ tố; fx: số hiệu ứng đặc biệt
@@ -382,7 +389,7 @@
     medicus: { name: 'Học trò thầy thuốc', desc: 'Khi hắn ở trong trường: vết thương của cả đội lành nhanh gấp đôi, khả năng chết khi gục giảm 30%.' },
     doctore: { name: 'Từng là Doctore', desc: 'Thầy dạy kiếm: cả đội nhận +25% kinh nghiệm.' },
     idol: { name: 'Con cưng của khán đài', desc: '+4 sức hút. Tiền thưởng khán giả của hắn gấp đôi.' },
-    giant: { name: 'Người khổng lồ', desc: '+14 sức mang, +20% máu, nhưng −10% né.' },
+    giant: { name: 'Người khổng lồ', desc: '+12 sức mang, +20% máu, nhưng −10% né.' },
     venator: { name: 'Thợ săn thú', desc: 'Lao và giáo: +25% sát thương, đòn đầu tiên trong trận luôn chí mạng.' },
     twinborn: { name: 'Thuận cả hai tay', desc: 'Vũ khí hai tay và song đao: +15% tốc độ đánh.' },
     survivor: { name: 'Kẻ sống sót', desc: 'Một lần mỗi trận, đòn chí tử chỉ để lại cho hắn 1 máu. Không bao giờ chết trên cát khi đội thắng.' },
@@ -396,7 +403,7 @@
     agi: { name: 'Dẻo dai', r: 1, desc: '+2 Nhanh nhẹn.', agi: 2 },
     vit: { name: 'Bền bỉ', r: 1, desc: '+2 Thể chất.', vit: 2 },
     hide: { name: 'Da dày', r: 1, desc: '+2 giáp ở mọi chỗ.', armorAll: 2 },
-    porter: { name: 'Vai gánh', r: 1, desc: '+9 sức mang.', cap: 9 },
+    porter: { name: 'Vai gánh', r: 1, desc: '+8 sức mang.', cap: 8 },
     riposte: { name: 'Phản đòn', r: 2, uniq: 1, desc: 'Sau khi chặn hoặc né, đòn kế tiếp +70% sát thương.' },
     bloodlust: { name: 'Khát máu', r: 2, uniq: 1, desc: 'Hạ gục một địch thủ: hồi 25% máu.' },
     grit: { name: 'Lì đòn', r: 2, uniq: 1, desc: 'Dưới 35% máu: nhận ít hơn 35% sát thương.' },

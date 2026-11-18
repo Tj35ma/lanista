@@ -132,6 +132,54 @@
     t.box(0.3, 0.035, 0.02, P.steel, { y: -0.12, z: 0.335 }); t.box(0.22, 0.035, 0.02, P.steel, { y: -0.24, z: 0.36 });
     return { ry: 0.35, rx: 0.12 };
   };
+  // cờ hiệu của tinh thần: vàng tung bay khi hăng hái, đỏ khi bình thường, xám rủ khi chán nản, gãy gục khi sắp bỏ trốn
+  function vexillum(k, cloth, trim, opt) {
+    var m = k.m, Pm = { rz: opt.tilt || 0 };
+    if (opt.broken) {
+      m.cyl(0.035, 0.04, 0.62, 6, P.wood, { y: -0.36 });
+      m.cyl(0.03, 0.035, 0.66, 6, P.wood, { x: 0.27, y: -0.2, rz: -1.95 });
+      m.box(0.46, 0.4, 0.03, cloth, { x: 0.36, y: -0.42, rz: -0.35 }); m.box(0.46, 0.06, 0.035, trim, { x: 0.43, y: -0.6, rz: -0.35 });
+      return;
+    }
+    m.cyl(0.035, 0.04, 0.98, 6, P.wood, at(Pm, { y: 0.1 }));
+    m.box(0.68, 0.055, 0.055, P.woodDark, at(Pm, { y: 0.42 }));
+    m.box(0.6, 0.56, 0.03, cloth, at(Pm, { y: 0.12, z: 0.02 })); m.box(0.6, 0.08, 0.035, trim, at(Pm, { y: -0.16, z: 0.022 }));
+    k.t.ico(0.075, 0, GOLD, at(Pm, { y: 0.64 }));
+    if (opt.laurel) { k.t.torus(0.15, 0.035, 4, 12, GOLD, at(Pm, { y: 0.16, z: 0.045 })); k.t.ico(0.05, 0, GOLD, at(Pm, { y: 0.16, z: 0.05 })); }
+  }
+  E.mor_hi = function (k) { vexillum(k, 0xc9a23a, RED, { laurel: 1 }); return { ry: 0.3, rx: 0.06 }; };
+  E.mor_ok = function (k) { vexillum(k, RED, GOLDD, {}); return { ry: 0.3, rx: 0.06 }; };
+  E.mor_low = function (k) { vexillum(k, 0x6f675b, 0x4e5053, { tilt: -0.4 }); return { ry: 0.3, rx: 0.06 }; };
+  E.mor_flee = function (k) { vexillum(k, 0x5a5048, 0x3a3430, { broken: 1 }); return { ry: 0.3, rx: 0.08 }; };
+  E.inj = function (k) {   // miếng băng chữ thập đỏ: chấn thương
+    var m = k.m;
+    m.box(0.8, 0.8, 0.08, 0xe2d8c2, {}); m.box(0.84, 0.1, 0.09, 0xcfc4a6, { y: 0.3 }); m.box(0.84, 0.1, 0.09, 0xcfc4a6, { y: -0.3 });
+    m.box(0.52, 0.17, 0.1, 0xb02a22, {}); m.box(0.17, 0.52, 0.1, 0xb02a22, {});
+    return { ry: 0.35, rx: 0.15 };
+  };
+  E.bond = function (k) {   // hai vòng lồng nhau: trung thành
+    k.t.torus(0.27, 0.065, 5, 12, P.bronzeLight, { x: -0.17 }); k.t.torus(0.27, 0.065, 5, 12, GOLD, { x: 0.17, rx: 1.1 });
+    return { ry: 0.25, rx: 0.1 };
+  };
+  E.food = function (k) {   // vò rượu và ổ bánh: phí nuôi
+    var m = k.m;
+    m.loft([[-0.5, 0.07, 0.07], [-0.32, 0.2, 0.2], [-0.02, 0.27, 0.27], [0.2, 0.2, 0.2], [0.32, 0.09, 0.09], [0.48, 0.12, 0.12]], 8, P.terracotta, { x: -0.14 }, 3);
+    m.beam([-0.02, 0.36, 0], [0.12, 0.14, 0], 0.03, P.terracotta, 5); m.beam([-0.26, 0.36, 0], [-0.4, 0.14, 0], 0.03, P.terracotta, 5);
+    m.ico(0.2, 1, 0xc9a25e, { x: 0.36, y: -0.36, z: 0.14, sy: 0.6, sx: 1.25 }); m.box(0.26, 0.02, 0.02, 0x8a6a3a, { x: 0.36, y: -0.26, z: 0.2, rz: 0.4 });
+    return { ry: 0.3, rx: 0.1 };
+  };
+  E.bone = function (k) {   // khúc xương: xương giòn
+    var m = k.m, a = [-0.34, -0.3, 0], b = [0.34, 0.3, 0], i, s;
+    m.beam(a, b, 0.075, BONE, 6);
+    for (i = 0; i < 2; i++) { var p = i ? b : a, sg = i ? 1 : -1; for (s = -1; s <= 1; s += 2) m.ico(0.12, 0, BONE, { x: p[0] + sg * 0.05 + s * 0.08, y: p[1] + sg * 0.05 - s * 0.08 }); }
+    return { ry: 0.2, rx: 0.08 };
+  };
+  E.talent = function (k) {   // ngôi sao vàng: thiên phú
+    var d = k.d, i, R = 0.52, r = 0.22, pts = [];
+    for (i = 0; i < 10; i++) { var an = PI / 2 + i * PI / 5, rr = i % 2 ? r : R; pts.push([Math.cos(an) * rr, Math.sin(an) * rr]); }
+    for (i = 0; i < 10; i++) { var p = pts[i], q = pts[(i + 1) % 10]; d.tri([0, 0, 0.16], [p[0], p[1], 0], [q[0], q[1], 0], i % 2 ? GOLD : 0xf2d27a); d.tri([0, 0, -0.1], [q[0], q[1], 0], [p[0], p[1], 0], GOLDD); }
+    return { ry: 0.3, rx: 0.1 };
+  };
   E.aspd = function (k) {   // lưỡi kiếm vung nhanh: tốc độ đánh
     var bx = -0.3, by = -0.52, a = -0.62, s = 1.2, ux = -Math.sin(a), uy = Math.cos(a), nx = -uy, ny = ux, i;
     sword(k, { x: bx, y: by, rz: a, s: s });

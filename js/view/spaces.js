@@ -377,6 +377,16 @@
     if (k !== this.hk || fp) { this.hk = k; if (this.onHover) this.onHover(fp, x, y); }
     V.canvas.style.cursor = p ? (p.type === 'glad' ? 'grab' : 'pointer') : '';
   };
+  // toạ độ màn hình ngay trên đầu từng người của ta (cho hàng icon trạng thái)
+  var hp3 = new T.Vector3(), hs3 = { x: 0, y: 0, behind: false };
+  ready.anchors = function () {
+    var out = []; if (V.cur !== this) return out;
+    for (var i = 0; i < this.figs.length; i++) {
+      var f = this.figs[i]; if (f.type !== 'glad') continue;
+      f.fig.headTop(hp3); hp3.y += 0.12; V.project(hp3, hs3); if (!hs3.behind) out.push({ i: 'hd' + f.id, x: hs3.x, y: hs3.y });
+    }
+    return out;
+  };
   ready.click = function (ray) {
     if (this.drag) return;
     if (this.noClick) { this.noClick = false; return; }

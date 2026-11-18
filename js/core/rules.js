@@ -221,11 +221,11 @@
       if (s === 'shield') block = (it.block || 0) + blk;
     }
     if (wdmg !== 1) { var w0 = w; w = {}; for (k in w0) w[k] = w0[k]; w.dmg = w0.dmg * wdmg; }
-    if (g.talent === 'giant') { m.cap += 14; m.hpMul += 0.2; m.dodge -= 0.10; }
+    if (g.talent === 'giant') { m.cap += 12; m.hpMul += 0.2; m.dodge -= 0.10; }
     if (g.talent === 'idol') m.appeal += 4;
     if (g.talent === 'twinborn' && K.hands === 2) m.aspd += 0.15;
     var str = g.str + m.str, agi = g.agi + m.agi, vit = g.vit + m.vit;
-    var cap = 12 + str * 3 + B.cap + m.cap + (x.capAdd || 0);
+    var cap = 2 + str * 2.5 + vit * 2 + B.cap + m.cap + (x.capAdd || 0);   // người khỏe và dai sức mới gánh nổi giáp nặng
     var load = Math.min(1.3, weight / Math.max(1, cap));
     for (k in armor) armor[k] += m.armorAll;
     var mor = g.morale >= 80 ? 1.06 : (g.morale <= 30 ? 0.9 : 1);

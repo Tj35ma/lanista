@@ -461,7 +461,7 @@
       sh.onHover = function (i) {
         hlRow(i);
         if (i === 'relic' && s.market.relic && !s.market.relic.sold) tip3d('relic', function () { return relicTip(s.market.relic.id, s.market.relic.price); });
-        else if (typeof i === 'number' && i >= 0 && s.market.shop[i] && !s.market.shop[i].sold) tip3d('s' + i, function () { return itemTip(G.ITEMS[s.market.shop[i].id], { price: s.market.shop[i].price, g: gm.glad(UI.sel) }); });
+        else if (typeof i === 'number' && i >= 0 && s.market.shop[i] && !s.market.shop[i].sold) tip3d('s' + i, function () { return itemTip(G.ITEMS[s.market.shop[i].id], { price: s.market.shop[i].price, g: gm.glad(UI.sel), inst: s.market.shop[i] }); });
         else tipHide('3d');
       };
       sh.onClick = function (i) { hlRow(i, true); };
@@ -746,6 +746,7 @@
       add(nm, h('i', 'dot' + (s.form[g.id] ? ' on' : ''))); nm.appendChild(document.createTextNode(g.name));
       add(r, nm, markers(g));
       r.classList.add('grab');
+      addStatusIcons('ready', g);
       r.addEventListener('mousedown', function (e) { formDragStart(g.id, e, 'row'); });
       r.addEventListener('click', function () { if (Date.now() - noRowClick < 350) return; UI.sel = g.id; UI.equipOpen = true; snd('click'); UI.refresh(); });
       bindTip(r, function () { return gladTip(g, { sell: gm.sellValue(g) }); });
@@ -873,9 +874,9 @@
   }
   // Cột chỉ số luôn hiện bên trái một nô lệ trên bục: icon + con số, rê chuột lên từng dòng để xem nó làm gì.
   var STAT_ROWS = [
-    ['str', 'Sức mạnh', 'Mỗi điểm trên 5: +7% sát thương. Mỗi điểm: mang thêm được 3 đơn vị trọng lượng.'],
+    ['str', 'Sức mạnh', 'Mỗi điểm trên 5: +7% sát thương. Mỗi điểm: +2,5 sức mang.'],
     ['agi', 'Nhanh nhẹn', 'Mỗi điểm trên 5: +5% tốc độ đánh. Mỗi điểm: +2% né và chạy nhanh hơn một chút.'],
-    ['vit', 'Thể chất', 'Mỗi điểm: +14 máu.'],
+    ['vit', 'Thể chất', 'Mỗi điểm: +14 máu và +2 sức mang.'],
     ['hp', 'Máu', 'Hết máu là gục. Tính từ Thể chất và cấp.'],
     ['move', 'Tốc chạy', 'Mét mỗi giây. Đồ nặng làm chậm lại.'],
     ['aspd', 'Tốc đánh', 'Số giây giữa hai đòn với thứ đang cầm — càng nhỏ càng nhanh.']
@@ -924,6 +925,36 @@
     // vũ khí: hai ô nằm ngang trên bàn, sát mép trước, ngay trên nút giá; giáp: canh phải, cùng một hàng phía trên; phụ kiện: cạnh món
     var tf = it.slot === 'weapon' ? 'translate(-50%, -100%)' : (it.slot === 'trinket' ? 'translate(0, 0)' : 'translate(-100%, 0)');
     elTags.appendChild(col); tagList.push({ el: col, key: 'st' + i, space: space, tf: tf });
+  }
+  // Hàng icon trên đầu một người ở Phòng chờ: tinh thần, thiên phú, nét tốt/xấu, từng chấn thương.
+  var TRAIT_ICON = { tough: 'hp', quick: 'aspd', keen: 'sharp', darling: 'showman', loyal: 'bond', frugal: 'food', healer: 'inj', lefty: 'riposte', learner: 'drilled', brave: 'mor_hi',
+    coward: 'mor_flee', drunk: 'food', brittle: 'bone', slow: 'fleet', proud: 'mor_low', plain: 'showman', sullen: 'mor_low', lazy: 'drilled', glutton: 'food', clumsy: 'agi' };
+  function moraleState(m) { return m < 15 ? 'flee' : (m <= 30 ? 'low' : (m >= 80 ? 'hi' : 'ok')); }
+  function moraleTip(g) {
+    var m = g.morale, st = moraleState(m), eff = st === 'hi' ? '+6% sát thương.' : (st === 'low' ? '−10% sát thương.' : (st === 'flee' ? '−10% sát thương, và hắn có thể bỏ trốn khi qua ngày.' : 'Không cộng, không trừ.'));
+    return '<div class="tt-h">Tinh thần ' + m + ' — ' + esc(moraleWord(m)) + '</div><div>' + eff + '</div><div class="tt-sec tt-desc">Từ 80 trở lên: +6% sát thương. Từ 30 trở xuống: −10%. Dưới 15: có thể bỏ trốn. Thắng trận và đãi tiệc làm tinh thần lên.</div>';
+  }
+  function addStatusIcons(space, g) {
+    var row = h('div', 'tag3d sticons'), n = 0;
+    function badge(icon, cls, tipFn) {
+      var b = h('div', 'sb ' + cls), u = '';
+      try { u = G.V.cardIcon(icon, 44); } catch (e) { if (window.console) console.error(e); }
+      if (u) { var im = document.createElement('img'); im.src = u; im.draggable = false; im.alt = ''; b.appendChild(im); }
+      bindTip(b, tipFn); row.appendChild(b); n++;
+    }
+    var ms = moraleState(g.morale);
+    badge('mor_' + ms, 'mor-' + ms, function () { return moraleTip(g); });
+    if (g.talent && G.TALENTS[g.talent]) badge('talent', 'tal', function () { return '<div class="tt-h">✦ ' + esc(G.TALENTS[g.talent].name) + '</div><div>' + esc(G.TALENTS[g.talent].desc) + '</div>'; });
+    g.traits.forEach(function (id) {
+      var T = G.TRAITS[id]; if (!T) return;
+      badge(TRAIT_ICON[id] || (T.good ? 'mor_hi' : 'mor_low'), T.good ? 'good' : 'bad', function () { return '<div class="tt-h ' + (T.good ? 'good' : 'bad') + '">' + esc(T.name) + '</div><div>' + esc(T.desc) + '</div>'; });
+    });
+    g.injuries.forEach(function (inj) {
+      var I = G.INJURIES[inj.id]; if (!I) return;
+      badge('inj', inj.perm ? 'perm' : 'hurt', function () { return '<div class="tt-h inj">✚ ' + esc(I.name) + '</div><div>' + esc(I.desc) + '</div><div class="tt-sec tt-desc">' + (inj.perm ? 'Vĩnh viễn.' : 'Còn ' + Math.max(1, Math.ceil(inj.days)) + ' ngày. Gọi thầy thuốc để chữa ngay.') + '</div>'; });
+    });
+    row.style.visibility = 'hidden';
+    elTags.appendChild(row); tagList.push({ el: row, key: 'hd' + g.id, space: space, tf: 'translate(-50%, -100%)' });
   }
   function tagLoop() {
     requestAnimationFrame(tagLoop);
