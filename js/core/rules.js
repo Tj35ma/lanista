@@ -108,12 +108,22 @@
   };
 
   // ---------------------------------------------------------------- Thẻ
+  // Thẻ chỉ có tác dụng với đồ nhất định: trả về lý do nếu với đồ đang mang thì thẻ chưa làm gì, ngược lại null.
+  G.cardIdle = function (g, k) {
+    if (k === 'wall' && !(g.gear && g.gear.shield)) return 'Chưa mang khiên: thẻ này chưa có tác dụng.';
+    if (k === 'heavy') {
+      var wk = G.weaponOf(g).kind;
+      if (wk !== 'axe' && wk !== 'trident') return (wk === 'fist' ? 'Đang tay không' : 'Đang cầm ' + G.WKIND[wk].name) + ': thẻ này chưa có tác dụng.';
+    }
+    return null;
+  };
   G.cardOptions = function (g, rng) {
     var pool = [], k;
     for (k in G.CARDS) {
       var c = G.CARDS[k];
       if (c.uniq && g.cards.indexOf(k) >= 0) continue;
-      if (k === 'wall' && !(g.gear.shield)) { if (rng.chance(0.6)) continue; }
+      // thẻ vô dụng với đồ đang mang thì ít khi được mời (vẫn có thể ra, vì sau này có thể đổi đồ)
+      if ((k === 'wall' || k === 'heavy') && G.cardIdle(g, k)) { if (rng.chance(0.6)) continue; }
       pool.push(k);
     }
     var out = [];

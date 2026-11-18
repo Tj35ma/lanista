@@ -1216,6 +1216,7 @@
       var C = G.CARDS[id]; if (!C) return;
       var c = h('div', 'card' + (C.r === 2 ? ' rare' : ''));
       add(c, cardIconEl(id, 96), h('div', 'cn', C.name), h('div', 'cr', C.r === 2 ? 'Hiếm' + (C.uniq ? ' · chỉ một lần' : '') : 'Thường' + (C.uniq ? ' · chỉ một lần' : ' · chọn lại được')), h('div', 'cd', C.desc));
+      var idle = G.cardIdle(g, id); if (idle) add(c, h('div', 'cw', idle));
       c.addEventListener('click', function () {
         if (done) return;
         if (gm.pickCard(g.id, id)) { done = true; snd('card'); m.close(true); cb(true); }

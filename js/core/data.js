@@ -434,7 +434,7 @@
     showman: { name: 'Biết diễn', r: 1, uniq: 1, desc: '+2 sức hút khán giả.', appeal: 2 },
     stubborn: { name: 'Cứng đầu', r: 2, uniq: 1, desc: 'Choáng và lưới chỉ còn một nửa thời gian.' },
     second: { name: 'Hơi thở thứ hai', r: 2, uniq: 1, desc: 'Một lần mỗi trận, khi xuống dưới 25% máu: hồi 30% máu.' },
-    heavy: { name: 'Tay nặng', r: 2, uniq: 1, desc: '+18% sát thương với vũ khí cầm hai tay (rìu, đinh ba).' },
+    heavy: { name: 'Tay nặng', r: 2, uniq: 1, desc: '+18% sát thương, chỉ khi cầm rìu hai tay hoặc đinh ba & lưới (cung, nỏ, song đao, găng không được tính).' },
     fitted: { name: 'Quen giáp', r: 1, uniq: 1, desc: 'Giáp và khiên trên người nhẹ đi 20%.' }
   };
 
