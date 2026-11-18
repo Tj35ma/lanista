@@ -3,6 +3,8 @@
 Game quản lý trường đấu sĩ La Mã kết hợp auto-battler, chạy trong trình duyệt máy tính, chơi bằng chuột.
 Toàn bộ hình ảnh, chuyển động, giao diện và âm thanh được sinh bằng mã lúc chạy — không có tệp mô hình, ảnh, âm thanh, phông chữ hay hoạt ảnh nào.
 
+**Chơi trực tuyến:** <https://tj35ma.github.io/lanista/> (máy tính, có chuột; cửa sổ từ 1100×650 trở lên).
+
 ## Chạy game
 
 Cách 1 — mở thẳng: bấm đúp `index.html` (Chrome / Edge / Firefox bản mới). Game là trang tĩnh, dùng script thường nên chạy được từ `file://`.
