@@ -75,10 +75,22 @@
       special: { id: 'sweep', name: 'Quét vòng', cd: 9, desc: 'Quét ngang trúng mọi kẻ địch trước mặt (85% sát thương) và hất chúng ra xa.' }
     },
     javelin: {
-      name: 'Lao', reach: 7.5, interval: 1.9, windup: 0.52, recover: 0.46, hands: 1, ai: 'ranged', pen: 0.2, len: 1.5, ranged: true, meleeReach: 1.6,
-      role: 'Lính ném lao', strength: 'Đánh từ xa 7,5 m. +30% sát thương vào kẻ không có khiên. Bị áp sát thì chỉ còn đâm yếu ớt.',
-      behave: 'Đứng xa mà ném, lùi dần khi địch tới gần.',
+      name: 'Lao', reach: 7.0, interval: 2.9, windup: 0.64, recover: 0.56, hands: 1, ai: 'ranged', pen: 0.4, len: 1.5, ranged: true, meleeReach: 1.6, meleeMul: 0.7, proj: 'javelin', projSpeed: 16,
+      role: 'Lính ném lao', strength: 'Ném xa 7 m. Cây lao nặng: sát thương lớn nhất trong các vũ khí tầm xa, xuyên 40% giáp, +30% vào kẻ không có khiên. Ném chậm; bị áp sát thì chỉ còn đâm yếu ớt.',
+      behave: 'Giữ khoảng cách mà ném, lùi khi địch tới gần. Một tay nên vẫn cầm được khiên.',
       special: { id: 'pin', name: 'Lao ghim khiên', cd: 9, desc: 'Cây lao nặng cắm vào khiên làm khiên vô dụng đến hết trận (nhà vô địch thì giật ra được sau 5 giây); nếu địch không có khiên: ×1,6 sát thương.' }
+    },
+    bow: {
+      name: 'Cung', reach: 10, interval: 0.85, windup: 0.36, recover: 0.16, hands: 2, ai: 'ranged', pen: 0, len: 1.2, ranged: true, meleeReach: 1.15, meleeMul: 0.5, proj: 'arrow', projSpeed: 28,
+      role: 'Cung thủ', strength: 'Bắn xa nhất (10 m), nhẹ nhất và nhanh nhất trong các vũ khí tầm xa. Mũi tên nhẹ: sát thương thấp, giáp dày gần như chặn hết.',
+      behave: 'Đứng thật xa mà bắn, vừa lùi vừa bắn khi địch tới gần. Cần cả hai tay.',
+      special: { id: 'volley', name: 'Ba mũi liên tiếp', cd: 9, desc: 'Bắn liền ba mũi tên vào cùng một mục tiêu, mỗi mũi 75% sát thương.' }
+    },
+    crossbow: {
+      name: 'Nỏ', reach: 9, interval: 1.8, windup: 0.4, recover: 0.5, hands: 2, ai: 'ranged', pen: 0.5, len: 0.75, ranged: true, meleeReach: 1.15, meleeMul: 0.5, proj: 'bolt', projSpeed: 32,
+      role: 'Xạ thủ nỏ', strength: 'Bắn xa 9 m. Mũi tên nỏ ngắn và nặng: xuyên 50% giáp. Nhẹ, nhưng lên dây mất thời gian nên bắn thưa hơn cung.',
+      behave: 'Đứng xa mà bắn, lùi khi địch tới gần. Cần cả hai tay.',
+      special: { id: 'pierce', name: 'Phát bắn xuyên giáp', cd: 9, desc: 'Một phát căng hết dây: ×1,6 sát thương, bỏ qua toàn bộ giáp, đẩy lùi địch.' }
     }
   };
 
@@ -105,7 +117,9 @@
   W('trident', 19.5, 5, 18, ['Chĩa ba ngư phủ', 'Đinh ba Fuscina', 'Đinh ba thép', 'Đinh ba Neptunus']);
   W('twin', 6, 2.6, 16, ['Đôi dao găm Pugio', 'Song kiếm ngắn', 'Song đao Dimachaerus', 'Song kiếm thép Noricum']);
   W('axe', 23, 8, 16, ['Rìu đốn củi', 'Rìu chiến Germania', 'Liềm Falx Dacia', 'Đại rìu Bipennis']);
-  W('javelin', 16.5, 3, 15, ['Lao gỗ tôi lửa', 'Lao Verutum', 'Lao Pilum', 'Pilum nặng lê dương']);
+  W('javelin', 26, 6.5, 15, ['Lao gỗ tôi lửa', 'Lao Verutum', 'Lao Pilum', 'Pilum nặng lê dương']);
+  W('bow', 12.5, 1.6, 15, ['Cung săn gỗ tần bì', 'Cung ngắn Numidia', 'Cung sừng Scythia', 'Cung ghép Parthia']);
+  W('crossbow', 23.5, 2.6, 17, ['Nỏ gỗ thợ săn', 'Nỏ bụng Gastraphetes', 'Nỏ tay Manuballista', 'Nỏ thép Arcuballista']);
 
   function A(id, slot, tier, name, armor, wt, price, extra, look, desc) {
     var it = { id: id, slot: slot, tier: tier, name: name, armor: armor, wt: wt, price: Math.round(price * 1.12), look: look || {}, desc: desc || '' };
@@ -223,10 +237,11 @@
   // giá trị của một điểm chỉ số (đơn vị "điểm"); giá = điểm × vàng-mỗi-điểm của hạng
   var PT = { hpMul: 45, aspd: 60, moveMul: 30, resist: 9, dodge: 80, crit: 70, appeal: 2.2, steady: 6, netRes: 5, missileBlock: 10, deflect: 35, moraleFight: 0.6 };
   var ARMOR_PT = { body: 1, head: 0.75, arms: 0.7, legs: 0.7 }, TIER_GOLD = [0, 5, 6.5, 8.5, 11];
+  var ARMOR_WT = 2;   // mọi món giáp (mũ, thân, tay, chân) nặng gấp đôi con số ghi trong bảng dưới
   function S(id, armor, wt, extra, desc) {
     var it = items[id], k, pts;
     for (k = 0; k < ROLE_KEYS.length; k++) delete it[ROLE_KEYS[k]];
-    it.armor = armor; it.wt = wt; it.desc = desc;
+    it.armor = armor; it.wt = Math.round(wt * ARMOR_WT * 10) / 10; it.desc = desc;
     for (k in extra) it[k] = extra[k];
     pts = armor * ARMOR_PT[it.slot] - wt * 0.18 + (it.perk ? 3 : 0);
     for (k in PT) if (it[k]) pts += it[k] * PT[k];
@@ -553,7 +568,7 @@
         foes: [e('Murmillo Celadus', 'big', 10, 'gladius3', ['s_scutum', 'h_murmillo', 'b_linen', 'a_manica', 'l_ocrea'], 0, 1), e('Thraex Oceanus', 'bal', 10, 'sica3', ['s_parma', 'h_galea', 'b_linen', 'a_scale', 'l_ocrea'], 0, 3), e('Hoplomachus Rusticus', 'bal', 9, 'hasta3', ['s_parma', 'h_galea', 'b_linen'], 1, 2), e('Retiarius Crescens', 'agi', 9, 'trident3', ['a_galerus', 'l_sandal'], 1, 4)] },
       { name: 'Ferox — Bức Tường Sắt', boss: 1, desc: 'Ba mươi trận, chưa một vết sẹo. Hắn không tấn công: hắn đứng sau tấm scutum bọc sắt và chờ anh mệt.',
         hint: 'Tấm khiên của hắn che cả trước mặt lẫn hai sườn và chặn hơn nửa số đòn; chỉ sau lưng là hở. Giáp nuốt phần còn lại. Chùy bỏ qua giáp, rìu xuyên nửa lực qua khiên, đao cong vòng qua mép khiên; lao nặng ghim được khiên năm giây rồi hắn giật ra. Song đao và nắm đấm gần như vô hại trước lớp sắt ấy; một hàng kiếm khiên đứng trước mặt hắn chỉ tổ mỏi tay.',
-        foes: [e('Ferox', 'big', 11, 'gladius3', ['s_tower', 'h_secutor', 'b_segment', 'a_plate', 'l_ocrea2'], 0, 2, { boss: 1, hpMul: 3.6, dmgMul: 2.55, scale: 1.08, spCd: 0.7, capAdd: 30, moveMul: 1.3, wall: 1 })] }
+        foes: [e('Ferox', 'big', 11, 'gladius3', ['s_tower', 'h_secutor', 'b_segment', 'a_plate', 'l_ocrea2'], 0, 2, { boss: 1, hpMul: 3.2, dmgMul: 2.55, scale: 1.08, spCd: 0.7, capAdd: 30, moveMul: 1.3, wall: 1 })] }
     ],
     // ================= COLOSSEUM (5 người)
     [

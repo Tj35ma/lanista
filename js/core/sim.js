@@ -235,9 +235,10 @@
     var cornered = Math.sqrt(f.x * f.x + f.z * f.z) > this.R - 1.5;
     var nx = (f.x - near.x) / (dn || 1), nz = (f.z - near.z) / (dn || 1);
     if (ai === 'ranged') {
-      if (dn < 4.0 && !cornered) { mx = nx; mz = nz; sp = speed * 0.62; }
-      else if (dn < 1.9) { if (d > reach * 0.9) { mx = ux; mz = uz; } }
-      else if (d > reach * 0.9) { mx = ux; mz = uz; }
+      // người cầm vũ khí tầm xa luôn muốn giữ kẻ địch gần nhất ở ngoài ~60% tầm bắn: bắn xong là lùi
+      var keep = Math.max(4.0, f.st.reach * 0.6);
+      if (dn < keep && !cornered) { mx = nx; mz = nz; sp = speed * 0.9; }
+      else if ((melee || dn >= keep) && d > reach * 0.9) { mx = ux; mz = uz; }
     } else if (ai === 'kite') {
       if (dn < (near.net > 0 ? reach * 0.9 : reach * 0.62) && !cornered) { mx = nx; mz = nz; sp = speed * 0.7; }
       else if (d > reach * 0.9) { mx = ux; mz = uz; }
@@ -321,11 +322,11 @@
 
   Battle.prototype.startAttack = function (f, t, forced, melee) {
     var K = f.K, sp = forced || null, rng = this.rng;
-    if (!sp && f.sp <= 0 && K.special.id !== 'net' && !(f.kind === 'javelin' && melee)) sp = K.special.id;
+    if (!sp && f.sp <= 0 && K.special.id !== 'net' && !(K.ranged && melee)) sp = K.special.id;
     var as = f.st.aspd * (f.net > 0 ? 0.5 : 1) * (f.enraged ? 1.5 : 1) * (1 + 0.04 * (f.frenzy || 0));
     var tm = 1 / Math.min(1.35, Math.max(0.6, as));
     var wu = K.windup * tm, rec = K.recover * tm, hits = [], h, i, table = 'def';
-    if (f.kind === 'trident') table = 'trident'; else if (f.kind === 'javelin') table = 'javelin'; else if (f.kind === 'fist' || f.kind === 'caestus') table = 'fist';
+    if (f.kind === 'trident') table = 'trident'; else if (K.ranged) table = 'javelin'; else if (f.kind === 'fist' || f.kind === 'caestus') table = 'fist';
     var missile = K.ranged && !melee, self = this;
     function mkHit(at, mul, hand, o) {
       var loc = self.rollLoc(f, t, (o && o.table) || table);
@@ -338,13 +339,14 @@
     else if (sp === 'hook') { wu *= 1.3; h = mkHit(wu, f.kind === 'caestus' ? 1.6 : 1.5, 0, { table: 'head' }); h.stun = f.kind === 'caestus' ? 1.3 : 1.0; hits.push(h); }
     else if (sp === 'hookshield') { h = mkHit(wu, 1.1, 0, { unblockable: true }); h.hook = true; hits.push(h); }
     else if (sp === 'stun') { wu *= 1.25; h = mkHit(wu, 1.0, 0, { table: 'head' }); h.stun = 2.0; hits.push(h); }
-    else if (sp === 'pierce') { wu *= 1.2; h = mkHit(wu, 1.6, 0); h.pen = 1; h.kb = 1.0; hits.push(h); }
+    else if (sp === 'pierce') { wu *= 1.2; h = mkHit(wu, 1.6, 0, { missile: missile }); h.pen = 1; h.kb = 1.0; hits.push(h); }
+    else if (sp === 'volley') { for (i = 0; i < 3; i++) hits.push(mkHit(wu + i * 0.27, 0.75, 0, { missile: true })); }
     else if (sp === 'sweep') { wu *= 1.15; hits.push({ at: wu, mul: 0.85, hand: 0, loc: 'body', out: 'hit', sweep: true }); }
     else if (sp === 'net') { wu = 0.42; rec = 0.36; hits.push({ at: wu, mul: 0, hand: 1, loc: 'body', out: 'hit', net: true }); }
     else if (sp === 'pin') { wu *= 1.15; h = mkHit(wu, 1.0, 0, { missile: true, unblockable: true }); h.pin = true; hits.push(h); }
     else if (f.kind === 'twin') { hits.push(mkHit(wu, 1, 0)); hits.push(mkHit(wu + 0.2, 1, 1)); }
     else if (f.kind === 'caestus' || f.kind === 'fist') { hits.push(mkHit(wu, 1, f.hand)); f.hand = 1 - f.hand; }
-    else if (melee && f.kind === 'javelin') { hits.push(mkHit(wu, 0.7, 0)); }
+    else if (melee && K.ranged) { hits.push(mkHit(wu, K.meleeMul || 0.7, 0)); }
     else hits.push(mkHit(wu, 1, 0, { missile: missile, forceCrit: firstCrit }));
     var total = hits[hits.length - 1].at + rec;
     var interval = f.st.interval / as;
@@ -363,9 +365,9 @@
       return;
     }
     if (a.missile) {
-      var dur = Math.max(0.18, dist(f, t) / 17);
-      this.proj.push({ type: 'javelin', a: f, d: t, t: 0, dur: dur, h: h });
-      this.emit({ e: 'proj', type: 'javelin', a: f.id, d: t.id, dur: dur, out: h.out, loc: h.loc, arm: h.arm, pin: !!h.pin, toShield: !!(h.pin && t.st.hasShield && !t.shieldOff) });
+      var ptype = f.K.proj || 'javelin', dur = Math.max(0.14, dist(f, t) / (f.K.projSpeed || 17));
+      this.proj.push({ type: ptype, a: f, d: t, t: 0, dur: dur, h: h });
+      this.emit({ e: 'proj', type: ptype, a: f.id, d: t.id, dur: dur, out: h.out, loc: h.loc, arm: h.arm, pin: !!h.pin, toShield: !!(h.pin && t.st.hasShield && !t.shieldOff) });
       return;
     }
     if (h.sweep) {

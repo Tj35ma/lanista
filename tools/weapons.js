@@ -6,7 +6,7 @@ const G = require('./load.js');
 const args = process.argv.slice(2);
 const N = +(args.find(a => !a.startsWith('--')) || 120);
 const SHOW = args.includes('--matrix');
-const KINDS = ['caestus', 'gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin'];
+const KINDS = ['caestus', 'gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'bow', 'crossbow'];
 const BODIES = ['big', 'bal', 'agi'];
 const SETUPS = [
   { name: 'KHÔNG GIÁP (cấp 2, hạng 1)', lvl: 2, wt: 1, gear: [], shield: null, esc: 's_plank' },

@@ -50,6 +50,7 @@
   function loop(now) {
     requestAnimationFrame(loop);
     var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (V.w !== window.innerWidth || V.h !== window.innerHeight) V.resize();   // phòng khi trình duyệt không bắn sự kiện resize (tab mở ngầm)
     if (V.debug.freeze) return;
     if (V.debug.paused) dt = 0; else dt *= V.debug.scale;
     V.frame(dt);

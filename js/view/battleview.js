@@ -105,7 +105,7 @@
   BattleView.prototype.on_attack = function (ev) {
     var self = this, a = this.figs[ev.a], d = this.figs[ev.d], K = G.WKIND[ev.kind];
     A.attack(a, ev, d);
-    var missile = (ev.kind === 'javelin' && !ev.melee) || ev.special === 'pin';
+    var missile = (K.ranged && !ev.melee) || ev.special === 'pin';
     if (ev.special) this.float(a, K.special.name, 'sp', 0.2);
     var heavy = ev.kind === 'axe' || ev.kind === 'mace';
     ev.hits.forEach(function (h) {
@@ -156,7 +156,7 @@
       if (miss) { fx.puff(p.obj.position, 2, 0.6); fx.stick(p.obj, self.scene, 0); }
       else if (toSh && d.hasShield) { d.n.shield.attach(p.obj); fx.stick(p.obj, d.n.shield, 0); }
       else { d.n.chest.attach(p.obj); p.obj.translateY(-0.12); self.at(1.4, function () { if (p.obj.parent) p.obj.parent.remove(p.obj); }); }
-    });
+    }, ev.type);
     if (ev.out === 'block') this.at(ev.dur - 0.17, function () { A.react(d, 'block', { from: self.posOf(a, new T.Vector3()), loc: ev.loc, lead: 0.17, arm: ev.arm }); });
     else if (miss) this.at(ev.dur - 0.14, function () { A.react(d, 'dodge', { from: self.posOf(a, new T.Vector3()), side: Math.random() < 0.5 ? 1 : -1 }); });
   };

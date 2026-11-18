@@ -123,8 +123,34 @@
     gt.cone(0.016, 0.07, 4, STEEL[q], { y: 0.735 });
     if (q >= 2) gt.box(0.035, 0.05, 0.035, P.ironDark, { y: 0.5 });
   };
+  // Cung: gốc = chỗ nắm; hai cánh cung dọc ±Y, bụng cung quay về +Z (phía mục tiêu), dây ở phía −Z
+  Wp.bow = function (gm, gt, q, L) {
+    var wood = [0x8a6a42, 0x6b4e32, 0x4a3828, 0x3a2c22][q], tip = q >= 2 ? 0xe6dcc4 : wood, n = 5, i, s;
+    for (s = -1; s <= 1; s += 2) {
+      var prev = [0, 0, 0.02];
+      for (i = 1; i <= n; i++) { var t = i / n, p = [0, s * 0.62 * t, 0.02 - 0.2 * t * t]; gm.beam(prev, p, 0.017 - 0.007 * t, i === n ? tip : wood, 5); prev = p; }
+    }
+    gm.cyl(0.023, 0.023, 0.15, 6, P.leatherDark, { z: 0.02 });
+    gm.beam([0, 0.62, -0.18], [0, -0.62, -0.18], 0.004, 0xd8cdb4, 3);
+    if (q >= 3) { gt.cyl(0.021, 0.021, 0.03, 6, P.bronzeLight, { y: 0.11, z: 0.014 }); gt.cyl(0.021, 0.021, 0.03, 6, P.bronzeLight, { y: -0.11, z: 0.014 }); }
+  };
+  // Nỏ: gốc = tay cầm; thân nỏ dọc +Y (hướng bắn), cánh nỏ nằm ngang theo ±X, mặt trên (rãnh tên) quay về +Z
+  Wp.crossbow = function (gm, gt, q, L) {
+    var wood = WOODS[q], c = STEEL[q], s, i;
+    gm.box(0.05, 0.78, 0.045, wood, { y: 0.14 });
+    gm.box(0.046, 0.2, 0.075, wood, { y: -0.17, z: -0.014 });
+    gt.box(0.02, 0.07, 0.03, P.ironDark, { y: -0.02, z: -0.04 });
+    for (s = -1; s <= 1; s += 2) {
+      var prev = [0, 0.46, 0.012];
+      for (i = 1; i <= 3; i++) { var t = i / 3, p = [s * 0.34 * t, 0.46 - 0.13 * t * t, 0.012]; (q >= 2 ? gt : gm).beam(prev, p, 0.017 - 0.006 * t, q >= 2 ? c : 0x5a4030, 5); prev = p; }
+      gm.beam([s * 0.34, 0.33, 0.012], [0, 0.2, 0.03], 0.004, 0xd8cdb4, 3);
+    }
+    gt.box(0.012, 0.3, 0.012, c, { y: 0.35, z: 0.032 }); gt.cone(0.014, 0.05, 4, c, { y: 0.525, z: 0.032 });
+    gt.box(0.03, 0.04, 0.05, P.ironDark, { y: 0.2, z: 0.03 });
+    if (q >= 1) gt.box(0.056, 0.03, 0.05, P.bronze, { y: 0.5 });
+  };
   // chiều dài từ chỗ nắm tới mũi — dùng cho động tác ngắm (cộng thêm look.dl của từng biến thể)
-  V.WEAPON_TIP = { fist: 0.05, caestus: 0.06, gladius: 0.62, sica: 0.6, mace: 0.7, hasta: 1.2, trident: 1.63, twin: 0.44, axe: 0.85, javelin: 0.77 };
+  V.WEAPON_TIP = { fist: 0.05, caestus: 0.06, gladius: 0.62, sica: 0.6, mace: 0.7, hasta: 1.2, trident: 1.63, twin: 0.44, axe: 0.85, javelin: 0.77, bow: 0.62, crossbow: 0.55 };
 
   // găng: vẽ quanh nắm tay
   function caestus(k, q, D, L) {
@@ -480,6 +506,11 @@
       });
       // phụ tùng theo vũ khí
       if (kind === 'trident') { var n = k.g('hips'); n.fj = 0.2; n.ico(0.11, 0, P.rope, { x: 0.19 * D.W, y: -0.02, z: -0.02, sy: 1.3, sx: 0.6 }); }
+      if (kind === 'bow' || kind === 'crossbow') {
+        var qv = k.g('chest'), ql = kind === 'bow' ? 0.5 : 0.3;
+        qv.box(0.09, ql, 0.07, P.leather, { x: 0.07, y: 0.24 * D.S, z: -0.16 * D.W, rz: -0.3 }); qv.box(0.095, 0.04, 0.075, P.leatherDark, { x: 0.07 + ql * 0.14, y: 0.24 * D.S + ql * 0.46, z: -0.16 * D.W, rz: -0.3 });
+        for (var qi = 0; qi < 3; qi++) { qv.cyl(0.006, 0.006, 0.2, 4, 0xd8cdb4, { x: 0.07 + ql * 0.2 + (qi - 1) * 0.022, y: 0.24 * D.S + ql * 0.64, z: -0.16 * D.W + (qi - 1) * 0.015, rz: -0.3 }); }
+      }
       if (kind === 'javelin') {
         var b = k.g('chest'), bt = k.g('chest', 'metal');
         b.box(0.07, 0.3, 0.06, P.leather, { y: 0.24 * D.S, z: -0.15 * D.W, rz: 0.35 });

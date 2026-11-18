@@ -147,6 +147,15 @@
     if (!javGeo) { var g = new V.Geo(); g.cyl(0.011, 0.012, 1.26, 5, 0x7a5a3a, { y: -0.12 }); g.cyl(0.006, 0.008, 0.2, 4, P.iron, { y: 0.6 }); g.cone(0.016, 0.07, 4, P.steel, { y: 0.735 }); javGeo = g.build(); }
     return new T.Mesh(javGeo, V.M.matte);
   }
+  var arrowGeo = null, boltGeo = null;
+  function arrowMesh(bolt) {
+    if (bolt) {
+      if (!boltGeo) { var b = new V.Geo(); b.cyl(0.009, 0.009, 0.34, 5, 0x5a4030, {}); b.cone(0.016, 0.06, 4, P.steel, { y: 0.2 }); b.box(0.004, 0.08, 0.04, 0xcfc4a6, { y: -0.13 }); b.box(0.04, 0.08, 0.004, 0xcfc4a6, { y: -0.13 }); boltGeo = b.build(); }
+      return new T.Mesh(boltGeo, V.M.matte);
+    }
+    if (!arrowGeo) { var g = new V.Geo(); g.cyl(0.006, 0.006, 0.66, 5, 0xb89a6a, {}); g.cone(0.013, 0.06, 4, P.steel, { y: 0.36 }); for (var i = 0; i < 3; i++) g.box(0.003, 0.12, 0.04, 0xe6dcc4, { y: -0.26, ry: i * 2.09 }); arrowGeo = g.build(); }
+    return new T.Mesh(arrowGeo, V.M.matte);
+  }
   function netMat() { return new T.LineBasicMaterial({ color: 0xb8a070 }); }
   function netFlat() {
     if (!netGeo) {
@@ -171,9 +180,10 @@
     return new T.LineSegments(drapeGeo, netMat());
   }
   // from: V3; to: hàm(out) trả điểm đích hiện tại; done(p): gọi khi tới nơi
-  Fx.prototype.throwJavelin = function (from, to, dur, done) {
-    var o = javelinMesh(); o.castShadow = true; o.position.copy(from); this.scene.add(o);
-    this.projs.push({ type: 'javelin', obj: o, from: from.clone(), prev: from.clone(), to: to, t: 0, dur: dur, arc: 0.25 + dur * 0.9, done: done });
+  Fx.prototype.throwJavelin = function (from, to, dur, done, kind) {
+    var o = kind === 'arrow' ? arrowMesh(false) : (kind === 'bolt' ? arrowMesh(true) : javelinMesh()); o.castShadow = true; o.position.copy(from); this.scene.add(o);
+    var arc = kind === 'arrow' ? 0.06 + dur * 0.5 : (kind === 'bolt' ? 0.03 + dur * 0.25 : 0.25 + dur * 0.9);   // tên bay căng hơn lao
+    this.projs.push({ type: 'javelin', obj: o, from: from.clone(), prev: from.clone(), to: to, t: 0, dur: dur, arc: arc, done: done });
   };
   Fx.prototype.throwNet = function (from, to, dur, done) {
     var o = netFlat(); o.position.copy(from); this.scene.add(o);

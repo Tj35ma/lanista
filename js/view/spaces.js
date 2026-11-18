@@ -58,7 +58,7 @@
   arena.stop = function () { if (this.view) { this.view.dispose(); this.view = null; } if (V.overlay) V.overlay.innerHTML = ''; };
   arena.idle = function (tier) { this.build(tier); this.stop(); this.mode = 'idle'; this.demo(); };
   arena.demo = function () {
-    var rng = new G.Rng((Math.random() * 1e9) | 0), kinds = ['gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'caestus'];
+    var rng = new G.Rng((Math.random() * 1e9) | 0), kinds = ['gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'caestus', 'bow', 'crossbow'];
     var t = this.tier, wt = t + 1, armor = [['b_harness'], ['b_leather', 'h_legion'], ['b_linen', 'h_galea', 'l_ocrea'], ['b_hamata', 'h_murmillo', 'l_ocrea', 'a_scale']][t];
     var shields = ['s_plank', 's_parma', 's_hoplon', 's_scutum'];
     function team(n, off) {
@@ -66,7 +66,7 @@
       for (var i = 0; i < n; i++) {
         var k = rng.pick(kinds), gear = armor.slice(0, rng.int(0, armor.length));
         if (G.WKIND[k].hands === 1 && rng.chance(0.6)) gear.push(shields[t]);
-        var d = G.e('Demo', rng.pick(['big', 'bal', 'agi']), G.TIERS[t].lvl + 1, k + wt, gear, k === 'javelin' ? 1 : 0, [2, 1, 3][i]);
+        var d = G.e('Demo', rng.pick(['big', 'bal', 'agi']), G.TIERS[t].lvl + 1, k + wt, gear, G.WKIND[k].ranged ? 1 : 0, [2, 1, 3][i]);
         o.push({ g: G.makeFoe(d, i + off, rng.int(1, 1e6)), c: d.c, r: d.r });
       }
       return o;
@@ -185,12 +185,14 @@
     function putFlat(inner, slot, idx, it) {
       var holder = new T.Group();
       if (it.kind === 'twin' && inner.children[1]) inner.children[1].position.set(0, 0, 0.2);   // hai thanh nằm cạnh nhau, không chồng lên nhau
-      if (it.kind === 'caestus') inner.rotation.x = -PI / 2; else inner.quaternion.setFromRotationMatrix(FLAT);
+      var lieFlat = it.kind === 'caestus' || it.kind === 'crossbow';   // găng và nỏ nằm úp mặt rộng xuống bàn
+      if (lieFlat) inner.rotation.x = -PI / 2; else inner.quaternion.setFromRotationMatrix(FLAT);
       inner.position.set(0, 0, 0); inner.updateMatrixWorld(true); bb.setFromObject(inner); bb.getCenter(bc); bb.getSize(bs);
       var s = it.kind === 'caestus' ? 2.0 : V.clamp((slot.len || 2.05) / Math.max(0.1, bs.z), 0.8, 1.7);
       // vũ khí cán dài nhìn từ trên xuống quá mảnh: vẽ đậm nét hơn (chỉ bề dày và bề ngang, không đổi chiều dài)
       var th = { hasta: 1.7, trident: 1.6, javelin: 1.7, axe: 1.3 }[it.kind] || 1, kw = s * th;
-      if (it.kind === 'caestus') inner.scale.setScalar(s); else inner.scale.set(kw, s, kw);
+      if (lieFlat) inner.scale.setScalar(s); else inner.scale.set(kw, s, kw);
+      if (lieFlat) kw = s;
       inner.position.set(-bc.x * kw, -bb.min.y * kw + 0.012, -bb.max.z * s);
       holder.add(inner); holder.position.set(slot.x, slot.y, slot.z); self.scene.add(holder);
       var L = bs.z * s, W = Math.max(0.42, bs.x * kw + 0.14);

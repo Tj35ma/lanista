@@ -45,7 +45,7 @@ function gain(gm, g, item, opt, inst) {
     // sở thích theo thể hình (như người chơi thường làm)
     const K = G.WKIND[item.kind];
     if (g.body === 'big' && (item.kind === 'axe' || item.kind === 'mace')) d *= 1.15;
-    if (g.body === 'agi' && (item.kind === 'twin' || item.kind === 'javelin' || item.kind === 'trident' || item.kind === 'sica')) d *= 1.15;
+    if (g.body === 'agi' && (item.kind === 'twin' || item.kind === 'bow' || item.kind === 'crossbow' || item.kind === 'trident' || item.kind === 'sica')) d *= 1.15;
     if (item.kind === 'hasta' || item.kind === 'trident') d *= 1.05; // tầm xa có giá trị mà G.power không thấy
   }
   return d;

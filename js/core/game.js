@@ -108,7 +108,7 @@
   Game.prototype.slavePrice = function (g, f) { return Math.max(6, Math.round(G.gladValue(g) * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
   Game.prototype.itemPrice = function (it, f) { return Math.max(2, Math.round(it.price * (f || 1) * (this.has('anvil') ? 0.85 : 1))); };
 
-  var W_KINDS = ['caestus', 'gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin'];
+  var W_KINDS = ['caestus', 'gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'bow', 'crossbow'];
   Game.prototype.genSide = function (hard) {
     var s = this.s, rng = this.rng, T = G.TIERS[s.tier];
     var st = Math.min(6, s.stage);

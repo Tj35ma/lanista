@@ -25,6 +25,8 @@
     axe: { hr: [-0.4, 0.06, 0], rh: [-0.12, 1.2, 0.22], rd: [-0.25, 0.9, 0.1], lg: -0.43, lgw: 1, rp: [-0.8, -0.4, -0.3], lp: [0.6, -0.6, 0.2], rhint: [0.3, 0, 1] },
     javelin: { rh: [-0.3, 1.56, -0.12], rd: [0.03, 0.1, 0.99], rp: [-1, 0.2, -0.3], lh: [0.17, 1.3, 0.42], rhint: [1, 0, 0] }
   };
+  ST.bow = { rh: [-0.16, 1.2, 0.4], rd: [0.08, 0.98, 0.18], rhint: [0.25, 0, 1], rp: [-0.8, -0.5, -0.2], lh: [0.14, 1.12, 0.3], ld: [0, 1, 0.2] };
+  ST.crossbow = { rh: [-0.14, 1.08, 0.3], rd: [0.1, -0.12, 0.98], rhint: [0, 1, 0], rp: [-0.8, -0.5, -0.3], lg: 0.3, lgw: 1 };
   ST.caestus = ST.fist;
   var SHIELD = { lh: [0.21, 1.1, 0.33], ld: [0, 1, 0], lhint: [0.3, 0, 1], lp: [0.7, -0.6, -0.2] };
   var STUN = { hip: [0, 0.8, -0.03], hr: [-0.1, 0.3, 0.05], ch: [0, 0.36, 0.08], hd: [0.1, 0.45], rh: [-0.3, 0.72, 0.2], rd: [0.2, -0.62, 0.75], lh: [0.3, 0.76, 0.22], ld: [0, 1, 0.1], lgw: 0 };
@@ -77,7 +79,7 @@
     fig.stance = st;
     fig.pStun = over(fig, st, STUN); fig.pNet = over(fig, st, NET); fig.pRun = over(fig, st, RUN);
     var sd = over(fig, st, STAND);
-    if (fig.kind === 'hasta' || fig.kind === 'trident' || fig.kind === 'axe' || fig.kind === 'javelin') sd = over(fig, sd, STAND_LONG);
+    if (fig.kind === 'hasta' || fig.kind === 'trident' || fig.kind === 'axe' || fig.kind === 'javelin' || fig.kind === 'bow') sd = over(fig, sd, STAND_LONG);
     if (fig.kind === 'fist' || fig.kind === 'caestus') sd = over(fig, sd, { rd: [0, 1, 0.2] });
     if (fig.hasShield) sd = over(fig, sd, STAND_SHIELD);
     fig.pStand = fig.opts.bound ? over(fig, sd, BOUND) : sd;
@@ -298,12 +300,37 @@ c.k(wu + 0.16, { rh: [0.3, 1.08, 0.3], rd: [0.92, -0.08, 0.38], hr: [0.3, 0.1, 0
       c.k(wu + 0.52, { rh: [-0.2, 1.52, -0.28], rd: [0.2, 0.9, -0.3], wvis: 0 }, 'io');
       c.k(wu + 0.55, { rh: [-0.2, 1.52, -0.28], rd: [0.2, 0.9, -0.3], wvis: 1 }, 'lin');
       c.k(wu + 0.85, {}, 'io');
+    } else if (kind === 'bow' && !ev.melee) {
+      // giương cung về phía địch, tay kia kéo dây về má rồi buông; chiêu ba mũi thì kéo–buông ba lần
+      c = new Clip(fig);
+      var up = { rh: [-0.1, 1.42, 0.62], rd: [0, 1, 0], rhint: [0, 0, 1], lh: [0.0, 1.4, 0.38], ld: [0, 0.3, 0.95], hr: [-0.7, 0, 0], ch: [-0.5, 0, 0], hd: [0.9, 0], hip: [0, 0.9, 0] };
+      var drawn = {}, loose = {}, bk; for (bk in up) { drawn[bk] = up[bk]; loose[bk] = up[bk]; }
+      drawn.lh = [0.15, 1.45, -0.05]; loose.lh = [0.09, 1.42, 0.22];
+      c.k(wu * 0.45, up, 'io');
+      for (var bi = 0; bi < ev.hits.length; bi++) {
+        var ha = ev.hits[bi].at;
+        if (bi > 0) c.k(ha - 0.14, up, 'io');
+        c.k(ha, drawn, 'in'); c.k(ha + 0.05, loose, 'out');
+      }
+      c.k(ev.hits[ev.hits.length - 1].at + rec + 0.18, {}, 'io');
+    } else if (kind === 'crossbow' && !ev.melee) {
+      // nâng nỏ lên vai, ngắm, bắn (giật nhẹ), rồi hạ xuống lên dây lại
+      c = new Clip(fig);
+      var cx2 = ctxOf(tf, h0); cx2.loc = h0.loc; cx2.freezeAt = null;
+      var aimP = { rh: [-0.12, 1.4, 0.34], rd: [0, 0, 1], rhint: [0, 1, 0], lg: 0.3, lgw: 1, hr: [-0.25, 0, 0], ch: [-0.2, 0, 0], hd: [0.3, 0], hip: [0, 0.9, 0.02] };
+      var kick = {}, ck; for (ck in aimP) kick[ck] = aimP[ck]; kick.rh = [-0.12, 1.44, 0.26];
+      c.k(wu * 0.6, aimP, 'io', [{ type: 'throw', side: 0, c: cx2 }]);
+      c.k(wu, aimP, 'lin', [{ type: 'throw', side: 0, c: cx2 }]);
+      c.k(wu + 0.07, kick, 'out');
+      c.k(wu + 0.07 + rec * 0.5, { rh: [-0.1, 0.98, 0.3], rd: [0.05, -0.75, 0.66], rhint: [0, 0.66, 0.75], lgw: 0, lh: [0.06, 0.93, 0.44], ld: [0, 0.6, 0.8], hip: [0, 0.86, 0.04], ch: [0.1, 0.25, 0] }, 'io');
+      c.k(wu + 0.07 + rec * 0.85, { rh: [-0.1, 0.98, 0.3], rd: [0.05, -0.75, 0.66], rhint: [0, 0.66, 0.75], lgw: 0, lh: [0.04, 1.12, 0.3], ld: [0, 0.6, 0.8], hip: [0, 0.9, 0.02] }, 'io');
+      c.k(wu + rec + 0.32, {}, 'io');
     } else if (kind === 'twin') {
       c = seq(fig, ev, tf, function (h) { return h.hand ? CL.twinL : CL.twinR; });
     } else if (kind === 'fist' || kind === 'caestus') {
       c = seq(fig, ev, tf, function (h) { return sp === 'hook' ? CL.hook : (h.hand ? CL.punchL : CL.punchR); });
     } else {
-      var S = sp === 'hookshield' ? CL.hookshield : (kind === 'javelin' ? CL.jstab : CL[kind]);
+      var S = sp === 'hookshield' ? CL.hookshield : (G.WKIND[kind].ranged ? CL.jstab : CL[kind]);
       if (sp === 'pierce') S = { cock: S.cock, imp: { hr: [-0.05, 0.14, 0], ch: [0.3, 0.3, 0], hip: [0, 0.8, 0.1], hd: [-0.15, 0.05] }, aim: { type: 'thrust', L: 1.2, over: true, lunge: 0.5 } };
       c = seq(fig, ev, tf, function () { return S; });
     }

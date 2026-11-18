@@ -47,7 +47,7 @@
     var it = G.ITEMS[id], grp = it ? V.Gear.display(it, 0, rar) : V.relicMesh(id), holder = new T.Group();
     holder.add(grp);
     if (it && it.slot === 'weapon' && it.kind !== 'caestus') {
-      grp.rotation.y = 1.25; holder.rotation.z = -0.78;
+      grp.rotation.y = it.kind === 'crossbow' ? 0.2 : 1.25; holder.rotation.z = -0.78;
       // vũ khí cán dài quá mảnh ở cỡ icon: vẽ đậm nét hơn
       if (it.kind === 'hasta' || it.kind === 'trident' || it.kind === 'javelin' || it.kind === 'axe' || it.kind === 'mace') grp.scale.set(1.9, 1, 1.9);
     }   // nằm chéo, phô mặt lưỡi

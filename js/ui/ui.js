@@ -1262,7 +1262,7 @@
   }
 
   // ---------------------------------------------------------------- trận đấu
-  var VERB = { fist: 'đấm', caestus: 'đấm', gladius: 'đâm', sica: 'chém', mace: 'đập', hasta: 'đâm', trident: 'đâm', twin: 'chém', axe: 'bổ', javelin: 'đâm' };
+  var VERB = { fist: 'đấm', caestus: 'đấm', gladius: 'đâm', sica: 'chém', mace: 'đập', hasta: 'đâm', trident: 'đâm', twin: 'chém', axe: 'bổ', javelin: 'đâm', bow: 'bắn', crossbow: 'bắn' };
   var hud = null;
 
   function startFight() {
