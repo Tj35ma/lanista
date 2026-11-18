@@ -29,6 +29,8 @@ Cửa sổ nên rộng từ 1100×650 trở lên. Tiến trình tự lưu vào `
 - Người bị thương tạm thời có thể chữa ngay bằng nút **Gọi thầy thuốc** trong Phòng chờ, nếu anh chịu trả tiền.
 - Ở Chợ nô lệ và Lò rèn, nút mua nằm ngay dưới chân từng nô lệ và dưới từng món hàng trong cảnh 3D (danh sách bên trái vẫn dùng được).
 - Trong Phòng chờ, bấm vào một đấu sĩ để mở **bảng trang bị**: kho đồ là lưới icon, kéo một món thả vào người (hoặc vào ô của nó) để mang, kéo từ ô ra kho để tháo; trong lúc kéo, bảng hiện luôn chỉ số sẽ đổi ra sao. Bấm một lần vào icon cũng mang/tháo được.
+- Xếp đội hình bằng kéo thả: nắm một người (ngay trên sân, trên băng ghế, hoặc tên trong danh sách bên trái) rồi thả vào ô muốn đứng; thả lên ô đang có người thì hai người đổi chỗ (hoặc người mới vào thay); thả ra băng ghế hoặc lên danh sách để rút về. Ô sẽ đỏ lên nếu sân đã đủ người.
+- Khi một đấu sĩ lên cấp, bảng chọn thẻ hiện chính mô hình của người đó (đúng đồ đang mang) bên trái và ba thẻ bên phải; mỗi thẻ có icon riêng, cũng là mô hình low-poly dựng bằng mã như icon trang bị.
 - Mỗi món đồ có một trong năm độ hiếm: Thường, Tốt, Hiếm, Sử thi, Huyền thoại. Càng hiếm thì mô hình càng nhiều chi tiết (dây quấn, đá quý, nạm vàng, lông mũ, áo choàng), chỉ số gốc càng cao, có thêm 1–3 phụ tố chỉ số; đồ Sử thi và Huyền thoại có thêm một hiệu ứng đặc biệt. Đấu trường càng cao thì đồ hiếm càng hay xuất hiện.
 - Mỗi ô giáp có một vai trò riêng, ngoài điểm giáp của vùng nó che: **giáp thân** cộng % máu; **mũ** cộng kháng hiệu ứng (choáng, lưới, chậm, chảy máu ngắn lại theo đúng số % đó); **giáp tay / găng** cộng tốc độ đánh; **giày / giáp chân** cộng tốc độ di chuyển. Đồ từ bậc Tốt trở lên luôn có một phụ tố đúng vai trò của ô (Chắc thịt, Vững trí, Khéo tay, Nhẹ chân), và hiệu ứng đặc biệt của mũ, găng, giày cũng theo vai trò ấy (ví dụ Tỉnh đòn, Dồn dập, Xuất phát). Đồ nặng vẫn làm chậm cả tay lẫn chân, nên giáp chân sắt chỉ đủ bù trọng lượng của chính nó, còn giày nhẹ mới thật sự nhanh.
 - Giá giáp tính từ chính chỉ số của món đồ (`S()` trong `js/core/data.js`): điểm = giáp × hệ số ô + các chỉ số phụ − trọng lượng, giá = điểm × vàng-mỗi-điểm của hạng (5 / 6,5 / 8,5 / 11). Trong cùng một hạng, món đắt gấp đôi thì cho gấp đôi chỉ số.
@@ -40,7 +42,7 @@ Cửa sổ nên rộng từ 1100×650 trở lên. Tiến trình tự lưu vào `
 | Thư mục | Nội dung |
 |---|---|
 | `js/core/` | Luật chơi thuần logic, chạy được không cần đồ họa: `data.js` (nội dung), `rules.js` (chỉ số), `sim.js` (mô phỏng trận), `game.js` (chiến dịch, lưu game) |
-| `js/view/` | Đồ họa three.js: `builder.js`, `gear.js` (trang bị), `figure.js` (thân người, IK, bước chân), `anim.js` (thế thủ, đòn đánh), `fx.js`, `scenes.js` (bốn không gian), `spaces.js`, `battleview.js` |
+| `js/view/` | Đồ họa three.js: `builder.js`, `gear.js` (trang bị), `figure.js` (thân người, IK, bước chân), `icons.js` / `cardicons.js` (icon trang bị, chân dung, icon thẻ lên cấp), `anim.js` (thế thủ, đòn đánh), `fx.js`, `scenes.js` (bốn không gian), `spaces.js`, `battleview.js` |
 | `js/ui/`, `css/` | Giao diện DOM |
 | `js/audio.js` | Âm thanh tổng hợp bằng Web Audio |
 | `lib/three.min.js` | three.js r160 (MIT) đóng gói thành một tệp mã, không kèm tài nguyên |

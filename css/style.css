@@ -180,6 +180,32 @@ h3 small { float: right; font-variant: normal; letter-spacing: 0; color: #a8946a
 .card .cr { font-size: 12px; color: #a8946a; margin-bottom: 6px; }
 .card.rare { border-color: #c9a25e; } .card.rare .cr { color: #f0c96a; }
 .card .cd { font-size: 14px; }
+.cicon { width: 96px; height: 96px; box-sizing: border-box; margin: 0 auto 8px; border-radius: 50%; border: 2px solid #8a6a3a; background: radial-gradient(circle at 50% 42%, #5a4833 0%, #1d1711 78%); overflow: hidden; }
+.cicon img { width: 100%; height: 100%; display: block; pointer-events: none; }
+.card.rare .cicon { border-color: #e2b85a; box-shadow: 0 0 12px rgba(226, 184, 90, .35); }
+.card { text-align: center; } .card .cd { text-align: left; }
+.cicon.mini { width: 34px; height: 34px; margin: 0; border-width: 1px; position: relative; overflow: visible; pointer-events: auto; }
+.cicon.mini img { border-radius: 50%; }
+.cicon.mini b { position: absolute; right: -4px; bottom: -4px; font-size: 11px; color: #ffe2a0; background: #2a2018; border: 1px solid #6b5636; border-radius: 7px; padding: 0 3px; line-height: 13px; }
+.modal.wide.lvl { max-width: 940px; }
+.row.grab { cursor: grab; user-select: none; }
+body.fdragging, body.fdragging * { cursor: grabbing !important; user-select: none; }
+.fghost { position: absolute; z-index: 60; pointer-events: none; padding: 3px 9px; font-size: 13px; color: #f3e6c8; background: rgba(28, 22, 15, .93); border: 1px solid #c9a25e; border-radius: 3px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0, 0, 0, .5); }
+.fghost b { color: #ffe2a0; font-weight: normal; }
+.fghost.bad { border-color: #d0604a; color: #ffb09a; }
+.lvlup { display: flex; gap: 18px; align-items: stretch; }
+.lv-who { width: 204px; flex: none; text-align: center; }
+.lv-port { position: relative; width: 204px; height: 300px; box-sizing: border-box; border: 1px solid #6b5636; background: radial-gradient(ellipse at 50% 30%, #6a5438 0%, #1d1711 82%); pointer-events: auto; }
+.lv-port img { width: 100%; height: 100%; display: block; pointer-events: none; }
+.lv-badge { position: absolute; left: 6px; top: 6px; padding: 1px 7px; font-size: 14px; color: #1d1711; background: #e2b85a; border-radius: 3px; font-weight: bold; }
+.lv-name { margin-top: 8px; font-size: 20px; color: #fff0cf; font-variant: small-caps; letter-spacing: .06em; } .lv-name.tal { color: #f0c96a; }
+.lv-sub { font-size: 12.5px; color: #a8946a; }
+.lv-cap { margin-top: 10px; font-size: 11.5px; color: #8f7d5a; text-transform: uppercase; letter-spacing: .1em; }
+.lv-have { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 5px; }
+.lv-main { flex: 1; min-width: 0; display: flex; flex-direction: column; } .lv-main .cards { flex: 1; } .lv-main .card { min-width: 150px; }
+.tt-card { display: inline-flex; align-items: center; gap: 3px; margin-right: 6px; white-space: nowrap; }
+.tt-card img { width: 20px; height: 20px; border-radius: 50%; background: #2a2018; border: 1px solid #6b5636; }
+.tt-cards { line-height: 24px; }
 
 /* ---------------------------------------------------------------- màn hình chính */
 #title { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8vh 0 10vh; }

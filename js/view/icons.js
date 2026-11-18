@@ -39,6 +39,8 @@
     return out.toDataURL('image/png');
   }
 
+  V.shoot = shoot;
+
   // Icon của một món trang bị hoặc một vật của lanista (theo id).
   V.itemIcon = function (id, size, rar) {
     size = size || 64; rar = rar || 0; var key = id + '@' + size + '#' + rar; if (cache[key]) return cache[key];
@@ -57,9 +59,10 @@
   };
 
   // Chân dung toàn thân một đấu sĩ với đúng trang bị đang mang.
-  V.portrait = function (g, w, h) {
+  V.portrait = function (g, w, h, pose) {
     var fig = new V.Figure(g, 0, { ring: false, blob: false });
     fig.state = 'stand'; fig.place(0, 0, 0.42);
+    if (pose === 'win') { fig.state = 'win'; fig.phase = 1.2; for (var i = 0; i < 50; i++) V.Anim.update(fig, 1 / 30); }
     var url = shoot(fig.group, w, h, 0.05);
     fig.dispose();
     return url;

@@ -4,7 +4,7 @@
 
   var UI = G.UI = { game: null, state: 'title', tab: 'market', sel: null, fightKind: 'main', battle: null };
   var root, elTop, elHint, elLeft, elRight, elBottom, elTip, elToasts, elModals, elTitle, elHud, elPop, elTags, elEquip;
-  var tagList = [], drag = null;
+  var tagList = [], drag = null, fdrag = null, noRowClick = 0;
   var mouse = { x: 0, y: 0 };
   var ROMAN = ['', 'I', 'II', 'III', 'IV'];
   var MUTE_KEY = 'lanista_muted';
@@ -177,8 +177,8 @@
     if (g.cards && g.cards.length) {
       var cnt = {}, order = [];
       for (i = 0; i < g.cards.length; i++) { if (!cnt[g.cards[i]]) { cnt[g.cards[i]] = 0; order.push(g.cards[i]); } cnt[g.cards[i]]++; }
-      var cs = order.map(function (k) { return G.CARDS[k] ? esc(G.CARDS[k].name) + (cnt[k] > 1 ? ' ×' + cnt[k] : '') : ''; });
-      sec.push('<div><span class="tt-desc">Thẻ:</span> ' + cs.join(', ') + '</div>');
+      var cs = order.map(function (k) { if (!G.CARDS[k]) return ''; var u = cardIconUrl(k, 22); return '<span class="tt-card">' + (u ? '<img src="' + u + '" alt="">' : '') + esc(G.CARDS[k].name) + (cnt[k] > 1 ? ' ×' + cnt[k] : '') + '</span>'; });
+      sec.push('<div class="tt-cards"><span class="tt-desc">Thẻ:</span> ' + cs.join(' ') + '</div>');
     }
     for (i = 0; i < g.injuries.length; i++) {
       var inj = g.injuries[i], I = G.INJURIES[inj.id]; if (!I) continue;
@@ -303,6 +303,7 @@
     elTags = h('div'); elTags.id = 'tags'; elEquip = h('div', 'panel'); elEquip.id = 'equip'; show(elEquip, false);
     add(root, elTags, elTop, elHint, elLeft, elRight, elEquip, elBottom, elTitle, elHud, elToasts, elModals);
     document.addEventListener('mousemove', dragMove); document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('mousemove', formDragMove); document.addEventListener('mouseup', formDragEnd);
     requestAnimationFrame(tagLoop);
     document.body.appendChild(elTip);
     showHub(false); show(elTitle, false); show(elHud, false);
@@ -464,6 +465,7 @@
     } else {
       var rd = vsub('ready'); if (!rd) return;
       rd.onPick = onReadyPick;
+      rd.onDown = function (p, x, y, e) { if (p.type === 'glad' && gm.glad(p.id)) formDragStart(p.id, e, '3d'); };
       rd.onHover = function (p, x, y) {
         if (p && p.type === 'glad') { var g = gm.glad(p.id); if (g) { tip3d('g' + p.id, function () { return gladTip(g, {}); }, x, y); return; } }
         if (p && p.type === 'foe') { var fs = currentFoes(); if (fs && fs[p.idx]) { tip3d('f' + p.idx, function () { return gladTip(fs[p.idx].g, { foe: true }); }, x, y); return; } }
@@ -714,11 +716,13 @@
       var nm = h('span', 'nm' + (g.talent ? ' tal' : ''));
       add(nm, h('i', 'dot' + (s.form[g.id] ? ' on' : ''))); nm.appendChild(document.createTextNode(g.name));
       add(r, nm, markers(g));
-      r.addEventListener('click', function () { UI.sel = g.id; UI.equipOpen = true; snd('click'); UI.refresh(); });
+      r.classList.add('grab');
+      r.addEventListener('mousedown', function (e) { formDragStart(g.id, e, 'row'); });
+      r.addEventListener('click', function () { if (Date.now() - noRowClick < 350) return; UI.sel = g.id; UI.equipOpen = true; snd('click'); UI.refresh(); });
       bindTip(r, function () { return gladTip(g, { sell: gm.sellValue(g) }); });
       elLeft.appendChild(r);
     });
-    if (s.roster.length) add(elLeft, h('div', 'note', 'Bấm vào một người để mở bảng trang bị; bấm một ô trên sàn để xếp chỗ. ◆ = ra sân.'));
+    if (s.roster.length) add(elLeft, h('div', 'note', 'Kéo một người (trên sân, trên ghế hoặc từ danh sách này) thả vào ô để xếp chỗ; thả vào ô có người để đổi chỗ; thả ra ghế để rút về. Bấm vào người để mở bảng trang bị. ◆ = ra sân.'));
 
     // --- phải: người đang chọn
     var g = gm.glad(UI.sel);
@@ -989,6 +993,61 @@
     UI.refresh();
   }
 
+  // ---------------------------------------------------------------- kéo thả đội hình (phòng chờ)
+  function formDragStart(id, e, src) {
+    if (e.button !== 0 || UI.state !== 'hub' || UI.tab !== 'ready') return;
+    fdrag = { id: id, x0: e.clientX, y0: e.clientY, on: false, src: src, ghost: null };
+  }
+  // Chỗ con trỏ đang chỉ nghĩa là gì với người đang kéo.
+  function formDropInfo(e, t) {
+    var gm = UI.game, s = gm.s, id = fdrag.id, mine = !!s.form[id], k, other = null;
+    var inLeft = elLeft && elLeft.contains(e.target), onCanvas = e.target === G.V.canvas;
+    if (inLeft || (onCanvas && t && t.type === 'bench')) return { act: mine ? 'bench' : null, ok: true, label: mine ? 'Rút về ghế' : 'Đang ngồi ghế' };
+    if (!onCanvas || !t || t.type !== 'cell') return { act: null, ok: true, label: 'Thả vào một ô trên sân' };
+    for (k in s.form) if (k !== id && s.form[k][0] === t.c && s.form[k][1] === t.r) other = gm.glad(k);
+    if (mine && s.form[id][0] === t.c && s.form[id][1] === t.r) return { act: null, ok: true, label: 'Chỗ đang đứng' };
+    if (!mine && !other && gm.fielded() >= gm.fieldLimit()) return { act: 'full', ok: false, label: 'Sân chỉ cho ' + gm.fieldLimit() + ' người — thả lên một người để thay' };
+    return { act: 'cell', c: t.c, r: t.r, ok: true, label: other ? (mine ? 'Đổi chỗ với ' + other.name : 'Vào thay ' + other.name) : 'Xếp vào ô này' };
+  }
+  function formDragMove(e) {
+    var d = fdrag; if (!d) return;
+    var rd = vsub('ready'), g = UI.game && UI.game.glad(d.id);
+    if (!rd || !g || UI.state !== 'hub' || UI.tab !== 'ready') { formDragStop(); return; }
+    if (!d.on) {
+      if (Math.abs(e.clientX - d.x0) + Math.abs(e.clientY - d.y0) < 7) return;
+      var began = false; vtry(function () { began = rd.dragBegin(d.id, d.src === '3d' ? d.x0 : null, d.y0); });
+      if (!began) { fdrag = null; return; }
+      d.on = true; tipHide(); document.body.classList.add('fdragging');
+      d.ghost = h('div', 'fghost'); root.appendChild(d.ghost); snd('click');
+    }
+    var t = null; vtry(function () { t = rd.dragTo(e.clientX, e.clientY); });
+    var info = formDropInfo(e, t);
+    if (rd.drag) { rd.drag.ok = info.ok; if (info.act !== 'cell' && info.act !== 'full') rd.hoverCell = -1; if (info.act !== 'bench' && rd.drag.tgt && rd.drag.tgt.type === 'bench' && !UI.game.s.form[d.id]) rd.drag.tgt = null; }
+    d.ghost.className = 'fghost' + (info.ok ? '' : ' bad');
+    d.ghost.innerHTML = '<b>' + esc(g.name) + '</b>' + (info.label ? ' · ' + esc(info.label) : '');
+    d.ghost.style.left = Math.min(window.innerWidth - d.ghost.offsetWidth - 6, e.clientX + 16) + 'px'; d.ghost.style.top = (e.clientY + 18) + 'px';
+    e.preventDefault();
+  }
+  function formDragStop() {
+    var d = fdrag; fdrag = null; if (!d) return;
+    var rd = vsub('ready'); vtry(function () { if (rd && rd.dragEnd) rd.dragEnd(); });
+    if (d.ghost && d.ghost.parentNode) d.ghost.parentNode.removeChild(d.ghost);
+    document.body.classList.remove('fdragging');
+  }
+  function formDragEnd(e) {
+    var d = fdrag; if (!d) return;
+    if (!d.on) { fdrag = null; return; }   // chỉ là một cú bấm: để sự kiện click lo
+    var gm = UI.game, rd = vsub('ready'), t = null;
+    vtry(function () { t = rd.dragTo(e.clientX, e.clientY); });
+    var info = formDropInfo(e, t);
+    formDragStop();
+    if (d.src === 'row') noRowClick = Date.now();
+    if (info.act === 'bench') { gm.bench(d.id); snd('click'); }
+    else if (info.act === 'cell') { if (gm.place(d.id, info.c, info.r)) snd('equip'); }
+    else if (info.act === 'full') { snd('error'); toast('Đấu trường này chỉ cho ' + gm.fieldLimit() + ' người ra sân. Thả lên một người đang đứng để thay, hoặc rút bớt một người về ghế.', 'err'); }
+    UI.sel = d.id; gm.save(); UI.refresh();
+  }
+
   function quickPlace(g) {
     var gm = UI.game, s = gm.s;
     if (gm.fielded() >= gm.fieldLimit()) return false;
@@ -1003,27 +1062,58 @@
   }
 
   // ---------------------------------------------------------------- thẻ lên cấp
+  function cardIconUrl(id, size) { try { return G.V.cardIcon(id, size); } catch (e) { if (window.console) console.error(e); return ''; } }
+  function cardIconEl(id, size, cls) {
+    var w = h('div', 'cicon' + (cls ? ' ' + cls : '')), u = cardIconUrl(id, size);
+    if (u) { var im = document.createElement('img'); im.src = u; im.draggable = false; im.alt = ''; w.appendChild(im); }
+    return w;
+  }
+  function cardTip(id, n) {
+    var C = G.CARDS[id];
+    return '<div class="tt-h">' + esc(C.name) + (n > 1 ? ' ×' + n : '') + '</div><div>' + esc(C.desc) + '</div>';
+  }
   function showCardPicker(g, cb) {
-    var gm = UI.game, opts = gm.cardChoices(g), done = false, m;
-    var d = h('div');
-    add(d, h('h2', null, g.name + ' lên cấp ' + (g.lvl - g.pending + 1)));
-    add(d, h('p', null, 'Chọn một thẻ. Thẻ ở lại với hắn đến hết đời.'));
+    var gm = UI.game, opts = gm.cardChoices(g), done = false, m, lvl = g.lvl - g.pending + 1, B = G.BODY[g.body];
+    var d = h('div', 'lvlup');
+    // --- trái: chính người đang lên cấp, với đồ đang mang
+    var who = h('div', 'lv-who'), port = h('div', 'lv-port'), pu = '';
+    try { pu = G.V.portrait(g, 204, 300, 'win'); } catch (e) { if (window.console) console.error(e); }
+    if (pu) { var im = document.createElement('img'); im.src = pu; im.draggable = false; im.alt = ''; port.appendChild(im); }
+    add(port, h('div', 'lv-badge', '▲ ' + lvl));
+    add(who, port, h('div', 'lv-name' + (g.talent ? ' tal' : ''), g.name), h('div', 'lv-sub', 'Cấp ' + (lvl - 1) + ' → ' + lvl + ' · ' + B.name + ' · ' + G.WKIND[G.weaponOf(g).kind].role));
+    if (g.cards && g.cards.length) {
+      var cnt = {}, order = [], have = h('div', 'lv-have');
+      g.cards.forEach(function (id) { if (!cnt[id]) { cnt[id] = 0; order.push(id); } cnt[id]++; });
+      order.forEach(function (id) {
+        if (!G.CARDS[id]) return;
+        var e = cardIconEl(id, 34, 'mini'); if (cnt[id] > 1) add(e, h('b', null, '×' + cnt[id]));
+        bindTip(e, function () { return cardTip(id, cnt[id]); });
+        have.appendChild(e);
+      });
+      add(who, h('div', 'lv-cap', 'Thẻ đã có'), have);
+    }
+    bindTip(port, function () { return gladTip(g, {}); });
+    // --- phải: ba thẻ
+    var main = h('div', 'lv-main');
+    add(main, h('h2', null, g.name + ' lên cấp ' + lvl));
+    add(main, h('p', null, 'Chọn một thẻ. Thẻ ở lại với hắn đến hết đời.'));
     var cs = h('div', 'cards');
     opts.forEach(function (id) {
       var C = G.CARDS[id]; if (!C) return;
       var c = h('div', 'card' + (C.r === 2 ? ' rare' : ''));
-      add(c, h('div', 'cn', C.name), h('div', 'cr', C.r === 2 ? 'Hiếm' + (C.uniq ? ' · chỉ một lần' : '') : 'Thường' + (C.uniq ? ' · chỉ một lần' : ' · chọn lại được')), h('div', 'cd', C.desc));
+      add(c, cardIconEl(id, 96), h('div', 'cn', C.name), h('div', 'cr', C.r === 2 ? 'Hiếm' + (C.uniq ? ' · chỉ một lần' : '') : 'Thường' + (C.uniq ? ' · chỉ một lần' : ' · chọn lại được')), h('div', 'cd', C.desc));
       c.addEventListener('click', function () {
         if (done) return;
         if (gm.pickCard(g.id, id)) { done = true; snd('card'); m.close(true); cb(true); }
       });
       cs.appendChild(c);
     });
-    d.appendChild(cs);
+    main.appendChild(cs);
     var f = h('div', 'foot');
     add(f, btn('Để sau', null, function () { m.close(); }));
-    d.appendChild(f);
-    m = modal(d, { cls: 'wide', onClose: function () { if (!done) { done = true; cb(false); } } });
+    main.appendChild(f);
+    add(d, who, main);
+    m = modal(d, { cls: 'wide lvl', onClose: function () { if (!done) { done = true; cb(false); } } });
     snd('levelup');
   }
   function cardChain(done) {

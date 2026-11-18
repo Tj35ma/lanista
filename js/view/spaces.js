@@ -247,8 +247,16 @@
         var m = new T.Mesh(pg, new T.MeshBasicMaterial({ color: 0xd8b060, transparent: true, opacity: 0.1, depthWrite: false }));
         m.position.set(p.x, 0.022, p.z); m.renderOrder = 1; m.userData = { c: c, r: r }; st.scene.add(m); st.cells.push(m);
       }
+      var bz = { x0: 1e9, x1: -1e9, z0: 1e9, z1: -1e9 }, bl = st.env.bench || [];
+      for (var bi = 0; bi < bl.length; bi++) { bz.x0 = Math.min(bz.x0, bl[bi].x); bz.x1 = Math.max(bz.x1, bl[bi].x); bz.z0 = Math.min(bz.z0, bl[bi].z); bz.z1 = Math.max(bz.z1, bl[bi].z); }
+      if (bl.length) {
+        bz.x0 -= 0.75; bz.x1 += 0.75; bz.z0 -= 0.9; bz.z1 += 1.0;
+        var bg = new T.PlaneGeometry(bz.x1 - bz.x0, bz.z1 - bz.z0); bg.rotateX(-PI / 2);
+        var bm = new T.Mesh(bg, new T.MeshBasicMaterial({ color: 0xd8b060, transparent: true, opacity: 0, depthWrite: false }));
+        bm.position.set((bz.x0 + bz.x1) / 2, 0.024, (bz.z0 + bz.z1) / 2); bm.renderOrder = 1; st.scene.add(bm); st.benchPad = bm; st.benchZone = bz;
+      }
     }
-    this.scene = st.scene; this.camera = st.camera; this.env = st.env; this.fov = st.fov; this.cells = st.cells; this.tier = tier;
+    this.scene = st.scene; this.camera = st.camera; this.env = st.env; this.fov = st.fov; this.cells = st.cells; this.benchPad = st.benchPad || null; this.benchZone = st.benchZone || null; this.drag = null; this.tier = tier;
   };
   ready.show = function (d) { this.data = d; if (this.scene && V.cur === this) { if (d.tier != null && d.tier !== this.tier) this.build(d.tier); this.sync(); } };
   ready.sync = function () {
@@ -258,7 +266,7 @@
       return g.id + ':' + G.SLOTS.map(function (s) { return g.gear[s] ? g.gear[s].id + (g.gear[s].r || '') : ''; }).join('/') + ':' + (f ? f[0] + '' + f[1] : 'b') + ':' + g.injuries.length;
     }).join(',') + '|' + (d.foes ? d.foes.map(function (o) { return o.g.name + o.g.lvl + o.c + o.r + (o.g.gear.weapon ? o.g.gear.weapon.id : ''); }).join(',') : '');
     if (key === this.key) { this.select(this.sel); return; }
-    this.key = key;
+    this.key = key; this.drag = null;
     var i; for (i = 0; i < this.figs.length; i++) { this.figs[i].fig.dispose(); this.scene.remove(this.figs[i].proxy); }
     this.figs = [];
     var bi = 0, self = this;
@@ -280,8 +288,51 @@
   ready.update = function (dt) {
     if (this.env.update) this.env.update(V.time, dt);
     for (var i = 0; i < this.figs.length; i++) A.update(this.figs[i].fig, dt);
-    for (i = 0; i < this.cells.length; i++) { var m = this.cells[i].material, want = i === this.hoverCell ? (this.sel ? 0.5 : 0.28) : (this.sel ? 0.16 : 0.07); m.opacity += (want - m.opacity) * Math.min(1, dt * 12); }
+    var d = this.drag;
+    for (i = 0; i < this.cells.length; i++) {
+      var m = this.cells[i].material, hov = i === this.hoverCell, want = d ? (hov ? 0.62 : 0.2) : (hov ? (this.sel ? 0.5 : 0.28) : (this.sel ? 0.16 : 0.07));
+      m.opacity += (want - m.opacity) * Math.min(1, dt * 12); m.color.setHex(d && hov && !d.ok ? 0xd0503a : (d && hov ? 0xf2d27a : 0xd8b060));
+    }
+    if (this.benchPad) { var bm = this.benchPad.material, bw = d ? (d.tgt && d.tgt.type === 'bench' ? 0.42 : 0.14) : 0; bm.opacity += (bw - bm.opacity) * Math.min(1, dt * 12); this.benchPad.visible = bm.opacity > 0.01; }
+    if (d) {   // người đang được nhấc đi theo con trỏ; gần ô nào thì hút vào giữa ô ấy
+      var tx = d.x, tz = d.z, face = d.face0;
+      if (d.tgt && d.tgt.type === 'cell') { var cp = G.cellPos(0, d.tgt.c, d.tgt.r); tx = cp.x; tz = cp.z; face = PI / 2; }
+      var kf = Math.min(1, dt * 18); d.cx += (tx - d.cx) * kf; d.cz += (tz - d.cz) * kf; d.lift += (0.24 - d.lift) * Math.min(1, dt * 10);
+      d.f.fig.place(d.cx, d.cz, face, d.lift); d.f.proxy.position.set(d.cx, 0.98, d.cz);
+    }
   };
+  // ---- kéo thả: UI gọi dragBegin / dragTo / dragEnd, phần này chỉ lo nhấc mô hình và chỉ ra chỗ thả
+  ready.groundAt = function (x, y) { var r = V.rayAt(x, y); return r && r.ray.intersectPlane(ground, gp) ? gp : null; };
+  ready.targetAt = function (x, z) {
+    var gr = G.GRID, c = Math.round((-x - gr.front) / gr.gap), r = Math.round(z / gr.gap + 2), h = gr.gap * 0.5 + 0.12;
+    if (c >= 0 && c < gr.cols && r >= 0 && r < gr.rows && Math.abs(-x - gr.front - c * gr.gap) < h && Math.abs(z - (r - 2) * gr.gap) < h) return { type: 'cell', c: c, r: r };
+    var b = this.benchZone; if (b && x > b.x0 && x < b.x1 && z > b.z0 && z < b.z1) return { type: 'bench' };
+    return null;
+  };
+  ready.dragBegin = function (id, x, y) {
+    var f = null, i; for (i = 0; i < this.figs.length; i++) if (this.figs[i].type === 'glad' && this.figs[i].id === id) f = this.figs[i];
+    if (!f || this.drag) return false;
+    var b = f.fig.base, d = this.drag = { f: f, id: id, ox: 0, oz: 0, x0: b.x, z0: b.z, face0: b.face, x: b.x, z: b.z, cx: b.x, cz: b.z, lift: 0, tgt: null, ok: true };
+    if (x != null) { var p = this.groundAt(x, y); if (p) { var ox = b.x - p.x, oz = b.z - p.z; if (ox * ox + oz * oz < 9) { d.ox = ox; d.oz = oz; } } }   // giữ đúng chỗ đã nắm (nắm ở đầu thì chân không nhảy tới con trỏ)
+    this.hk = ''; if (this.onHover) this.onHover(null, 0, 0);
+    V.canvas.style.cursor = 'grabbing';
+    return true;
+  };
+  ready.dragTo = function (x, y) {
+    var d = this.drag; if (!d) return null;
+    var p = this.groundAt(x, y);
+    if (p) { d.x = V.clamp(p.x + d.ox, -11, 1.5); d.z = V.clamp(p.z + d.oz, -7, 6); d.tgt = this.targetAt(d.x, d.z); } else d.tgt = null;
+    this.hoverCell = d.tgt && d.tgt.type === 'cell' ? d.tgt.c * G.GRID.rows + d.tgt.r : -1;
+    return d.tgt;
+  };
+  ready.dragEnd = function () {
+    var d = this.drag; if (!d) return null;
+    this.drag = null; this.hoverCell = -1; V.canvas.style.cursor = '';
+    d.f.fig.place(d.x0, d.z0, d.face0, 0); d.f.proxy.position.set(d.x0, 0.98, d.z0);   // về chỗ cũ; nếu đội hình đổi thì sync() dựng lại ngay sau đó
+    this.noClick = true;   // cú nhả chuột này không tính là một lần bấm
+    return d.tgt;
+  };
+  ready.down = function (ray, x, y, e) { this.noClick = false; var p = this.pickAt(ray); if (p && p.type === 'glad' && this.onDown) this.onDown(p, x, y, e); };
   ready.pickAt = function (ray) {
     if (!ray) return null;
     var h = ray.intersectObjects(this.figs.map(function (f) { return f.proxy; }), false);
@@ -293,13 +344,18 @@
     return null;
   };
   ready.hover = function (ray, x, y) {
+    if (this.drag) return;
     var p = this.pickAt(ray);
     this.hoverCell = p && p.type === 'cell' ? p.c * G.GRID.rows + p.r : -1;
     var fp = p && (p.type === 'glad' || p.type === 'foe') ? p : null;
     var k = fp ? fp.type + (fp.id || fp.idx) : '';
     if (k !== this.hk || fp) { this.hk = k; if (this.onHover) this.onHover(fp, x, y); }
-    V.canvas.style.cursor = p ? 'pointer' : '';
+    V.canvas.style.cursor = p ? (p.type === 'glad' ? 'grab' : 'pointer') : '';
   };
-  ready.click = function (ray) { var p = this.pickAt(ray); if (p && this.onPick) this.onPick(p); };
+  ready.click = function (ray) {
+    if (this.drag) return;
+    if (this.noClick) { this.noClick = false; return; }
+    var p = this.pickAt(ray); if (p && this.onPick) this.onPick(p);
+  };
 
 })(window.G = window.G || {});

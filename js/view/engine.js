@@ -16,12 +16,15 @@
     window.addEventListener('resize', V.resize);
     canvas.addEventListener('mousemove', function (e) { V.mouse = e; if (V.cur && V.cur.hover && !fading) { setRay(e); V.cur.hover(ray, e.clientX, e.clientY); } });
     canvas.addEventListener('mouseleave', function () { if (V.cur && V.cur.hover) V.cur.hover(null, 0, 0); });
+    canvas.addEventListener('mousedown', function (e) { if (e.button === 0 && V.cur && V.cur.down && !fading) { setRay(e); V.cur.down(ray, e.clientX, e.clientY, e); } });
     canvas.addEventListener('click', function (e) { if (V.cur && V.cur.click && !fading) { setRay(e); V.cur.click(ray, e.clientX, e.clientY); } });
     try { initPost(); } catch (e) { console.warn('Không bật được hậu kỳ:', e); V.post = { ok: false }; }
     V.resize();
     last = performance.now();
     requestAnimationFrame(loop);
   };
+  // tia nhìn qua điểm (x, y) của cửa sổ — dùng khi con trỏ đang ở trên một bảng giao diện
+  V.rayAt = function (x, y) { if (!V.cur || !V.cur.camera) return null; setRay({ clientX: x, clientY: y }); return ray; };
   function setRay(e) {
     var rc = V.canvas.getBoundingClientRect();
     ndc.set(((e.clientX - rc.left) / rc.width) * 2 - 1, -((e.clientY - rc.top) / rc.height) * 2 + 1);
