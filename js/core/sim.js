@@ -232,12 +232,21 @@
     var speed = f.st.move * (f.slowT > 0 ? f.slowF : 1) * (f.boostT > 0 ? 1.25 : 1) * (f.st.perks.sprint && this.time < 5 ? 1.4 : 1);
     if (f.net > 0) return;
     var mx = 0, mz = 0, sp = speed;
-    var cornered = Math.sqrt(f.x * f.x + f.z * f.z) > this.R - 1.5;
+    var rr0 = Math.sqrt(f.x * f.x + f.z * f.z);
+    if (f.atWall) { if (rr0 < this.R - 2.6) f.atWall = false; } else if (rr0 > this.R - 1.5) f.atWall = true;
+    var cornered = !!f.atWall;
     var nx = (f.x - near.x) / (dn || 1), nz = (f.z - near.z) / (dn || 1);
     if (ai === 'ranged') {
       // người cầm vũ khí tầm xa luôn muốn giữ kẻ địch gần nhất ở ngoài ~60% tầm bắn: bắn xong là lùi
       var keep = Math.max(4.0, f.st.reach * 0.6);
-      if (dn < keep && !cornered) { mx = nx; mz = nz; sp = speed * 0.9; }
+      // hai chế độ: "lùi" giữ khoảng cách, "trụ" đứng đánh (bị dồn sát rào thì hết đường lùi).
+      // Có trễ và giữ mỗi chế độ ít nhất 0,8 giây để không đổi qua đổi lại từng khung hình.
+      if (f.modeT > 0) f.modeT -= dt;
+      var back = f.mode === 'back';
+      if (back && cornered) back = false;                                   // chạm rào: dừng lùi ngay (trạng thái rào đã có trễ nên không bật lại)
+      else if (!(f.modeT > 0)) back = back ? dn < keep + 0.6 : (dn < keep && !cornered);
+      if ((back ? 'back' : 'hold') !== f.mode) { f.mode = back ? 'back' : 'hold'; f.modeT = 0.8; }
+      if (back) { mx = nx; mz = nz; sp = speed * 0.9; }
       else if ((melee || dn >= keep) && d > reach * 0.9) { mx = ux; mz = uz; }
     } else if (ai === 'kite') {
       if (dn < (near.net > 0 ? reach * 0.9 : reach * 0.62) && !cornered) { mx = nx; mz = nz; sp = speed * 0.7; }
