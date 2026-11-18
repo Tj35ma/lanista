@@ -699,7 +699,7 @@
   V.Env.shop = function () {
     sd = 57; V.jseed(555);
     var env = base({ sunDir: [0.35, 0.3, 0.9], sunCol: 0xffc890, sunInt: 2.0, hemi: [0xb8a890, 0x6a4a30, 0.8], shadow: [9, 7], center: [0, 1.2, 0.5], fog: { color: 0x4a3a2c, near: 22, far: 70 }, bg: 0x2e241b });
-    var k = new Kit(), i, x, WS = [-3.2, -2.5, -1.8, -1.1, -0.4];
+    var k = new Kit(), i, x, CX = 0.3, AZ = -0.62, WZ = 1.9;   // tâm phòng; bàn giáp kê sát tường sau, bàn vũ khí ở phía trước
     k.m.add(new T.PlaneGeometry(30, 22, 20, 14), P.dirt, { rx: -PI / 2, z: 4 });
     // tường, mái, cột
     k.m.box(13.6, 4.0, 0.3, P.plaster, { x: 0, y: 2, z: -1.35 }); k.m.box(13.0, 0.85, 0.04, P.brick, { x: 0, y: 0.43, z: -1.185 });
@@ -707,20 +707,30 @@
     k.m.box(13.6, 0.12, 3.9, P.woodDark, { x: 0, y: 3.86, z: 0.6 });
     for (i = 0; i < 3; i++) k.m.box(13.0, 0.18, 0.18, P.wood, { x: 0, y: 3.7, z: -0.7 + i * 1.35 });
     for (i = 0; i < 8; i++) k.d.box(1.72, 0.05, 1.8, i % 2 ? P.clothOchre : P.linen, { x: -6.02 + i * 1.72, y: 4.1, z: 3.3, rx: -0.3 });
-    // giá treo vũ khí trên tường (khe vũ khí: y=1.55, z=-0.95)
-    k.m.box(3.5, 1.75, 0.04, 0xdacdab, { x: -1.8, y: 1.58, z: -1.18 });      // nền vải lanh sáng cho vũ khí nổi hình
-    k.m.box(0.09, 1.92, 0.07, P.woodDark, { x: -3.56, y: 1.58, z: -1.13 }); k.m.box(0.09, 1.92, 0.07, P.woodDark, { x: -0.04, y: 1.58, z: -1.13 });
-    k.m.box(3.5, 0.09, 0.07, P.woodDark, { x: -1.8, y: 2.25, z: -1.13 }); k.m.box(3.5, 0.09, 0.07, P.woodDark, { x: -1.8, y: 0.92, z: -1.13 });
-    for (i = 0; i < WS.length; i++) for (x = -1; x <= 1; x += 2) {
-      k.m.cyl(0.02, 0.02, 0.2, 4, P.woodDark, { x: WS[i] + x * 0.08, y: 2.25, z: -1.02, rx: PI / 2 });
-      k.m.cyl(0.02, 0.02, 0.2, 4, P.woodDark, { x: WS[i] + x * 0.08, y: 0.92, z: -1.02, rx: PI / 2 });
+    // ---- bàn giáp (sát tường sau): mặt bàn y = 0.9, phủ khăn đỏ; năm món giáp đứng trên giá gỗ
+    k.m.box(4.1, 0.08, 0.96, P.wood, { x: CX, y: 0.86, z: AZ });
+    for (i = 0; i < 4; i++) k.m.box(0.1, 0.82, 0.1, P.woodDark, { x: CX + (i % 2 ? 1.9 : -1.9), y: 0.41, z: AZ + (i < 2 ? -0.38 : 0.38) });
+    k.m.box(3.8, 0.05, 0.66, P.woodDark, { x: CX, y: 0.28, z: AZ });
+    k.m.box(4.0, 0.045, 0.9, 0x8a4a34, { x: CX, y: 0.925, z: AZ }); k.d.box(4.0, 0.26, 0.02, 0x7d4230, { x: CX, y: 0.8, z: AZ + 0.46 });
+    // ---- bàn vũ khí (phía trước): thấp, sâu, phủ vải lanh sáng cho lưỡi thép nổi hình; năm món nằm dọc, cán quay ra phía khách
+    k.m.box(3.5, 0.09, 2.4, P.wood, { x: CX, y: 0.775, z: WZ });
+    for (i = 0; i < 4; i++) k.m.box(0.12, 0.74, 0.12, P.woodDark, { x: CX + (i % 2 ? 1.6 : -1.6), y: 0.37, z: WZ + (i < 2 ? -1.05 : 1.05) });
+    k.m.box(3.3, 0.06, 0.1, P.woodDark, { x: CX, y: 0.3, z: WZ - 1.05 }); k.m.box(3.3, 0.06, 0.1, P.woodDark, { x: CX, y: 0.3, z: WZ + 1.05 });
+    k.m.box(3.36, 0.03, 2.28, 0x2f4252, { x: CX, y: 0.835, z: WZ }); k.d.box(3.36, 0.2, 0.02, 0x273846, { x: CX, y: 0.74, z: WZ + 1.15 });
+    for (i = 0; i < 4; i++) k.m.box(0.022, 0.024, 2.16, P.bronzeDark, { x: CX + (i - 1.5) * 0.62, y: 0.86, z: WZ });   // nẹp gỗ chia năm ô
+    // ---- thanh treo đồ nghề trên tường sau bàn giáp
+    k.m.box(4.3, 0.07, 0.06, P.woodDark, { x: CX, y: 2.12, z: -1.15 });
+    for (i = 0; i < 7; i++) {
+      x = CX - 1.8 + i * 0.6;
+      k.x.cyl(0.012, 0.012, 0.1, 4, P.ironDark, { x: x, y: 2.07, z: -1.1 });
+      if (i % 3 === 0) { k.m.cyl(0.018, 0.02, 0.5, 5, P.wood, { x: x, y: 1.8, z: -1.1 }); k.x.box(0.2, 0.09, 0.09, P.iron, { x: x, y: 1.55, z: -1.1 }); }
+      else if (i % 3 === 1) { k.x.beam([x - 0.03, 2.02, -1.1], [x + 0.05, 1.5, -1.1], 0.012, P.ironDark, 4); k.x.beam([x + 0.03, 2.02, -1.1], [x - 0.05, 1.5, -1.1], 0.012, P.ironDark, 4); }
+      else { k.x.box(0.07, 0.5, 0.015, P.steel, { x: x, y: 1.76, z: -1.1 }); k.m.box(0.03, 0.12, 0.03, P.leatherDark, { x: x, y: 2.0, z: -1.1 }); }
     }
-    // bàn dài bày giáp: mặt bàn y = 0.9
-    k.m.box(4.95, 0.08, 1.0, P.wood, { x: 2.375, y: 0.86, z: -0.45 });
-    for (i = 0; i < 4; i++) k.m.box(0.1, 0.82, 0.1, P.woodDark, { x: i % 2 ? 4.7 : 0.05, y: 0.41, z: i < 2 ? -0.85 : -0.05 });
-    k.m.box(4.65, 0.05, 0.7, P.woodDark, { x: 2.375, y: 0.28, z: -0.45 });
+    // ---- bàn tròn nhỏ cho món phụ kiện (mặt bàn y = 0.8)
+    k.m.cyl(0.3, 0.3, 0.05, 8, P.wood, { x: 3.2, y: 0.78, z: -0.5 }); k.m.cyl(0.05, 0.08, 0.76, 6, P.woodDark, { x: 3.2, y: 0.38, z: -0.5 }); k.m.cyl(0.2, 0.24, 0.04, 8, P.woodDark, { x: 3.2, y: 0.02, z: -0.5 });
     // bệ đá cho vật của lanista: mặt bệ y = 1.0
-    k.m.box(0.62, 0.12, 0.62, P.stoneDark, { x: -4.3, y: 0.06, z: -0.2 }); k.m.box(0.46, 0.78, 0.46, P.stone, { x: -4.3, y: 0.51, z: -0.2 }); k.m.box(0.58, 0.1, 0.58, P.stoneLight, { x: -4.3, y: 0.95, z: -0.2 });
+    k.m.box(0.62, 0.12, 0.62, P.stoneDark, { x: -2.65, y: 0.06, z: -0.55 }); k.m.box(0.46, 0.78, 0.46, P.stone, { x: -2.65, y: 0.51, z: -0.55 }); k.m.box(0.58, 0.1, 0.58, P.stoneLight, { x: -2.65, y: 0.95, z: -0.55 });
     // lò rèn + than hồng + ống khói
     var fx = -5.7, fz = -0.45;
     k.m.box(1.5, 0.85, 1.3, P.stoneDark, { x: fx, y: 0.425, z: fz });
@@ -735,7 +745,7 @@
     var fl = new T.PointLight(0xff7a30, 22, 9, 1.6); fl.position.set(fx + 0.3, 1.45, fz + 0.4); env.group.add(fl);
     env.upd.push(function (t) { fl.intensity = 22 * (0.8 + 0.2 * Math.sin(t * 9) * Math.sin(t * 5.3) + 0.08 * Math.sin(t * 21)); });
     var fill = new T.PointLight(0xffe2c0, 16, 14, 1.5); fill.position.set(0.8, 2.9, 3.2); env.group.add(fill);
-    var rl = new T.PointLight(0xffecd0, 11, 7, 1.6); rl.position.set(-1.8, 2.3, 1.7); env.group.add(rl);      // đèn rọi giá vũ khí
+    var rl = new T.PointLight(0xffecd0, 9, 8, 1.6); rl.position.set(0.3, 2.9, 2.6); env.group.add(rl);      // đèn rọi bàn vũ khí
     (function () {                   // tàn lửa bay lên từ lò
       var n = 22, pos = new Float32Array(n * 3), sp = [], q;
       for (q = 0; q < n; q++) { pos[q * 3] = fx + rr(-0.45, 0.45); pos[q * 3 + 1] = rr(0.95, 2.6); pos[q * 3 + 2] = fz + rr(-0.35, 0.35); sp.push(rr(0.35, 0.9), rr(0, 6.28)); }
@@ -746,8 +756,7 @@
         eg.attributes.position.needsUpdate = true;
       });
     })();
-    for (i = 0; i < 2; i++) { x = i ? 3.8 : 1.0; k.x.beam([x, 3.62, 1.1], [x, 2.86, 1.1], 0.008, P.ironDark, 3); k.x.cyl(0.13, 0.07, 0.08, 7, P.bronzeDark, { x: x, y: 2.82, z: 1.1 }); flame(env, x, 2.86, 1.1, 0.55); }
-    k.m.box(4.85, 0.045, 0.94, 0x8a4a34, { x: 2.375, y: 0.925, z: -0.45 }); k.d.box(4.85, 0.26, 0.02, 0x7d4230, { x: 2.375, y: 0.8, z: 0.03 });   // khăn trải bàn
+    for (i = 0; i < 2; i++) { x = i ? 2.3 : -1.7; k.x.beam([x, 3.62, 0.5], [x, 2.86, 0.5], 0.008, P.ironDark, 3); k.x.cyl(0.13, 0.07, 0.08, 7, P.bronzeDark, { x: x, y: 2.82, z: 0.5 }); flame(env, x, 2.86, 0.5, 0.55); }
     k.g.box(0.55, 0.02, 0.05, 0xff8a3a, { x: -4.5, y: 0.815, z: 1.5, ry: 0.35 }); k.x.box(0.2, 0.02, 0.03, P.ironDark, { x: -4.16, y: 0.815, z: 1.37, ry: 0.35 });   // lưỡi kiếm rèn dở
     // đe trên gốc cây, búa, kìm, thùng nước
     k.m.cyl(0.3, 0.33, 0.5, 7, P.woodDark, { x: -4.5, y: 0.25, z: 1.5 });
@@ -772,11 +781,12 @@
     k.into(env.group);
     dust(env, [-5, 0.4, -1, 5, 3.2, 3], 60, 0.05);
     env.slots = {
-      weapon: WS.map(function (x) { return { x: x, y: 1.55, z: -0.95 }; }),
-      armor: [0.33, 1.1, 1.87, 2.64, 3.41].map(function (x) { return { x: x, y: 0.95, z: -0.5 }; }),
-      trinket: [{ x: 4.15, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 }
+      // vũ khí nằm trên bàn trước: z là mép cán (gần khách), lưỡi chĩa vào trong
+      weapon: [-2, -1, 0, 1, 2].map(function (n) { return { x: CX + n * 0.62, y: 0.852, z: WZ + 1.0, flat: true, len: 2.05 }; }),
+      armor: [-2, -1, 0, 1, 2].map(function (n) { return { x: CX + n * 0.76, y: 0.95, z: AZ }; }),
+      trinket: [{ x: 3.2, y: 0.81, z: -0.5 }], relic: { x: -2.65, y: 1.05, z: -0.55 }
     };
-    env.cam = { pos: [0, 1.95, 6.2], look: [0, 1.25, -0.5], fov: 40 };
+    env.cam = { pos: [0.3, 5.05, 7.65], look: [0.3, 0.9, 1.9], fov: 40 };
     return env;
   };
 

@@ -140,21 +140,26 @@
   var ap = new T.Vector3(), asp = { x: 0, y: 0, behind: false };
   market.anchors = function () {
     var out = []; if (V.cur !== this || !this.env) return out;
-    for (var i = 0; i < this.figs.length; i++) { if (!this.figs[i]) continue; var s = this.env.slots[i]; ap.set(s.x, s.y - 0.03, s.z + 0.62); V.project(ap, asp); out.push({ i: i, x: asp.x, y: asp.y }); }
+    for (var i = 0; i < this.figs.length; i++) {
+      if (!this.figs[i]) continue; var s = this.env.slots[i];
+      ap.set(s.x, s.y - 0.03, s.z + 0.62); V.project(ap, asp); out.push({ i: i, x: asp.x, y: asp.y });
+      ap.set(s.x - 0.5, s.y + 1.12, s.z); V.project(ap, asp); out.push({ i: 'st' + i, x: asp.x, y: asp.y });   // cột chỉ số: bên trái, ngang ngực
+    }
     return out;
   };
   market.highlight = function (i) { this.hi = i; if (!this.rings) return; for (var k = 0; k < this.rings.length; k++) this.rings[k].visible = (k === i && !!this.figs[k]); };
 
   // =================================================================== LÒ RÈN
+  // trục của mô hình vũ khí khi nằm: bề dày (x) → lên trên, chiều dài (y) → vào trong (−z), bề rộng lưỡi (z) → ngang (−x)
+  var FLAT = new T.Matrix4().makeBasis(new T.Vector3(0, 1, 0), new T.Vector3(0, 0, -1), new T.Vector3(-1, 0, 0));
   var shop = V.shop = V.spaces.shop = { shiftX: 0.1, objs: [], key: '', hi: -1, onHover: null, onClick: null, list: null, relic: null };
   shop.build = function () {
     if (this.scene) return;
     var env = V.getEnv('shop', 0, function () {
-      var sl = { weapon: [], armor: [], trinket: [{ x: 4.15, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 } };
-      for (var i = 0; i < 5; i++) { sl.weapon.push({ x: -3.2 + i * 0.7, y: 1.55, z: -0.95 }); sl.armor.push({ x: 0.33 + i * 0.77, y: 0.95, z: -0.5 }); }
-      return V.fallbackEnv({ pos: [0, 1.95, 6.2], look: [0, 1.25, -0.5], fov: 40 }, { slots: sl });
+      var sl = { weapon: [], armor: [], trinket: [{ x: 3.2, y: 0.81, z: -0.5 }], relic: { x: -2.65, y: 1.05, z: -0.55 } };
+      for (var i = 0; i < 5; i++) { sl.weapon.push({ x: 0.3 + (i - 2) * 0.62, y: 0.852, z: 2.9, flat: true, len: 2.05 }); sl.armor.push({ x: 0.3 + (i - 2) * 0.76, y: 0.95, z: -0.62 }); }
+      return V.fallbackEnv({ pos: [0.3, 5.05, 7.65], look: [0.3, 0.9, 1.9], fov: 40 }, { slots: sl });
     });
-    env.cam = { pos: [0.2, 2.2, 9.75], look: [0.2, 1.2, -0.5], fov: env.cam.fov || 40 };   // lùi máy để cả giá vũ khí, bàn giáp và bệ đá lọt khung
     var st = V.makeStage(env); this.scene = st.scene; this.camera = st.camera; this.env = env; this.fov = st.fov;
   };
   shop.show = function (list, relic) { this.list = list; this.relic = relic; if (this.scene) this.sync(); };
@@ -176,14 +181,30 @@
       var an = wall ? new T.Vector3(slot.x, 0.76, slot.z + 0.2) : new T.Vector3(slot.x, slot.y - 0.07, slot.z + Math.max(0.34, bs.z / 2 + 0.14));
       self.objs.push({ grp: grp, proxy: px, idx: idx, base: grp.position.clone(), wall: wall, s0: grp.scale.x, anchor: an });
     }
+    // Vũ khí nằm trên bàn: mặt lưỡi ngửa lên, cán ở mép bàn phía khách, mũi chĩa vào trong.
+    function putFlat(inner, slot, idx, it) {
+      var holder = new T.Group();
+      if (it.kind === 'twin' && inner.children[1]) inner.children[1].position.set(0, 0, 0.2);   // hai thanh nằm cạnh nhau, không chồng lên nhau
+      if (it.kind === 'caestus') inner.rotation.x = -PI / 2; else inner.quaternion.setFromRotationMatrix(FLAT);
+      inner.position.set(0, 0, 0); inner.updateMatrixWorld(true); bb.setFromObject(inner); bb.getCenter(bc); bb.getSize(bs);
+      var s = it.kind === 'caestus' ? 2.0 : V.clamp((slot.len || 2.05) / Math.max(0.1, bs.z), 0.8, 1.7);
+      // vũ khí cán dài nhìn từ trên xuống quá mảnh: vẽ đậm nét hơn (chỉ bề dày và bề ngang, không đổi chiều dài)
+      var th = { hasta: 1.7, trident: 1.6, javelin: 1.7, axe: 1.3 }[it.kind] || 1, kw = s * th;
+      if (it.kind === 'caestus') inner.scale.setScalar(s); else inner.scale.set(kw, s, kw);
+      inner.position.set(-bc.x * kw, -bb.min.y * kw + 0.012, -bb.max.z * s);
+      holder.add(inner); holder.position.set(slot.x, slot.y, slot.z); self.scene.add(holder);
+      var L = bs.z * s, W = Math.max(0.42, bs.x * kw + 0.14);
+      var px = new T.Mesh(new T.BoxGeometry(W, 0.34, L + 0.12), invis); px.position.set(slot.x, slot.y + 0.14, slot.z - L / 2); px.userData.i = idx; self.scene.add(px);
+      self.objs.push({ grp: holder, proxy: px, idx: idx, base: holder.position.clone(), flat: true, s0: 1, anchor: new T.Vector3(slot.x, slot.y - 0.05, slot.z + 0.2) });
+    }
     for (i = 0; i < list.length; i++) {
       if (list[i].sold) continue;
       var it = G.ITEMS[list[i].id], cat = it.slot === 'weapon' ? 'weapon' : (it.slot === 'trinket' ? 'trinket' : 'armor');
       var arr = sl[cat], slot = arr[used[cat]]; if (!slot) { slot = sl.armor[used.armor]; cat = 'armor'; if (!slot) continue; }
       used[cat]++;
-      var grp = V.Gear.display(it, 0, list[i].r || 0); grp.scale.setScalar(cat === 'weapon' ? 1.22 : 1.15);
-      if (cat === 'armor' && it.slot === 'weapon') grp.rotation.z = PI / 2;
-      put(grp, slot, cat === 'weapon', i);
+      var grp = V.Gear.display(it, 0, list[i].r || 0);
+      if (slot.flat) putFlat(grp, slot, i, it);
+      else { grp.scale.setScalar(1.2); if (it.slot === 'weapon') grp.rotation.z = PI / 2; put(grp, slot, false, i); }
     }
     if (relic && !relic.sold) put(V.relicMesh(relic.id), sl.relic, false, 'relic');
     this.highlight(this.hi);
@@ -194,6 +215,7 @@
     for (var i = 0; i < this.objs.length; i++) {
       var o = this.objs[i], on = o.idx === this.hi, k = Math.min(1, dt * 10);
       o.t = (o.t || 0) + ((on ? 1 : 0) - (o.t || 0)) * k;
+      if (o.flat) { o.grp.position.y = o.base.y + o.t * 0.07; o.grp.rotation.x = o.t * 0.5; o.grp.scale.setScalar(1 + o.t * 0.06); continue; }
       o.grp.position.y = o.base.y + o.t * 0.06; o.grp.position.z = o.base.z + o.t * 0.12;
       o.grp.scale.setScalar(o.s0 * (1 + o.t * 0.1));
       if (!o.wall) o.grp.rotation.y = o.t * Math.sin(V.time * 1.6) * 0.5;

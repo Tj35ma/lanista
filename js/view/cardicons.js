@@ -82,11 +82,32 @@
     k.d.tri([hx + 0.17, hy - 0.01, hz], [hx + 0.34, hy + 0.05, hz + 0.02], [hx + 0.24, hy - 0.01, hz], RED); k.d.tri([hx + 0.17, hy - 0.01, hz], [hx + 0.34, hy - 0.07, hz - 0.02], [hx + 0.24, hy - 0.01, hz], RED);
     return { ry: 0.2, rx: 0.1 };
   };
-  E.vit = function (k) {   // trái tim
+  E.hp = function (k) {   // trái tim: máu
     var m = k.m, c = 0xb5302a;
     m.ico(0.27, 1, c, { x: -0.19, y: 0.14, sz: 0.62 }); m.ico(0.27, 1, c, { x: 0.19, y: 0.14, sz: 0.62 });
     m.cone(0.455, 0.62, 8, c, { y: -0.2, rx: PI, sz: 0.5 });
     return { ry: 0.3, rx: 0.05 };
+  };
+  E.vit = function (k) {   // thân người vạm vỡ: thể chất
+    var m = k.m, i;
+    m.loft([[-0.5, 0.2, 0.14], [-0.3, 0.21, 0.15], [0.0, 0.27, 0.18], [0.25, 0.34, 0.2], [0.4, 0.3, 0.16]], 8, SK, null, 3);
+    m.cyl(0.085, 0.1, 0.16, 7, SK, { y: 0.47 });
+    for (i = -1; i <= 1; i += 2) {
+      m.ico(0.15, 1, SK, { x: i * 0.37, y: 0.32, sy: 0.9 });
+      m.ico(0.14, 1, SKD, { x: i * 0.135, y: 0.2, z: 0.15, sz: 0.5, sy: 0.85 });
+      for (var j = 0; j < 3; j++) m.box(0.105, 0.075, 0.03, SKD, { x: i * 0.062, y: -0.05 - j * 0.105, z: 0.186 - j * 0.012 });
+    }
+    m.box(0.46, 0.09, 0.32, P.leatherDark, { y: -0.53 }); m.box(0.3, 0.2, 0.3, V.TEAM[0].cloth, { y: -0.66 });
+    return { ry: 0.3, rx: 0.08 };
+  };
+  E.aspd = function (k) {   // lưỡi kiếm vung nhanh: tốc độ đánh
+    var bx = -0.3, by = -0.52, a = -0.62, s = 1.2, ux = -Math.sin(a), uy = Math.cos(a), nx = -uy, ny = ux, i;
+    sword(k, { x: bx, y: by, rz: a, s: s });
+    for (i = 0; i < 3; i++) {
+      var t = (0.34 + i * 0.22) * s, px = bx + ux * t, py = by + uy * t, L = 0.42 + i * 0.12;
+      k.d.tri([px + ux * 0.085, py + uy * 0.085, -0.03], [px - ux * 0.085, py - uy * 0.085, -0.03], [px + nx * L - ux * 0.12, py + ny * L - uy * 0.12, -0.03], i % 2 ? 0xf0cf7a : 0xffe7a8);
+    }
+    return { ry: 0.15, rx: 0.08 };
   };
   E.hide = function (k) {   // tấm da thú căng nhiều lớp
     var m = k.m, L = [[P.leatherDark, 0, 1], [P.leather, 0.06, 0.86], [0x8a6240, 0.12, 0.72]], i, sx, sy;
@@ -288,5 +309,8 @@
     grp.traverse(function (m) { if (m.geometry) m.geometry.dispose(); });
     return (cache[key] = url);
   };
+  // Icon của một chỉ số: str, agi, vit, hp, move, aspd.
+  var STAT = { str: 'str', agi: 'agi', vit: 'vit', hp: 'hp', move: 'fleet', aspd: 'aspd' };
+  V.statIcon = function (key, size) { return V.cardIcon(STAT[key] || key, size || 28); };
   V.CARD_ICONS = E;
 })(window.G = window.G || {});

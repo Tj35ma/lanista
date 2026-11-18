@@ -608,6 +608,7 @@
       if (!o.sold) {
         bindTip(r, function () { return gladTip(o.g, { price: o.price }); }, function () { vhl('market', i); }, function () { vhl('market', -1); });
         addTag('market', i, o.g.name, o.g.talent ? 'tal' : '', o.price, s.gold >= o.price, o.price === 0 ? 'Nhận' : 'Mua', buy, function () { return gladTip(o.g, { price: o.price }); });
+        addStatCol('market', i, o.g);
       }
       elLeft.appendChild(r);
     });
@@ -869,6 +870,32 @@
     t.style.visibility = 'hidden';
     elTags.appendChild(t); tagList.push({ el: t, key: key, space: space });
   }
+  // Cột chỉ số luôn hiện bên trái một nô lệ trên bục: icon + con số, rê chuột lên từng dòng để xem nó làm gì.
+  var STAT_ROWS = [
+    ['str', 'Sức mạnh', 'Mỗi điểm trên 5: +7% sát thương. Mỗi điểm: mang thêm được 3 đơn vị trọng lượng.'],
+    ['agi', 'Nhanh nhẹn', 'Mỗi điểm trên 5: +5% tốc độ đánh. Mỗi điểm: +2% né và chạy nhanh hơn một chút.'],
+    ['vit', 'Thể chất', 'Mỗi điểm: +14 máu.'],
+    ['hp', 'Máu', 'Hết máu là gục. Tính từ Thể chất và cấp.'],
+    ['move', 'Tốc chạy', 'Mét mỗi giây. Đồ nặng làm chậm lại.'],
+    ['aspd', 'Tốc đánh', 'Số giây giữa hai đòn với thứ đang cầm — càng nhỏ càng nhanh.']
+  ];
+  function statValues(g) {
+    var st = G.calcStats(g), K = G.WKIND[st.kind];
+    return { str: num(st.str, 1), agi: num(st.agi, 1), vit: num(st.vit, 1), hp: String(st.hp), move: num(st.move, 1), aspd: num(K.interval / st.aspd, 2) + 's' };
+  }
+  function addStatCol(space, i, g) {
+    var col = h('div', 'tag3d statcol'), v = statValues(g);
+    STAT_ROWS.forEach(function (R) {
+      var row = h('div', 'sc-row'), ic = h('div', 'sc-ic'), u = '';
+      try { u = G.V.statIcon(R[0], 48); } catch (e) { if (window.console) console.error(e); }
+      if (u) { var im = document.createElement('img'); im.src = u; im.draggable = false; im.alt = ''; ic.appendChild(im); }
+      add(row, ic, h('span', null, v[R[0]]));
+      bindTip(row, function () { return '<div class="tt-h">' + esc(R[1]) + ' ' + esc(v[R[0]]) + '</div><div>' + esc(R[2]) + '</div>'; }, function () { vhl(space, i); hlRow(i); }, function () { vhl(space, -1); hlRow(-1); });
+      col.appendChild(row);
+    });
+    col.style.visibility = 'hidden';
+    elTags.appendChild(col); tagList.push({ el: col, key: 'st' + i, space: space, tf: 'translate(-100%, -50%)' });
+  }
   function tagLoop() {
     requestAnimationFrame(tagLoop);
     if (!tagList.length || UI.state !== 'hub') return;
@@ -878,7 +905,7 @@
       if (list) for (j = 0; j < list.length; j++) if (list[j].i === t.key) { a = list[j]; break; }
       if (!a) { t.el.style.visibility = 'hidden'; continue; }
       t.el.style.visibility = 'visible';
-      t.el.style.transform = 'translate(' + Math.round(a.x) + 'px,' + Math.round(a.y) + 'px) translate(-50%, 0)';
+      t.el.style.transform = 'translate(' + Math.round(a.x) + 'px,' + Math.round(a.y) + 'px) ' + (t.tf || 'translate(-50%, 0)');
     }
   }
 
