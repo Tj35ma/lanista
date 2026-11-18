@@ -1,0 +1,77 @@
+# LANISTA — Cát & Máu
+
+Game quản lý trường đấu sĩ La Mã kết hợp auto-battler, chạy trong trình duyệt máy tính, chơi bằng chuột.
+Toàn bộ hình ảnh, chuyển động, giao diện và âm thanh được sinh bằng mã lúc chạy — không có tệp mô hình, ảnh, âm thanh, phông chữ hay hoạt ảnh nào.
+
+## Chạy game
+
+Cách 1 — mở thẳng: bấm đúp `index.html` (Chrome / Edge / Firefox bản mới). Game là trang tĩnh, dùng script thường nên chạy được từ `file://`.
+
+Cách 2 — qua máy chủ tĩnh bất kỳ (nên dùng nếu trình duyệt chặn `localStorage` trên `file://`):
+
+```bash
+python -m http.server 8765
+```
+
+rồi mở <http://localhost:8765/>.
+
+Cửa sổ nên rộng từ 1100×650 trở lên. Tiến trình tự lưu vào `localStorage` của trình duyệt (khóa `lanista_save_v1`); "Chơi mới" ở màn hình tiêu đề xóa bản lưu.
+
+## Cách chơi (tóm tắt)
+
+- Mỗi ngày: ghé **Chợ nô lệ** mua người, **Lò rèn** mua vũ khí/giáp/vật của lanista, vào **Phòng chờ** trang bị và xếp đội hình trên lưới 3×5, chọn trận (trận chính hoặc hai trận phụ), bấm **Ra đấu trường**.
+- Trận đấu tự diễn ra; nút duy nhất là **Xin thua**. Sau trận có bảng "Vì sao" giải thích kết quả.
+- Mỗi ngày tối đa một trận; **Qua ngày** trả phí nuôi, chữa thương, đổi hàng ở chợ.
+- Bốn hạng đấu trường (Chợ → Làng → Thành phố → Colosseum), mỗi hạng 7 trận chính, trận thứ 7 là một nhà vô địch đấu một mình với cả đội.
+- Trận phụ đấu lại bao nhiêu lần cũng được, nhưng khán giả chán dần: mỗi trận phụ kể từ lần thắng trận chính gần nhất làm túi thưởng vơi 5% (thấp nhất còn một nửa).
+- Người bị thương tạm thời có thể chữa ngay bằng nút **Gọi thầy thuốc** trong Phòng chờ, nếu anh chịu trả tiền.
+- Ở Chợ nô lệ và Lò rèn, nút mua nằm ngay dưới chân từng nô lệ và dưới từng món hàng trong cảnh 3D (danh sách bên trái vẫn dùng được).
+- Trong Phòng chờ, bấm vào một đấu sĩ để mở **bảng trang bị**: kho đồ là lưới icon, kéo một món thả vào người (hoặc vào ô của nó) để mang, kéo từ ô ra kho để tháo; trong lúc kéo, bảng hiện luôn chỉ số sẽ đổi ra sao. Bấm một lần vào icon cũng mang/tháo được.
+- Mỗi món đồ có một trong năm độ hiếm: Thường, Tốt, Hiếm, Sử thi, Huyền thoại. Càng hiếm thì mô hình càng nhiều chi tiết (dây quấn, đá quý, nạm vàng, lông mũ, áo choàng), chỉ số gốc càng cao, có thêm 1–3 phụ tố chỉ số; đồ Sử thi và Huyền thoại có thêm một hiệu ứng đặc biệt. Đấu trường càng cao thì đồ hiếm càng hay xuất hiện.
+- Mỗi ô giáp có một vai trò riêng, ngoài điểm giáp của vùng nó che: **giáp thân** cộng % máu; **mũ** cộng kháng hiệu ứng (choáng, lưới, chậm, chảy máu ngắn lại theo đúng số % đó); **giáp tay / găng** cộng tốc độ đánh; **giày / giáp chân** cộng tốc độ di chuyển. Đồ từ bậc Tốt trở lên luôn có một phụ tố đúng vai trò của ô (Chắc thịt, Vững trí, Khéo tay, Nhẹ chân), và hiệu ứng đặc biệt của mũ, găng, giày cũng theo vai trò ấy (ví dụ Tỉnh đòn, Dồn dập, Xuất phát). Đồ nặng vẫn làm chậm cả tay lẫn chân, nên giáp chân sắt chỉ đủ bù trọng lượng của chính nó, còn giày nhẹ mới thật sự nhanh.
+- Giá giáp tính từ chính chỉ số của món đồ (`S()` trong `js/core/data.js`): điểm = giáp × hệ số ô + các chỉ số phụ − trọng lượng, giá = điểm × vàng-mỗi-điểm của hạng (5 / 6,5 / 8,5 / 11). Trong cùng một hạng, món đắt gấp đôi thì cho gấp đôi chỉ số.
+- Ở Lò rèn, nút **Đổi lượt hàng** (5 vàng, bấm bao nhiêu lần cũng được) dọn hết hàng đang bày và bày lượt mới.
+- Mọi chi tiết (chỉ số, nét tính cách, mô tả vũ khí…) hiện khi rê chuột lên tên, lên icon hoặc lên nhân vật trong cảnh 3D.
+
+## Cấu trúc mã
+
+| Thư mục | Nội dung |
+|---|---|
+| `js/core/` | Luật chơi thuần logic, chạy được không cần đồ họa: `data.js` (nội dung), `rules.js` (chỉ số), `sim.js` (mô phỏng trận), `game.js` (chiến dịch, lưu game) |
+| `js/view/` | Đồ họa three.js: `builder.js`, `gear.js` (trang bị), `figure.js` (thân người, IK, bước chân), `anim.js` (thế thủ, đòn đánh), `fx.js`, `scenes.js` (bốn không gian), `spaces.js`, `battleview.js` |
+| `js/ui/`, `css/` | Giao diện DOM |
+| `js/audio.js` | Âm thanh tổng hợp bằng Web Audio |
+| `lib/three.min.js` | three.js r160 (MIT) đóng gói thành một tệp mã, không kèm tài nguyên |
+| `tools/` | Công cụ dòng lệnh Node: bot tự chơi hết chiến dịch, đo cân bằng |
+
+## Đồ họa
+
+Tất cả dựng bằng mã lúc chạy: thân người là các vỏ đa giác phẳng mặt nối từ những vòng cắt ngang (eo, ngực, bắp tay chân, hàm, gò má); tay chân đặt bằng IK, bàn chân cắm trong không gian thế giới nên không trượt; mỗi họ vũ khí có thế thủ và đòn riêng ngắm vào đúng đối thủ. Hậu kỳ gồm khử răng cưa, bloom nhẹ, tone-map ACES, chỉnh màu ấm, tối góc và hạt phim (tự tắt nếu máy không hỗ trợ bộ đệm HDR). Trong trận có vệt sáng theo mũi vũ khí, dấu chân trên cát, máu loang, bụi, vũ khí rơi khỏi tay kẻ gục và máy quay tự lấy khung.
+
+## Công cụ đo cân bằng (không cần đồ họa)
+
+```bash
+node tools/bot.js 40 1
+```
+
+chạy 40 chiến dịch bằng bot tự chơi và in số ngày, số lần thử mỗi trận chính, số người chết, thời lượng trận.
+
+```bash
+node tools/weapons.js
+```
+
+in ma trận thắng–thua giữa các họ vũ khí.
+
+```bash
+node tools/bosses.js
+```
+
+in tỉ lệ thắng của tám kiểu đội hình mẫu trước từng trùm.
+
+```bash
+node tools/gearcheck.js
+```
+
+in "trang bị đáng giá bao nhiêu": người đủ đồ đấu người tay không, người chỉ có vũ khí, v.v.
+
+Công cụ soi chuyển động (chỉ dùng khi phát triển): `node tools/serve.js` phục vụ game ở cổng 8765 và nhận ảnh chụp canvas; trong console trình duyệt nạp `tools/dbg.js` để dựng một trận tay đôi bất kỳ, dừng hình và xuất "tấm ảnh nhiều khung" của một đòn đánh.
