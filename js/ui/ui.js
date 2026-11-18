@@ -358,6 +358,7 @@
       else newGame();
     }));
     add(menu, soundBtn('sm'));
+    add(menu, h('div', 'saveinfo dim', 'Mỗi lần mở link là một ván mới. Lỡ tải lại trang (F5) thì vẫn chơi tiếp được; đóng tab là mất ván.'));
     add(elTitle, logo, menu);
   }
   function newGame() {
@@ -1408,7 +1409,18 @@
   }
 
   // ---------------------------------------------------------------- khởi động
+  // Trang được mở từ một đường link / gõ địa chỉ (không phải bấm tải lại)?
+  function freshVisit() {
+    try { var n = performance.getEntriesByType('navigation')[0]; return !n || (n.type !== 'reload' && n.type !== 'back_forward'); } catch (e) { return true; }
+  }
   UI.start = function () {
+    // Ai mở link cũng bắt đầu ván đầu tiên, không thấy "Tiếp tục" của ván cũ; chỉ khi tải lại trang (F5) ván đang dở mới còn.
+    if (freshVisit()) G.Game.clearSave();
+    // đóng tab là mất ván: để trình duyệt hỏi lại trước khi rời trang lúc đang chơi dở
+    window.addEventListener('beforeunload', function (e) {
+      var s = UI.game && UI.state !== 'title' ? UI.game.s : null;
+      if (s && !s.won && (s.day > 1 || s.roster.length)) { e.preventDefault(); e.returnValue = ''; }
+    });
     build();
     if (/[?&]debug\b/.test(window.location.search)) {
       UI.debugGold = function (n) { if (!UI.game) return; UI.game.s.gold += (n || 1000); UI.game.save(); UI.refresh(); return UI.game.s.gold; };

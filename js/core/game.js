@@ -19,19 +19,22 @@
     gm.sync();
     return gm;
   };
+  // Bản lưu chỉ sống trong đúng một tab (sessionStorage): tab khác, máy khác, lần mở link khác không bao giờ thấy ván của người trước.
+  function store() { try { return typeof sessionStorage !== 'undefined' ? sessionStorage : null; } catch (e) { return null; } }
+  try { if (typeof localStorage !== 'undefined' && localStorage) localStorage.removeItem(SAVE_KEY); } catch (e) { }   // bản lưu kiểu cũ (dùng chung cho mọi lần mở)
   Game.load = function () {
     try {
-      if (typeof localStorage === 'undefined') return null;
-      var raw = localStorage.getItem(SAVE_KEY); if (!raw) return null;
+      var st = store(); if (!st) return null;
+      var raw = st.getItem(SAVE_KEY); if (!raw) return null;
       var s = JSON.parse(raw); if (!s || s.v !== 1) return null;
       return new Game(s);
     } catch (e) { return null; }
   };
-  Game.clearSave = function () { try { localStorage.removeItem(SAVE_KEY); } catch (e) { } };
+  Game.clearSave = function () { try { var st = store(); if (st) st.removeItem(SAVE_KEY); } catch (e) { } };
   Game.prototype.sync = function () { this.s.rs = this.rng.s; };
   Game.prototype.save = function () {
     this.sync();
-    try { if (typeof localStorage !== 'undefined') localStorage.setItem(SAVE_KEY, JSON.stringify(this.s)); } catch (e) { }
+    try { var st = store(); if (st) st.setItem(SAVE_KEY, JSON.stringify(this.s)); } catch (e) { }
   };
 
   Game.prototype.has = function (relic) { return this.s.relics.indexOf(relic) >= 0; };

@@ -9,7 +9,7 @@ Toàn bộ hình ảnh, chuyển động, giao diện và âm thanh được sin
 
 Cách 1 — mở thẳng: bấm đúp `index.html` (Chrome / Edge / Firefox bản mới). Game là trang tĩnh, dùng script thường nên chạy được từ `file://`.
 
-Cách 2 — qua máy chủ tĩnh bất kỳ (nên dùng nếu trình duyệt chặn `localStorage` trên `file://`):
+Cách 2 — qua máy chủ tĩnh bất kỳ:
 
 ```bash
 python -m http.server 8765
@@ -17,7 +17,7 @@ python -m http.server 8765
 
 rồi mở <http://localhost:8765/>.
 
-Cửa sổ nên rộng từ 1100×650 trở lên. Tiến trình tự lưu vào `localStorage` của trình duyệt (khóa `lanista_save_v1`); "Chơi mới" ở màn hình tiêu đề xóa bản lưu.
+Cửa sổ nên rộng từ 1100×650 trở lên. Mỗi lần mở link (hoặc mở tệp) là một ván mới: không ai thấy nút "Tiếp tục" của ván người khác. Ván đang chơi tự lưu vào `sessionStorage` của riêng tab đó (khóa `lanista_save_v1`), nên lỡ tải lại trang (F5) vẫn chơi tiếp được; đóng tab hoặc mở lại link là bắt đầu lại từ đầu, và trình duyệt sẽ hỏi lại trước khi rời trang lúc đang chơi dở.
 
 ## Cách chơi (tóm tắt)
 
