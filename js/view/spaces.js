@@ -150,11 +150,11 @@
   shop.build = function () {
     if (this.scene) return;
     var env = V.getEnv('shop', 0, function () {
-      var sl = { weapon: [], armor: [], trinket: [{ x: 3.9, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 } };
-      for (var i = 0; i < 4; i++) { sl.weapon.push({ x: -3.0 + i * 0.8, y: 1.55, z: -0.95 }); sl.armor.push({ x: 0.4 + i * 0.9, y: 0.95, z: -0.5 }); }
+      var sl = { weapon: [], armor: [], trinket: [{ x: 4.15, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 } };
+      for (var i = 0; i < 5; i++) { sl.weapon.push({ x: -3.2 + i * 0.7, y: 1.55, z: -0.95 }); sl.armor.push({ x: 0.33 + i * 0.77, y: 0.95, z: -0.5 }); }
       return V.fallbackEnv({ pos: [0, 1.95, 6.2], look: [0, 1.25, -0.5], fov: 40 }, { slots: sl });
     });
-    env.cam = { pos: [0, 2.15, 8.7], look: [0, 1.3, -0.5], fov: env.cam.fov || 40 };   // lùi máy để cả giá vũ khí, bàn giáp và bệ đá lọt khung
+    env.cam = { pos: [0.2, 2.2, 9.75], look: [0.2, 1.2, -0.5], fov: env.cam.fov || 40 };   // lùi máy để cả giá vũ khí, bàn giáp và bệ đá lọt khung
     var st = V.makeStage(env); this.scene = st.scene; this.camera = st.camera; this.env = env; this.fov = st.fov;
   };
   shop.show = function (list, relic) { this.list = list; this.relic = relic; if (this.scene) this.sync(); };

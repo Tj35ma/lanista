@@ -76,6 +76,7 @@
   };
   Game.REROLL_COST = 5;
   // Bày hàng cho lò rèn: 4 vũ khí, 4 giáp/khiên, 1 phụ kiện; mỗi món được gieo độ hiếm theo hạng đấu trường.
+  Game.SHOP_WEAPONS = 5; Game.SHOP_ARMOR = 5;   // mỗi lượt hàng: 5 vũ khí, 5 giáp (mũ, thân, tay, chân, khiên), 1 phụ kiện
   Game.prototype.genShop = function () {
     var s = this.s, rng = this.rng, shopTier = s.tier + 1, pool = { weapon: [], armor: [], trinket: [] }, k, shop = [], self = this;
     for (k in G.ITEMS) {
@@ -94,7 +95,7 @@
         shop.push(o);
       }
     }
-    draw('weapon', 4); draw('armor', 4); draw('trinket', 1);
+    draw('weapon', Game.SHOP_WEAPONS); draw('armor', Game.SHOP_ARMOR); draw('trinket', 1);
     return shop;
   };
   // Trả 5 vàng để lò rèn bày một lượt hàng mới (vật của lanista giữ nguyên).
@@ -243,9 +244,16 @@
   Game.prototype.sellItem = function (uid) {
     var s = this.s;
     for (var i = 0; i < s.inv.length; i++) if (s.inv[i].uid === uid) {
-      s.gold += Math.round(G.instPrice(s.inv[i]) * 0.5); s.inv.splice(i, 1); this.save(); return { ok: true };
+      var inst = s.inv[i], val = Math.round(G.instPrice(inst) * 0.5);
+      s.gold += val; s.inv.splice(i, 1); this.save(); return { ok: true, inst: inst, gold: val };
     }
     return { ok: false };
+  };
+  // Lấy lại món vừa bán (trả lại đúng số vàng đã nhận).
+  Game.prototype.undoSell = function (inst, gold) {
+    var s = this.s; if (!inst) return { ok: false };
+    if (s.gold < gold) return { ok: false, msg: 'Không còn đủ ' + gold + ' vàng để lấy lại.' };
+    s.gold -= gold; s.inv.push(inst); this.save(); return { ok: true };
   };
   Game.prototype.buyRelic = function () {
     var s = this.s, o = s.market.relic;

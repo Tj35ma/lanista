@@ -3,7 +3,7 @@
   'use strict';
 
   var UI = G.UI = { game: null, state: 'title', tab: 'market', sel: null, fightKind: 'main', battle: null };
-  var root, elTop, elHint, elLeft, elRight, elBottom, elTip, elToasts, elModals, elTitle, elHud, elPop, elTags, elEquip;
+  var root, elTop, elHint, elLeft, elRight, elBottom, elTip, elToasts, elModals, elTitle, elHud, elPop, elTags, elEquip, elStash;
   var tagList = [], drag = null, fdrag = null, noRowClick = 0;
   var mouse = { x: 0, y: 0 };
   var ROMAN = ['', 'I', 'II', 'III', 'IV'];
@@ -146,7 +146,7 @@
     var sub = [];
     if (!o.foe && g.origin && G.ORIGINS[g.origin]) sub.push('Người ' + G.ORIGINS[g.origin].name);
     sub.push(B.name);
-    sub.push('Cấp ' + g.lvl + (o.foe ? '' : (g.lvl >= G.MAX_LVL ? ' (tối đa)' : ' (' + Math.round(g.xp) + '/' + G.xpNeed(g.lvl) + ' kn)')));
+    sub.push('Cấp ' + g.lvl + (!o.foe && g.lvl >= G.MAX_LVL ? ' (tối đa)' : ''));
     H.push('<div class="tt-sub">' + sub.join(' · ') + '</div>');
     if (!o.foe && G.TIERS[tier].cap != null && g.lvl >= G.TIERS[tier].cap && g.lvl < G.MAX_LVL) H.push('<div class="tt-sub">Đã chạm trần của ' + esc(G.TIERS[tier].name) + ' (cấp ' + G.TIERS[tier].cap + '): kinh nghiệm ở đấu trường này chỉ còn một nửa, và giảm tiếp một nửa cho mỗi cấp sau đó.</div>');
     H.push('<div class="tt-grid">' +
@@ -157,7 +157,8 @@
       kv('Chặn', st.block > 0 ? pct(st.block) : (st.deflect > 0 ? 'gạt ' + pct(st.deflect) : '—')) + kv('Chí mạng', pct(st.crit)) +
       kv('Kháng hiệu ứng', pct(st.resist)) + kv('', '') +
       '</div>');
-    H.push('<div class="tt-line"><span>Giáp —</span> đầu <b>' + num(st.armor.head, 1) + '</b> · thân <b>' + num(st.armor.body, 1) + '</b> · tay <b>' + num(st.armor.arms, 1) + '</b> · chân <b>' + num(st.armor.legs, 1) + '</b></div>');
+    // người không mặc giáp thì không cần một dòng toàn số 0
+    if (st.armor.head + st.armor.body + st.armor.arms + st.armor.legs > 0) H.push('<div class="tt-line"><span>Giáp —</span> đầu <b>' + num(st.armor.head, 1) + '</b> · thân <b>' + num(st.armor.body, 1) + '</b> · tay <b>' + num(st.armor.arms, 1) + '</b> · chân <b>' + num(st.armor.legs, 1) + '</b></div>');
     H.push('<div class="tt-line"><span>Mang</span> <b class="' + (st.load > 0.85 ? 'warn' : '') + '">' + num(st.weight, 1) + '/' + num(st.cap, 0) + '</b>' +
       (st.load > 0.5 ? ' <span>(nặng: chậm ' + Math.round(40 * Math.min(1, st.load)) + '%)</span>' : '') + '</div>');
     if (!o.foe) {
@@ -301,7 +302,8 @@
     elModals = h('div'); elModals.id = 'modals';
     elTip = h('div'); elTip.id = 'tip';
     elTags = h('div'); elTags.id = 'tags'; elEquip = h('div', 'panel'); elEquip.id = 'equip'; show(elEquip, false);
-    add(root, elTags, elTop, elHint, elLeft, elRight, elEquip, elBottom, elTitle, elHud, elToasts, elModals);
+    elStash = h('div', 'panel'); elStash.id = 'stash'; show(elStash, false);
+    add(root, elTags, elTop, elHint, elLeft, elRight, elEquip, elBottom, elStash, elTitle, elHud, elToasts, elModals);
     document.addEventListener('mousemove', dragMove); document.addEventListener('mouseup', dragEnd);
     document.addEventListener('mousemove', formDragMove); document.addEventListener('mouseup', formDragEnd);
     requestAnimationFrame(tagLoop);
@@ -321,7 +323,7 @@
     document.addEventListener('mousedown', function (e) { if (elPop && !elPop.contains(e.target) && !(e.target.closest && e.target.closest('.popbtn'))) closePop(); });
     try { if (localStorage.getItem(MUTE_KEY) === '1' && G.Audio && G.Audio.setMuted) G.Audio.setMuted(true); } catch (e) { }
   }
-  function showHub(on) { show(elTags, on); if (!on) { show(elEquip, false); UI.equipOpen = false; } show(elTop, on); show(elHint, on); show(elLeft, on); show(elRight, on); show(elBottom, on); if (!on) closePop(); }
+  function showHub(on) { show(elTags, on); if (!on) { show(elEquip, false); UI.equipOpen = false; show(elStash, false); } show(elTop, on); show(elHint, on); show(elLeft, on); show(elRight, on); show(elBottom, on); if (!on) closePop(); }
   function isMuted() { try { return !!(G.Audio && G.Audio.isMuted && G.Audio.isMuted()); } catch (e) { return false; } }
   function toggleMute() {
     var m = !isMuted();
@@ -422,6 +424,7 @@
     renderTop(); renderHint();
     clear(elTags); tagList = [];
     if (UI.tab !== 'ready') { UI.equipOpen = false; show(elEquip, false); }
+    if (UI.tab !== 'shop') { show(elStash, false); UI.lastSold = null; }
     if (UI.tab === 'market') renderMarket();
     else if (UI.tab === 'shop') renderShop();
     else renderReady();
@@ -673,24 +676,47 @@
       }
       elLeft.appendChild(rr);
     } else add(elLeft, h('div', 'note', 'Hôm nay không có gì.'));
-    var hk = h('h3', null, 'Kho'); add(hk, h('small', null, s.inv.length + ' món'));
-    add(elLeft, hk);
-    if (!s.inv.length) add(elLeft, h('div', 'note', 'Kho trống.'));
-    else {
-      var grid = h('div', 'igrid'), bar = h('div', 'sellbar');
-      sortedInv().forEach(function (inst) {
-        var it = G.ITEMS[inst.id], val = Math.round(G.instPrice(inst) * 0.5), t = itemTile(it, inst.uid === UI.invSel ? 'sel' : '', inst);
-        t.addEventListener('click', function () { snd('click'); UI.invSel = UI.invSel === inst.uid ? null : inst.uid; UI.refresh(); });
-        bindTip(t, function () { return itemTip(it, { sell: val, g: selG, inst: inst }); });
-        grid.appendChild(t);
-        if (inst.uid === UI.invSel) {
-          add(bar, h('span', 'nm rr' + (inst.r || 0), G.instName(inst)), btn('Bán ' + coin(val), 'price small', function () { if (gm.sellItem(inst.uid).ok) { snd('coin'); UI.invSel = null; UI.refresh(); } }, true));
-        }
-      });
-      add(elLeft, grid);
-      if (bar.firstChild) add(elLeft, bar); else add(elLeft, h('div', 'note', 'Bấm một món để bán lại nửa giá.'));
-    }
+    renderStash();
     if (selG) add(elLeft, h('div', 'note', 'Tooltip đang so với ' + selG.name + '.'));
+  }
+  // Thanh kho ở đáy Lò rèn: mọi món chưa mặc, kèm giá bán; bấm là bán, bán nhầm thì lấy lại được.
+  function renderStash() {
+    var gm = UI.game, s = gm.s, selG = gm.glad(UI.sel), inv = sortedInv(), total = 0, ls = UI.lastSold;
+    if (ls && ls.day !== s.day) ls = UI.lastSold = null;
+    clear(elStash); show(elStash, true);
+    inv.forEach(function (inst) { total += Math.round(G.instPrice(inst) * 0.5); });
+    var hd = h('div', 'st-head'), ttl = h('h3', null, 'Bán đồ trong kho');
+    add(ttl, h('small', null, inv.length ? inv.length + ' món · bán hết được ' + total + ' vàng' : 'kho trống'));
+    add(hd, ttl);
+    if (ls) {
+      var I = G.ITEMS[ls.inst.id], undo = h('div', 'st-undo');
+      undo.innerHTML = 'Vừa bán <span class="nm rr' + (ls.inst.r || 0) + '">' + esc(G.instName(ls.inst)) + '</span> ' + coin('+' + ls.gold);
+      add(undo, btn('Lấy lại', 'small' + (s.gold >= ls.gold ? '' : ' off'), function () {
+        var res = gm.undoSell(ls.inst, ls.gold);
+        if (res.ok) { snd('equip'); UI.lastSold = null; UI.refresh(); } else fail(res);
+      }));
+      add(hd, undo);
+    }
+    add(elStash, hd);
+    if (!inv.length) { add(elStash, h('div', 'note', 'Chưa có món nào để bán. Đồ đang mặc trên người phải tháo ra ở Phòng chờ trước.')); return; }
+    var grid = h('div', 'st-grid');
+    inv.forEach(function (inst) {
+      var it = G.ITEMS[inst.id], val = Math.round(G.instPrice(inst) * 0.5), cell = h('div', 'st-cell'), t = itemTile(it, '', inst), pr = h('div', 'st-price');
+      pr.innerHTML = coin(val);
+      add(cell, t, pr);
+      function sell() {
+        var res = gm.sellItem(inst.uid);
+        if (res.ok) { snd('coin'); UI.lastSold = { inst: res.inst, gold: res.gold, day: s.day }; UI.refresh(); } else fail(res);
+      }
+      cell.addEventListener('click', function () {
+        if ((inst.r || 0) >= 3) confirmBox('Bán ' + G.instName(inst) + '?', 'Món ' + G.RAR[inst.r].name.toLowerCase() + ' này bán lại được ' + val + ' vàng (nửa giá).', 'Bán', sell);
+        else sell();
+      });
+      bindTip(cell, function () { return itemTip(it, { sell: val, g: selG, inst: inst }); });
+      grid.appendChild(cell);
+    });
+    add(elStash, grid);
+    add(elStash, h('div', 'note', 'Bấm một món để bán ngay với nửa giá; bán nhầm thì bấm Lấy lại. Đồ đang mặc trên người phải tháo ở Phòng chờ trước.' + (selG ? ' Tooltip đang so với ' + selG.name + '.' : '')));
   }
   function sortedInv() {
     var inv = UI.game.s.inv.slice();

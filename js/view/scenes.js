@@ -699,7 +699,7 @@
   V.Env.shop = function () {
     sd = 57; V.jseed(555);
     var env = base({ sunDir: [0.35, 0.3, 0.9], sunCol: 0xffc890, sunInt: 2.0, hemi: [0xb8a890, 0x6a4a30, 0.8], shadow: [9, 7], center: [0, 1.2, 0.5], fog: { color: 0x4a3a2c, near: 22, far: 70 }, bg: 0x2e241b });
-    var k = new Kit(), i, x, WS = [-3.0, -2.2, -1.4, -0.6];
+    var k = new Kit(), i, x, WS = [-3.2, -2.5, -1.8, -1.1, -0.4];
     k.m.add(new T.PlaneGeometry(30, 22, 20, 14), P.dirt, { rx: -PI / 2, z: 4 });
     // tường, mái, cột
     k.m.box(13.6, 4.0, 0.3, P.plaster, { x: 0, y: 2, z: -1.35 }); k.m.box(13.0, 0.85, 0.04, P.brick, { x: 0, y: 0.43, z: -1.185 });
@@ -711,14 +711,14 @@
     k.m.box(3.5, 1.75, 0.04, 0xdacdab, { x: -1.8, y: 1.58, z: -1.18 });      // nền vải lanh sáng cho vũ khí nổi hình
     k.m.box(0.09, 1.92, 0.07, P.woodDark, { x: -3.56, y: 1.58, z: -1.13 }); k.m.box(0.09, 1.92, 0.07, P.woodDark, { x: -0.04, y: 1.58, z: -1.13 });
     k.m.box(3.5, 0.09, 0.07, P.woodDark, { x: -1.8, y: 2.25, z: -1.13 }); k.m.box(3.5, 0.09, 0.07, P.woodDark, { x: -1.8, y: 0.92, z: -1.13 });
-    for (i = 0; i < 4; i++) for (x = -1; x <= 1; x += 2) {
+    for (i = 0; i < WS.length; i++) for (x = -1; x <= 1; x += 2) {
       k.m.cyl(0.02, 0.02, 0.2, 4, P.woodDark, { x: WS[i] + x * 0.08, y: 2.25, z: -1.02, rx: PI / 2 });
       k.m.cyl(0.02, 0.02, 0.2, 4, P.woodDark, { x: WS[i] + x * 0.08, y: 0.92, z: -1.02, rx: PI / 2 });
     }
     // bàn dài bày giáp: mặt bàn y = 0.9
-    k.m.box(4.4, 0.08, 1.0, P.wood, { x: 2.1, y: 0.86, z: -0.45 });
-    for (i = 0; i < 4; i++) k.m.box(0.1, 0.82, 0.1, P.woodDark, { x: i % 2 ? 4.15 : 0.05, y: 0.41, z: i < 2 ? -0.85 : -0.05 });
-    k.m.box(4.1, 0.05, 0.7, P.woodDark, { x: 2.1, y: 0.28, z: -0.45 });
+    k.m.box(4.95, 0.08, 1.0, P.wood, { x: 2.375, y: 0.86, z: -0.45 });
+    for (i = 0; i < 4; i++) k.m.box(0.1, 0.82, 0.1, P.woodDark, { x: i % 2 ? 4.7 : 0.05, y: 0.41, z: i < 2 ? -0.85 : -0.05 });
+    k.m.box(4.65, 0.05, 0.7, P.woodDark, { x: 2.375, y: 0.28, z: -0.45 });
     // bệ đá cho vật của lanista: mặt bệ y = 1.0
     k.m.box(0.62, 0.12, 0.62, P.stoneDark, { x: -4.3, y: 0.06, z: -0.2 }); k.m.box(0.46, 0.78, 0.46, P.stone, { x: -4.3, y: 0.51, z: -0.2 }); k.m.box(0.58, 0.1, 0.58, P.stoneLight, { x: -4.3, y: 0.95, z: -0.2 });
     // lò rèn + than hồng + ống khói
@@ -746,8 +746,8 @@
         eg.attributes.position.needsUpdate = true;
       });
     })();
-    for (i = 0; i < 2; i++) { x = i ? 3.4 : 0.9; k.x.beam([x, 3.62, 1.1], [x, 2.86, 1.1], 0.008, P.ironDark, 3); k.x.cyl(0.13, 0.07, 0.08, 7, P.bronzeDark, { x: x, y: 2.82, z: 1.1 }); flame(env, x, 2.86, 1.1, 0.55); }
-    k.m.box(4.3, 0.045, 0.94, 0x8a4a34, { x: 2.1, y: 0.925, z: -0.45 }); k.d.box(4.3, 0.26, 0.02, 0x7d4230, { x: 2.1, y: 0.8, z: 0.03 });   // khăn trải bàn
+    for (i = 0; i < 2; i++) { x = i ? 3.8 : 1.0; k.x.beam([x, 3.62, 1.1], [x, 2.86, 1.1], 0.008, P.ironDark, 3); k.x.cyl(0.13, 0.07, 0.08, 7, P.bronzeDark, { x: x, y: 2.82, z: 1.1 }); flame(env, x, 2.86, 1.1, 0.55); }
+    k.m.box(4.85, 0.045, 0.94, 0x8a4a34, { x: 2.375, y: 0.925, z: -0.45 }); k.d.box(4.85, 0.26, 0.02, 0x7d4230, { x: 2.375, y: 0.8, z: 0.03 });   // khăn trải bàn
     k.g.box(0.55, 0.02, 0.05, 0xff8a3a, { x: -4.5, y: 0.815, z: 1.5, ry: 0.35 }); k.x.box(0.2, 0.02, 0.03, P.ironDark, { x: -4.16, y: 0.815, z: 1.37, ry: 0.35 });   // lưỡi kiếm rèn dở
     // đe trên gốc cây, búa, kìm, thùng nước
     k.m.cyl(0.3, 0.33, 0.5, 7, P.woodDark, { x: -4.5, y: 0.25, z: 1.5 });
@@ -757,8 +757,8 @@
     k.x.beam([-4.2, 0, 1.75], [-4.3, 0.75, 1.62], 0.014, P.ironDark, 4); k.x.beam([-4.14, 0, 1.7], [-4.34, 0.75, 1.66], 0.014, P.ironDark, 4);
     barrel(k, -5.8, 0, 1.6, 1.15); k.m.cyl(0.27, 0.27, 0.02, 8, 0x3a4a52, { x: -5.8, y: 0.84, z: 1.6 });
     // đá mài, khiên dựng tường, thùng (bên phải)
-    k.m.box(0.08, 0.8, 0.08, P.woodDark, { x: 5.0, y: 0.4, z: 0.9 }); k.m.box(0.08, 0.8, 0.08, P.woodDark, { x: 5.4, y: 0.4, z: 0.9 });
-    k.m.cyl(0.35, 0.35, 0.1, 10, P.stone, { x: 5.2, y: 0.75, z: 0.9, rz: PI / 2 }); k.m.box(0.5, 0.2, 0.9, P.wood, { x: 5.2, y: 0.2, z: 0.9 });
+    k.m.box(0.08, 0.8, 0.08, P.woodDark, { x: 5.25, y: 0.4, z: 1.0 }); k.m.box(0.08, 0.8, 0.08, P.woodDark, { x: 5.65, y: 0.4, z: 1.0 });
+    k.m.cyl(0.35, 0.35, 0.1, 10, P.stone, { x: 5.45, y: 0.75, z: 1.0, rz: PI / 2 }); k.m.box(0.5, 0.2, 0.9, P.wood, { x: 5.45, y: 0.2, z: 1.0 });
     k.m.cyl(0.42, 0.42, 0.05, 10, P.clothRed, { x: 6.3, y: 0.5, z: 0.0, rz: PI / 2 - 0.22 }); k.x.sph(0.09, 6, 4, P.bronze, { x: 6.22, y: 0.52, z: 0.0 });
     k.m.cyl(0.38, 0.38, 0.05, 10, P.wood, { x: 6.25, y: 0.46, z: -0.75, rz: PI / 2 - 0.28 });
     crate(k, 5.7, 0, 1.9, 0.7, 0.2); crate(k, 5.75, 0.56, 1.95, 0.45, 0.7);
@@ -773,8 +773,8 @@
     dust(env, [-5, 0.4, -1, 5, 3.2, 3], 60, 0.05);
     env.slots = {
       weapon: WS.map(function (x) { return { x: x, y: 1.55, z: -0.95 }; }),
-      armor: [0.4, 1.3, 2.2, 3.1].map(function (x) { return { x: x, y: 0.95, z: -0.5 }; }),
-      trinket: [{ x: 3.9, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 }
+      armor: [0.33, 1.1, 1.87, 2.64, 3.41].map(function (x) { return { x: x, y: 0.95, z: -0.5 }; }),
+      trinket: [{ x: 4.15, y: 0.95, z: -0.4 }], relic: { x: -4.3, y: 1.05, z: -0.2 }
     };
     env.cam = { pos: [0, 1.95, 6.2], look: [0, 1.25, -0.5], fov: 40 };
     return env;
