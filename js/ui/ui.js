@@ -281,9 +281,12 @@
     if (f.desc) H.push('<div>' + esc(f.desc) + '</div>');
     if (f.hint) H.push('<div class="tt-sec"><span class="tal">Lời mách:</span> ' + esc(f.hint) + '</div>');
     H.push('<div class="tt-sec"><span class="tt-price">Thưởng ' + f.gold + ' vàng</span>, ' + f.xp + ' kinh nghiệm mỗi người ra sân · Địch: ' + f.foes.length + ' người</div>');
+    var gm = UI.game, sb = gm ? gm.streakBonus() : 0, sk = gm ? (gm.s.streak || 0) : 0;
+    if (sb > 0) H.push('<div class="tt-sec good">Đang thắng liền ' + sk + ' trận: thắng trận này được thêm ' + Math.round(sb * 100) + '% túi thưởng (+' + Math.round(f.gold * sb * (gm.has('patron') ? 1.2 : 1)) + ' vàng). Thua là mất chuỗi.</div>');
+    else H.push('<div class="tt-desc">Thắng liên tiếp: từ trận thắng thứ hai liền nhau, mỗi trận thắng trước đó cộng thêm 20% túi thưởng (tối đa +100%). Thua là mất chuỗi.</div>');
     if (f.side && f.bored) H.push('<div class="tt-sec bad">Khán giả đã chán: túi thưởng vơi ' + f.bored.pct + '% (anh đã đấu ' + f.bored.n + ' trận phụ kể từ lần thắng trận chính gần nhất). Thắng một trận chính thì họ hào hứng lại.</div>');
     else if (f.side) H.push('<div class="tt-desc">Mỗi trận phụ làm khán giả chán thêm: túi thưởng trận phụ vơi 5% mỗi lần, thấp nhất còn một nửa, cho tới khi anh thắng một trận chính.</div>');
-    H.push('<div class="tt-desc">Thua vẫn nhận tiền xuất trận (15%).</div>');
+    H.push('<div class="tt-desc">Thua vẫn nhận tiền xuất trận: ' + Math.round(f.gold * G.Game.LOSS_PAY) + ' vàng.</div>');
     return H.join('');
   }
 
@@ -773,6 +776,13 @@
     if (s.side[0]) fb('side0', s.side[0], 'Trận phụ nhẹ');
     if (s.side[1]) fb('side1', s.side[1], 'Trận phụ nặng');
     var line = h('div', 'go-line'), nF = gm.fielded();
+    if (s.streak > 0) {
+      var sb = gm.streakBonus(), chip = h('span', 'streak' + (sb >= G.Game.STREAK_STEP * G.Game.STREAK_MAX ? ' max' : ''), 'Chuỗi thắng ' + s.streak + ' · +' + Math.round(sb * 100) + '%');
+      bindTip(chip, function () {
+        return '<div class="tt-h">Chuỗi thắng: ' + s.streak + ' trận</div><div>Trận thắng tới được thêm <b>' + Math.round(sb * 100) + '%</b> túi thưởng. Mỗi trận thắng liền nhau cộng thêm 20%, tối đa +100%.</div><div class="tt-desc">Thua một trận (kể cả xin thua) là mất cả chuỗi. Nghỉ ngày không mất chuỗi.</div>';
+      });
+      add(line, chip);
+    }
     add(line, h('span', 'cnt' + (nF ? '' : ' zero'), 'Ra sân ' + nF + '/' + gm.fieldLimit()));
     var fc = gm.feastCost();
     var fbn = btn('Đãi tiệc ' + coin(fc), s.feasted || !s.roster.length ? 'off' : '', function () {
@@ -1463,9 +1473,14 @@
     add(p, h('h4', null, 'Tiền'));
     if (res.win) {
       add(p, ln('Thưởng trận', '+' + res.gold + ' vàng', 'g'));
+      if (res.streakGold > 0) add(p, ln('Chuỗi thắng ' + res.streak + ' trận liền (+' + res.streakPct + '%)', '+' + res.streakGold + ' vàng', 'g'));
+      else if (res.streak === 1) add(p, ln('Chuỗi thắng', 'bắt đầu: thắng trận tới được thêm 20%', 'meh'));
       res.appealBy.forEach(function (a) { add(p, ln('Khán giả ném tiền cho ' + a.name, '+' + a.gold + ' vàng', 'g')); });
       if (!res.appealBy.length) add(p, ln('Tiền khán giả', 'không ai còn đứng để nhận', 'meh'));
-    } else add(p, ln('Tiền xuất trận', '+' + res.gold + ' vàng', 'g'));
+    } else {
+      add(p, ln('Tiền xuất trận', '+' + res.gold + ' vàng', 'g'));
+      if (res.streakLost > 0) add(p, ln('Mất chuỗi thắng', res.streakLost + ' trận liền', 'hurt'));
+    }
     add(p, ln('Trong túi', s.gold + ' vàng', 'g'));
     // số phận
     add(p, h('h4', null, 'Người của anh'));

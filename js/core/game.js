@@ -11,7 +11,7 @@
     seed = seed || (Date.now() & 0x7fffffff);
     var s = {
       v: 1, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
-      roster: [], inv: [], relics: [], market: null, side: [], form: {}, fought: false, feasted: false,
+      roster: [], inv: [], relics: [], market: null, side: [], form: {}, fought: false, feasted: false, streak: 0,
       stat: { wins: 0, losses: 0, deaths: 0, deserted: 0, earned: 0, mainLosses: 0 }, news: [], seenIntro: false
     };
     var gm = new Game(s);
@@ -149,9 +149,15 @@
     return {
       side: true, hard: !!hard, name: nm[0] + (hard ? ' (nặng)' : ' (nhẹ)'), desc: nm[1], foes: foes,
       bored: bored < 1 ? { n: s.sideRun || 0, pct: Math.round((1 - bored) * 100) } : null,
-      gold: Math.round(base * (hard ? 0.42 : 0.23) * bored), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
+      gold: Math.round(base * (hard ? 0.42 : 0.23) * bored * Game.PURSE_MUL), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
     };
   };
+
+  // Túi thưởng khi thắng gấp đôi mức gốc của hạng. Thua chỉ nhận tiền xuất trận, giữ đúng mức cũ (15% túi gốc = 7,5% túi mới).
+  Game.PURSE_MUL = 2; Game.LOSS_PAY = 0.15 / Game.PURSE_MUL;
+  // Chuỗi thắng: mỗi trận thắng liền trước đó cộng thêm 20% túi thưởng cho trận thắng này, tối đa +100%. Thua một trận là mất chuỗi.
+  Game.STREAK_STEP = 0.2; Game.STREAK_MAX = 5;
+  Game.prototype.streakBonus = function () { return Game.STREAK_STEP * Math.min(Game.STREAK_MAX, this.s.streak || 0); };
 
   // Khán giả chán: mỗi trận phụ kể từ lần thắng trận chính gần nhất làm túi thưởng trận phụ vơi đi 5%, thấp nhất còn một nửa.
   Game.BORED_STEP = 0.05; Game.BORED_FLOOR = 0.5;
@@ -164,7 +170,7 @@
     var d = G.CAMPAIGN[s.tier][s.stage], T = G.TIERS[s.tier];
     return {
       main: true, boss: !!d.boss, final: !!d.final, name: d.name, desc: d.desc, hint: d.hint, foes: d.foes,
-      gold: Math.round(T.reward * (1 + 0.14 * s.stage) * (d.boss ? 2.6 : 1)),
+      gold: Math.round(T.reward * (1 + 0.14 * s.stage) * (d.boss ? 2.6 : 1) * Game.PURSE_MUL),
       xp: Math.round((40 + s.tier * 25 + s.stage * 4) * (d.boss ? 1.5 : 1)), seed: 0, tier: s.tier, stage: s.stage
     };
   };
@@ -351,6 +357,9 @@
     // vàng
     if (win) {
       res.gold = Math.round(fight.gold * (this.has('patron') ? 1.2 : 1));
+      res.streak = (s.streak || 0) + 1;                         // trận thắng thứ mấy liên tiếp (kể cả trận này)
+      res.streakPct = Math.round(this.streakBonus() * 100);
+      res.streakGold = Math.round(res.gold * this.streakBonus());
       for (i = 0; i < mine.length; i++) {
         var f = mine[i];
         if (f.alive) {
@@ -359,9 +368,13 @@
         }
       }
     } else {
-      res.gold = Math.round(fight.gold * 0.15);
+      res.gold = Math.round(fight.gold * Game.LOSS_PAY);
+      res.streakLost = s.streak || 0;
     }
-    s.gold += res.gold + res.appealGold; s.stat.earned += res.gold + res.appealGold;
+    s.streak = win ? (s.streak || 0) + 1 : 0;
+    s.stat.bestStreak = Math.max(s.stat.bestStreak || 0, s.streak);
+    var earned = res.gold + (res.streakGold || 0) + res.appealGold;
+    s.gold += earned; s.stat.earned += earned;
     if (win) s.stat.wins++; else { s.stat.losses++; if (fight.main) s.stat.mainLosses++; }
     if (fight.side) s.sideRun = (s.sideRun || 0) + 1; else if (win) s.sideRun = 0;
     // số phận người gục

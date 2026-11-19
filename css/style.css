@@ -130,6 +130,8 @@ h3 small { float: right; font-variant: normal; letter-spacing: 0; color: #a8946a
 .go-line { display: flex; gap: 10px; align-items: center; justify-content: center; }
 .go-line .cnt { font-size: 13.5px; color: #d9c9a6; }
 .go-line .cnt.zero { color: #ff9a7a; }
+.go-line .streak { font-size: 13px; color: #ffd98a; padding: 3px 9px; border: 1px solid #b8862f; border-radius: 11px; background: rgba(120, 74, 20, .55); pointer-events: auto; cursor: help; white-space: nowrap; }
+.go-line .streak.max { color: #fff0c0; border-color: #f0c96a; box-shadow: 0 0 10px rgba(240, 180, 80, .45); }
 
 /* ---------------------------------------------------------------- tooltip */
 #tip {
