@@ -26,7 +26,7 @@ Cửa sổ nên rộng từ 1100×650 trở lên. Mỗi lần mở link (hoặc 
 - Mỗi ngày tối đa một trận; **Qua ngày** trả phí nuôi, chữa thương, đổi hàng ở chợ.
 - Bốn hạng đấu trường (Chợ → Làng → Thành phố → Colosseum), mỗi hạng 7 trận chính, trận thứ 7 là một nhà vô địch đấu một mình với cả đội.
 - Trận phụ đấu lại bao nhiêu lần cũng được, nhưng khán giả chán dần: mỗi trận phụ kể từ lần thắng trận chính gần nhất làm túi thưởng vơi 5% (thấp nhất còn một nửa).
-- **Chuỗi thắng:** thắng liền nhau (trận chính hay trận phụ đều tính) thì từ trận thắng thứ hai, mỗi trận thắng trước đó cộng thêm 20% túi thưởng: thắng liền 2 trận +20%, 3 trận +40%… tối đa +100%. Thua một trận (kể cả xin thua) là mất cả chuỗi; nghỉ ngày không mất. Chuỗi đang có hiện cạnh nút **Ra đấu trường**. Túi thưởng (`Game.PURSE_MUL` trong `js/core/game.js`) gấp đôi mức gốc của hạng; thua chỉ nhận tiền xuất trận bằng 7,5% túi thưởng.
+- **Chuỗi thắng:** thắng liền nhau (trận chính hay trận phụ đều tính) thì từ trận thắng thứ hai, mỗi trận thắng trước đó cộng thêm 20% túi thưởng: thắng liền 2 trận +20%, 3 trận +40%… tối đa +100%. Thua một trận (kể cả xin thua) là mất cả chuỗi; nghỉ ngày không mất. Chuỗi đang có hiện cạnh nút **Ra đấu trường**. Thua chỉ nhận tiền xuất trận bằng 15% túi thưởng (`Game.LOSS_PAY` trong `js/core/game.js`).
 - Người bị thương tạm thời có thể chữa ngay bằng nút **Gọi thầy thuốc** trong Phòng chờ, nếu anh chịu trả tiền.
 - Ở Chợ nô lệ, bên trái mỗi người trên bục luôn có một cột sáu chỉ số kèm icon: Sức mạnh, Nhanh nhẹn, Thể chất, Máu, Tốc chạy, Tốc đánh — rê chuột lên từng dòng để xem chỉ số đó làm gì.
 - Ở Chợ nô lệ và Lò rèn, nút mua nằm ngay dưới chân từng nô lệ và dưới từng món hàng trong cảnh 3D (danh sách bên trái vẫn dùng được).

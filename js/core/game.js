@@ -149,12 +149,12 @@
     return {
       side: true, hard: !!hard, name: nm[0] + (hard ? ' (nặng)' : ' (nhẹ)'), desc: nm[1], foes: foes,
       bored: bored < 1 ? { n: s.sideRun || 0, pct: Math.round((1 - bored) * 100) } : null,
-      gold: Math.round(base * (hard ? 0.42 : 0.23) * bored * Game.PURSE_MUL), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
+      gold: Math.round(base * (hard ? 0.42 : 0.23) * bored), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
     };
   };
 
-  // Túi thưởng khi thắng gấp đôi mức gốc của hạng. Thua chỉ nhận tiền xuất trận, giữ đúng mức cũ (15% túi gốc = 7,5% túi mới).
-  Game.PURSE_MUL = 2; Game.LOSS_PAY = 0.15 / Game.PURSE_MUL;
+  // Thua chỉ nhận tiền xuất trận: 15% túi thưởng.
+  Game.LOSS_PAY = 0.15;
   // Chuỗi thắng: mỗi trận thắng liền trước đó cộng thêm 20% túi thưởng cho trận thắng này, tối đa +100%. Thua một trận là mất chuỗi.
   Game.STREAK_STEP = 0.2; Game.STREAK_MAX = 5;
   Game.prototype.streakBonus = function () { return Game.STREAK_STEP * Math.min(Game.STREAK_MAX, this.s.streak || 0); };
@@ -170,7 +170,7 @@
     var d = G.CAMPAIGN[s.tier][s.stage], T = G.TIERS[s.tier];
     return {
       main: true, boss: !!d.boss, final: !!d.final, name: d.name, desc: d.desc, hint: d.hint, foes: d.foes,
-      gold: Math.round(T.reward * (1 + 0.14 * s.stage) * (d.boss ? 2.6 : 1) * Game.PURSE_MUL),
+      gold: Math.round(T.reward * (1 + 0.14 * s.stage) * (d.boss ? 2.6 : 1)),
       xp: Math.round((40 + s.tier * 25 + s.stage * 4) * (d.boss ? 1.5 : 1)), seed: 0, tier: s.tier, stage: s.stage
     };
   };
