@@ -388,7 +388,7 @@
     // xấu
     coward: { name: 'Nhát gan', good: 0, desc: '−20% sát thương khi dưới nửa máu.', coward: 1 },
     drunk: { name: 'Nghiện rượu', good: 0, desc: 'Phí nuôi gấp đôi.', upkeepMul: 1 },
-    brittle: { name: 'Xương giòn', good: 0, desc: 'Dễ bị thương nặng khi gục.', injuryMul: 1.6 },
+    brittle: { name: 'Xương giòn', good: 0, desc: 'Dễ bị thương nặng khi gục.', injuryMul: 0.6 },   // cộng vào 1: khả năng bị thương ×1,6
     slow: { name: 'Chậm chạp', good: 0, desc: '−12% tốc độ di chuyển.', moveMul: -0.12 },
     proud: { name: 'Kiêu ngạo', good: 0, desc: 'Thua thì mất gấp đôi tinh thần.', proud: 1 },
     plain: { name: 'Vô duyên', good: 0, desc: '−1 sức hút khán giả.', appeal: -1 },
