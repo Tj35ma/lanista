@@ -136,6 +136,8 @@
     if (x.scale) { g.look.h *= x.scale; g.look.w *= x.scale * 1.04; }
     if (def.w) g.gear.weapon = { id: def.w };
     for (var i = 0; i < def.gear.length; i++) { var it = G.ITEMS[def.gear[i]]; g.gear[it.slot] = { id: it.id }; }
+    // x.items: { ô: { r, q, fx, aff, ep } } — món đồ hiếm cầm sẵn (trùm mang đồ huyền thoại)
+    if (x.items) for (var isl in x.items) if (g.gear[isl]) for (var ik in x.items[isl]) g.gear[isl][ik] = x.items[isl][ik];
     var rv = x.rv != null ? x.rv : (x.boss ? (x.enrage ? 4 : 3) : 0);
     if (rv) for (var sk in g.gear) g.gear[sk].rv = rv;
     return g;
