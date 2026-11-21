@@ -178,6 +178,26 @@
     gt.torus(0.305, 0.018, 4, 10, P.bronzeDark, { z: 0.045 });
     gt.ico(0.06, 0, P.bronze, { z: 0.065, sz: 0.6 });
   };
+  // khiên nhỏ: buckler tròn (gỗ / da / màu đội) với núm lớn ở giữa
+  Sh.buckler = function (gm, gt, team, L) {
+    var v = L && L.v, face = v === 'wood' ? WOODS[1] : (v === 'hide' ? 0x8a6f52 : teamCol(team)), rim = v === 'wood' ? P.ironDark : P.bronzeDark;
+    gm.cyl(0.19, 0.19, 0.026, 12, face, { rx: PI / 2, z: 0.04 });
+    gt.torus(0.188, 0.016, 4, 12, rim, { z: 0.046 });
+    if (v === 'wood') for (var i = -1; i <= 1; i += 2) gm.box(0.012, 0.36, 0.006, P.woodDark, { x: i * 0.07, z: 0.055 });
+    if (v === 'hide') { gm.torus(0.13, 0.008, 3, 12, P.leatherDark, { z: 0.056 }); }
+    gt.cyl(0.075, 0.075, 0.014, 8, v === 'wood' ? P.iron : P.bronze, { rx: PI / 2, z: 0.058 });
+    gt.ico(0.05, 0, v === 'wood' ? P.iron : P.bronzeLight, { z: 0.072, sz: 0.7 });
+  };
+  // khiên tròn khuyết (pelta): trăng lưỡi liềm, mép trên khoét vào
+  Sh.pelta = function (gm, gt, team) {
+    var sh = new T.Shape(), R = 0.22, r = 0.24, N = 18, i, a;
+    for (i = 0; i <= N; i++) { a = 0.814 + i / N * (2 * PI - 1.628); if (i) sh.lineTo(Math.sin(a) * R, Math.cos(a) * R); else sh.moveTo(Math.sin(a) * R, Math.cos(a) * R); }
+    for (i = 0; i <= N; i++) { a = -0.73 + i / N * 1.46; sh.lineTo(Math.sin(a) * r, 0.33 - Math.cos(a) * r); }   // vòng khoét sâu: đáy ở y≈0,09
+    gm.add(new T.ExtrudeGeometry(sh, { depth: 0.024, bevelEnabled: false }), teamCol(team), { z: 0.03 });
+    gt.cyl(0.055, 0.055, 0.014, 8, P.bronze, { rx: PI / 2, y: -0.04, z: 0.06 });
+    gt.ico(0.04, 0, P.bronzeLight, { y: -0.04, z: 0.07, sz: 0.7 });
+    gm.box(0.3, 0.014, 0.006, teamCol(team, 'trim'), { y: -0.04, z: 0.058 });
+  };
   Sh.hoplon = function (gm, gt, team) {
     gt.cyl(0.25, 0.44, 0.07, 12, P.bronze, { rx: PI / 2, z: 0.05 });
     gm.cyl(0.24, 0.24, 0.02, 10, teamCol(team), { rx: PI / 2, z: 0.092 });
@@ -251,13 +271,27 @@
   }
   function yoke(g, D, col, h) { for (var s = -1; s <= 1; s += 2) g.box(0.11 * D.W, h, 0.2 * D.W, col, { x: s * 0.15 * D.W, y: 0.365 * D.S, rz: -s * 0.18 }); }
   var Bo = {};
+  // Cầu vai của giáp nhẹ: n lớp vòm chồng nhau ôm mặt ngoài vai (dựng trên khúc tay trên, nên theo tay khi vung)
+  function pauldron(k, D, cols, trim, n) {
+    var W = D.W;
+    for (var sd = 0; sd < 2; sd++) {
+      var g = k.g('armU' + sd, 'matteDouble'), mid = sd === 0 ? PI / 2 : -PI / 2, span = 2.7;   // trục X của khúc tay trên hướng vào trong người, nên mặt ngoài là +X (tay phải) / −X (tay trái)
+      for (var i = 0; i < n; i++) {
+        var r = (0.082 + 0.006 * (n - i)) * W, h = 0.06 * D.S, y = 0.01 - i * 0.042 * D.S;
+        g.add(new T.CylinderGeometry(r * 0.92, r * 1.08, h, 7, 1, true, mid - span / 2, span), cols[i % cols.length], { y: y });
+        if (trim) g.add(new T.CylinderGeometry(r * 1.09, r * 1.1, 0.012, 7, 1, true, mid - span / 2, span), trim, { y: y - h / 2 });
+      }
+      g.add(new T.SphereGeometry(0.085 * W, 7, 3, mid - span / 2, span, 0, PI / 2), cols[0], { y: 0.03, sy: 0.55 });   // nắp vai
+    }
+  }
   Bo.harness = function (k, D) {
     var g = k.g('chest'), s = D.S, w = D.W;
     for (var z = -1; z <= 1; z += 2) { g.box(0.045, 0.46 * s, 0.014, P.leather, { y: 0.21 * s, z: z * 0.128 * w, rz: 0.62 }); g.box(0.045, 0.46 * s, 0.014, P.leather, { y: 0.21 * s, z: z * 0.128 * w, rz: -0.62 }); }
     k.g('chest', 'metal').cyl(0.035, 0.035, 0.014, 6, P.bronze, { y: 0.22 * s, z: 0.14 * w, rx: PI / 2 });
+    pauldron(k, D, [P.leather, P.leatherDark], null, 2);
   };
-  Bo.leather = function (k, D) { var g = k.g('chest'); hull(g, D, P.leather, 0.1, 0.0, 0.36); yoke(g, D, P.leatherDark, 0.03); g.box(0.3 * D.W, 0.03, 0.22 * D.W, P.leatherDark, { y: 0.02 }); };
-  Bo.linen = function (k, D) { var g = k.g('chest'); hull(g, D, P.linen, 0.1, 0.0, 0.36); yoke(g, D, P.clothWhite, 0.035); g.box(0.31 * D.W, 0.035, 0.22 * D.W, P.clothOchre, { y: 0.03 }); pteruges(k.g('hips'), D, P.linen, 0.2); };
+  Bo.leather = function (k, D) { var g = k.g('chest'); hull(g, D, P.leather, 0.1, 0.0, 0.36); yoke(g, D, P.leatherDark, 0.03); g.box(0.3 * D.W, 0.03, 0.22 * D.W, P.leatherDark, { y: 0.02 }); pauldron(k, D, [P.leather, P.leatherDark], P.bronzeDark, 3); };
+  Bo.linen = function (k, D) { var g = k.g('chest'); hull(g, D, P.linen, 0.1, 0.0, 0.36); yoke(g, D, P.clothWhite, 0.035); g.box(0.31 * D.W, 0.035, 0.22 * D.W, P.clothOchre, { y: 0.03 }); pteruges(k.g('hips'), D, P.linen, 0.2); pauldron(k, D, [P.linen, P.clothWhite], P.clothOchre, 3); };
   Bo.hamata = function (k, D) {
     var g = k.g('chest', 'metal'); g.fj = 0.16; hull(g, D, 0x7f8183, 0.11, 0.0, 0.36); yoke(g, D, 0x6e7073, 0.035);
     var h = k.g('hips', 'metal'); h.fj = 0.16; skirt(h, D, 0x7f8183, 0.1, 0.2);
@@ -387,7 +421,7 @@
   };
 
   // ---------------------------------------------------------------- Độ hiếm: càng hiếm càng nhiều chi tiết
-  var TRIM = [0, P.bronze, 0xc4c8cc, 0xdcb040, 0xf4d264], GEMS = [0xa01c2c, 0x1f7a4e, 0x2a52a8, 0x6e2c92], PURPLE = 0x5c2a66, CRIMSON = 0x8e2626, CORD = 0x7a2a22;
+  var TRIM = [0, P.bronze, 0xc4c8cc, 0xdcb040, 0xf4d264, 0xf4d264, 0xffe08a], GEMS = [0xa01c2c, 0x1f7a4e, 0x2a52a8, 0x6e2c92], PURPLE = 0x5c2a66, CRIMSON = 0x8e2626, CORD = 0x7a2a22;
   function adorn(k, slot, it, D, r) {
     if (!r) return;
     var tc = TRIM[r], s = D.S, w = D.W, gem = GEMS[G.hashStr(it.id) % 4], i, gt, gm, sd;
@@ -411,18 +445,19 @@
         }
       });
     } else if (slot === 'shield') {
-      var m = it.look.m, round = m === 'parma' || m === 'hoplon', oval = it.look.v === 'oval', R0 = m === 'hoplon' ? 0.42 : 0.29, zf = m === 'hoplon' ? 0.11 : (m === 'scutum' || m === 'tower' ? 0.1 : 0.07), cy = (m === 'scutum' || m === 'tower') ? -0.14 : (m === 'plank' ? -0.05 : 0), hh = m === 'tower' ? 0.5 : (m === 'plank' ? 0.33 : 0.44);
+      var m = it.look.m, small = m === 'buckler' || m === 'pelta', round = m === 'parma' || m === 'hoplon' || small, oval = it.look.v === 'oval', R0 = m === 'hoplon' ? 0.42 : (small ? 0.19 : 0.29), zf = m === 'hoplon' ? 0.11 : (m === 'scutum' || m === 'tower' ? 0.1 : 0.07), cy = (m === 'scutum' || m === 'tower') ? -0.14 : (m === 'plank' ? -0.05 : 0), hh = m === 'tower' ? 0.5 : (m === 'plank' ? 0.33 : 0.44);
       gt = k.g('shield', 'metal'); gm = k.g('shield');
       for (i = 0; i < (round ? 6 : 4); i++) {
         var a = i / 6 * PI * 2;
+        if (m === 'pelta' && Math.cos(a) > 0.5) continue;   // khiên khuyết: không đóng đinh vào chỗ khoét
         if (round) gt.ico(0.018, 0, tc, { x: Math.sin(a) * R0 * 0.82, y: Math.cos(a) * R0 * 0.82 * (oval ? 1.5 : 1), z: zf - 0.02 });
         else gt.ico(0.02, 0, tc, { x: (i % 2 ? 1 : -1) * 0.2, y: cy + (i < 2 ? 1 : -1) * hh, z: zf - 0.03 });
       }
-      if (r >= 2) { gm.box(0.3, 0.016, 0.008, TRIM[Math.max(2, r)], { y: cy, z: zf, rz: 0.78 }); gm.box(0.3, 0.016, 0.008, TRIM[Math.max(2, r)], { y: cy, z: zf, rz: -0.78 }); }
+      if (r >= 2) { var xl = small ? 0.2 : 0.3; gm.box(xl, 0.016, 0.008, TRIM[Math.max(2, r)], { y: cy, z: zf, rz: 0.78 }); gm.box(xl, 0.016, 0.008, TRIM[Math.max(2, r)], { y: cy, z: zf, rz: -0.78 }); }
       if (r >= 3) { gt.ico(0.07, 1, tc, { y: cy, z: zf + 0.03, sz: 0.55 }); gt.torus(0.11, 0.012, 4, 10, tc, { y: cy, z: zf + 0.012 }); }
       if (r >= 4) {
-        gt.box(0.24, 0.045, 0.012, tc, { x: 0.13, y: cy + 0.17, z: zf + 0.012, rz: 0.45 }); gt.box(0.24, 0.045, 0.012, tc, { x: -0.13, y: cy + 0.17, z: zf + 0.012, rz: -0.45 }); gt.box(0.05, 0.13, 0.014, tc, { y: cy + 0.14, z: zf + 0.014 });
-        if (round) gt.torus(R0 * (m === 'hoplon' ? 1.03 : 1.06), 0.018, 4, 12, tc, { z: zf - 0.04, sy: oval ? 1.5 : 1 }); else { gt.box(0.03, hh * 2 + 0.1, 0.04, tc, { x: 0.29, y: cy, z: 0.0 }); gt.box(0.03, hh * 2 + 0.1, 0.04, tc, { x: -0.29, y: cy, z: 0.0 }); }
+        if (!small) { gt.box(0.24, 0.045, 0.012, tc, { x: 0.13, y: cy + 0.17, z: zf + 0.012, rz: 0.45 }); gt.box(0.24, 0.045, 0.012, tc, { x: -0.13, y: cy + 0.17, z: zf + 0.012, rz: -0.45 }); gt.box(0.05, 0.13, 0.014, tc, { y: cy + 0.14, z: zf + 0.014 }); }
+        if (round) { if (m !== 'pelta') gt.torus(R0 * (m === 'hoplon' ? 1.03 : 1.06), 0.018, 4, 12, tc, { z: zf - 0.04, sy: oval ? 1.5 : 1 }); } else { gt.box(0.03, hh * 2 + 0.1, 0.04, tc, { x: 0.29, y: cy, z: 0.0 }); gt.box(0.03, hh * 2 + 0.1, 0.04, tc, { x: -0.29, y: cy, z: 0.0 }); }
       }
     } else if (slot === 'head') {
       var hm = it.look.m, crest = (hm === 'galea' && it.look.v !== 'nocrest') || hm === 'murmillo' || hm === 'thraex' || hm === 'secutor';
@@ -457,6 +492,44 @@
     }
   }
   function rarOf(inst) { return inst ? (inst.r != null ? inst.r : (inst.rv || 0)) : 0; }
+  // Ba kiểu dáng của mỗi độ hiếm: cùng chỉ số, khác hình. Áp lên các đỉnh vừa dựng cho một món (từ dấu mark).
+  //  kiểu 1: thon dài, sắc ấm (đồng); kiểu 2: to bản, sắc lạnh (thép xanh, vải sẫm).
+  var MODEL_TINT = [null, [1.22, 1.0, 0.74], [0.68, 0.8, 1.06]];
+  function modelOf(inst) { return inst && inst.m ? inst.m : 0; }
+  function styleModel(k, mark, slot, m) {
+    if (!m) return;
+    var tint = MODEL_TINT[m], sh = slot === 'weapon' ? (m === 1 ? [0.85, 1.12, 0.85] : [1.45, 0.92, 1.45]) : (slot === 'shield' ? (m === 1 ? [0.95, 1.1, 1.0] : [1.1, 0.94, 1.0]) : null);
+    for (var key in k.m) {
+      var geo = k.m[key], p = geo.p, c = geo.c, i0 = mark[key] || 0;
+      for (var i = i0; i < p.length; i += 3) {
+        if (sh) { p[i] *= sh[0]; p[i + 1] *= sh[1]; p[i + 2] *= sh[2]; }
+        c[i] *= tint[0]; c[i + 1] *= tint[1]; c[i + 2] *= tint[2];
+      }
+    }
+  }
+  // chi tiết riêng của từng kiểu (dựng sau khi đổi dáng nên giữ nguyên cỡ)
+  function modelBits(k, slot, m, r, D, it) {
+    if (!m) return;
+    var tc = TRIM[Math.max(1, r)] || P.bronze, S = D ? D.S : 1, W = D ? D.W : 1, i, a;
+    if (slot === 'weapon') {
+      var gt = k.g('wR', 'metal'), gm = k.g('wR');
+      if (m === 1) { gt.box(0.2, 0.026, 0.034, tc, { y: 0.062 }); gt.cyl(0.022, 0.022, 0.014, 6, tc, { y: -0.015 }); gt.cyl(0.022, 0.022, 0.014, 6, tc, { y: 0.025 }); }
+      else { gt.ico(0.04, 0, tc, { y: -0.085 }); gm.box(0.016, 0.12, 0.01, CRIMSON, { y: -0.15, z: 0.012 }); gm.box(0.016, 0.1, 0.01, CRIMSON, { y: -0.14, z: -0.012, rx: 0.2 }); }
+    } else if (slot === 'shield') {
+      var st = k.g('shield', 'metal');
+      var sm = it && it.cls === 'small', rx = sm ? 0.15 : 0.24, ry = sm ? 0.15 : 0.3;
+      if (m === 1) for (i = 0; i < 10; i++) { a = i / 10 * Math.PI * 2; if (it && it.look.m === 'pelta' && Math.sin(a) > 0.5) continue; st.ico(sm ? 0.014 : 0.02, 0, tc, { x: Math.cos(a) * rx, y: Math.sin(a) * ry, z: 0.065 }); }
+      else { st.box(sm ? 0.3 : 0.5, 0.03, 0.02, tc, { y: sm ? 0.1 : 0.2, z: 0.065 }); st.box(sm ? 0.3 : 0.5, 0.03, 0.02, tc, { y: sm ? -0.1 : -0.2, z: 0.065 }); }
+    } else if (slot === 'head') {
+      var hm = k.g('head', 'metal');
+      if (m === 1) hm.box(0.025, 0.06, 0.26 * S, tc, { y: 0.29 * S });                       // gờ mào kim loại
+      else { hm.ico(0.022, 0, tc, { x: 0.1 * W, y: 0.08 * S, z: 0.06 * S }); hm.ico(0.022, 0, tc, { x: -0.1 * W, y: 0.08 * S, z: 0.06 * S }); }   // đinh má
+    } else if (slot === 'body') {
+      var bm = k.g('chest', 'metal');
+      if (m === 1) bm.cyl(0.05, 0.05, 0.015, 8, tc, { y: 0.22 * S, z: 0.14 * W, rx: Math.PI / 2 });   // huy hiệu ngực
+      else for (i = -1; i <= 1; i += 2) bm.ico(0.03, 0, tc, { x: 0.17 * W * i, y: 0.3 * S, z: 0.02 });   // đinh vai
+    }
+  }
   // dựng một món với bảng đổi màu riêng của nó (look.re)
   function withLook(it, fn) {
     var L = it.look || {};
@@ -486,21 +559,23 @@
       var kind = it ? it.kind : 'fist', K = G.WKIND[kind];
       if (it) {
         q = it.look.q || 0;
+        var mk0 = markKit(k);
         if (kind === 'caestus') caestus(k, q, D, it.look);
         else {
           Wp[kind](k.g('wR'), k.g('wR', 'metal'), q, it.look);
           if (kind === 'twin') Wp.twin(k.g('wL'), k.g('wL', 'metal'), q, it.look);
         }
+        styleModel(k, mk0, 'weapon', modelOf(inst)); modelBits(k, 'weapon', modelOf(inst), rarOf(inst), D);
         adorn(k, 'weapon', it, D, rarOf(inst));
       }
       inst = g.gear.shield; it = G.itemOf(inst);
-      if (it && K.hands !== 2) { (function (it) { withLook(it, function (L) { Sh[it.look.m](k.g('shield'), k.g('shield', 'metal'), team, L); }); })(it); adorn(k, 'shield', it, D, rarOf(inst)); }
+      if (it && K.hands !== 2) { var mk1 = markKit(k); (function (it) { withLook(it, function (L) { Sh[it.look.m](k.g('shield'), k.g('shield', 'metal'), team, L); }); })(it); styleModel(k, mk1, 'shield', modelOf(inst)); modelBits(k, 'shield', modelOf(inst), rarOf(inst), D, it); adorn(k, 'shield', it, D, rarOf(inst)); }
       var TB = { head: He, body: Bo, arms: Ar, legs: Le, trinket: Tr };
       ['head', 'body', 'arms', 'legs', 'trinket'].forEach(function (sl) {
         var ins = g.gear[sl], item = G.itemOf(ins);
         if (!item || !TB[sl][item.look.m]) return;
         var mark = (sl === 'head' || sl === 'body') ? markKit(k) : null;
-        withLook(item, function (L) { TB[sl][item.look.m](k, D, team, L); });
+        var mk2 = markKit(k); withLook(item, function (L) { TB[sl][item.look.m](k, D, team, L); }); styleModel(k, mk2, sl, modelOf(ins)); modelBits(k, sl, modelOf(ins), rarOf(ins), D);
         adorn(k, sl, item, D, rarOf(ins));
         if (mark) growKit(k, mark, sl, D);
       });
@@ -518,7 +593,7 @@
       }
     },
     // Hình trưng bày một món hàng cho cửa hàng
-    display: function (item, team, rar) {
+    display: function (item, team, rar, model) {
       var grp = new T.Group(), k = new Kit(), D = V.dims('bal', { h: 1, w: 1 }), nodes = {}, add = function (n, x, y, z) { var o = new T.Object3D(); o.position.set(x, y, z); grp.add(o); nodes[n] = o; };
       var stand = new V.Geo();
       if (item.slot === 'weapon') {
@@ -529,10 +604,10 @@
         var L = { hasta: 0.25, trident: 0.2, axe: 0.3, javelin: 0.5 }[item.kind];
         grp.userData.lift = L != null ? L : 0.0;
       } else if (item.slot === 'shield') { add('shield', 0, 0.45, 0); withLook(item, function (L) { Sh[item.look.m](k.g('shield'), k.g('shield', 'metal'), team, L); }); nodes.shield.rotation.x = -0.15; }
-      else if (item.slot === 'head') { add('head', 0, 0.2, 0); withLook(item, function (L) { He[item.look.m](k, D, team, L); }); stand.cyl(0.07, 0.09, 0.3, 6, P.wood, { y: 0.15 }); stand.ico(0.085, 1, P.woodLight, { y: 0.31 }); }
-      else if (item.slot === 'body') { add('chest', 0, 0.3, 0); add('hips', 0, 0.2, 0); add('armU1', 0, 0, 0); withLook(item, function (L) { Bo[item.look.m](k, D, team, L); }); stand.cyl(0.03, 0.04, 0.6, 5, P.wood, { y: 0.3 }); stand.box(0.44, 0.04, 0.04, P.wood, { y: 0.62 }); stand.box(0.3, 0.03, 0.3, P.woodDark, { y: 0.015 }); }
-      else if (item.slot === 'arms') { add('armU0', 0, 0.62, 0); add('armL0', 0, 0.33, 0); add('chest', -0.2, 0.2, 0); add('armU1', 0.12, 0.62, 0); withLook(item, function (L) { Ar[item.look.m](k, D, team, L); }); stand.cyl(0.03, 0.035, 0.62, 5, P.wood, { y: 0.31 }); }
-      else if (item.slot === 'legs') { for (var s = 0; s < 2; s++) { add('legL' + s, (s ? 0.1 : -0.1), 0.5, 0); add('legU' + s, (s ? 0.1 : -0.1), 0.9, 0); add('foot' + s, (s ? 0.1 : -0.1), 0.07, 0); stand.cyl(0.035, 0.04, 0.42, 5, P.woodLight, { x: s ? 0.1 : -0.1, y: 0.28 }); stand.box(0.08, 0.06, 0.22, P.woodLight, { x: s ? 0.1 : -0.1, y: 0.035, z: 0.06 }); } withLook(item, function (L) { Le[item.look.m](k, D, team, L); }); }
+      else if (item.slot === 'head') { add('head', 0, 0.02, 0); withLook(item, function (L) { He[item.look.m](k, D, team, L); }); }
+      else if (item.slot === 'body') { add('chest', 0, 0.3, 0); add('hips', 0, 0.2, 0); add('armU0', -D.shW, 0.3 + D.shY, 0); add('armU1', D.shW, 0.3 + D.shY, 0); nodes.armU0.rotation.y = nodes.armU1.rotation.y = PI; withLook(item, function (L) { Bo[item.look.m](k, D, team, L); }); }
+      else if (item.slot === 'arms') { add('armU0', 0, 0.62, 0); add('armL0', 0, 0.33, 0); add('chest', -0.2, 0.2, 0); add('armU1', 0.12, 0.62, 0); withLook(item, function (L) { Ar[item.look.m](k, D, team, L); }); }
+      else if (item.slot === 'legs') { for (var s = 0; s < 2; s++) { add('legL' + s, (s ? 0.1 : -0.1), 0.5, 0); add('legU' + s, (s ? 0.1 : -0.1), 0.9, 0); add('foot' + s, (s ? 0.1 : -0.1), 0.07, 0); } withLook(item, function (L) { Le[item.look.m](k, D, team, L); }); }
       else {
         add('hips', 0, 0.12, 0); add('head', 0, 0.0, 0);
         if (item.look.m === 'oil') { stand.cyl(0.05, 0.035, 0.16, 6, P.terracotta, { y: 0.1 }); stand.cyl(0.02, 0.03, 0.06, 6, P.terracotta, { y: 0.21 }); }
@@ -540,6 +615,7 @@
         if (item.look.m === 'pouch') nodes.hips.position.x = 0.16;
         if (item.look.m === 'flask') nodes.hips.position.x = 0.17;
       }
+      styleModel(k, {}, item.slot, model || 0); modelBits(k, item.slot, model || 0, rar || 0, D, item);
       adorn(k, item.slot, item, D, rar || 0);
       k.attach(nodes);
       if (!stand.empty()) grp.add(V.mesh(stand));

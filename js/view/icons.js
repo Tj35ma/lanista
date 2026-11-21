@@ -42,9 +42,9 @@
   V.shoot = shoot;
 
   // Icon của một món trang bị hoặc một vật của lanista (theo id).
-  V.itemIcon = function (id, size, rar) {
-    size = size || 64; rar = rar || 0; var key = id + '@' + size + '#' + rar; if (cache[key]) return cache[key];
-    var it = G.ITEMS[id], grp = it ? V.Gear.display(it, 0, rar) : V.relicMesh(id), holder = new T.Group();
+  V.itemIcon = function (id, size, rar, model) {
+    size = size || 64; rar = rar || 0; model = model || 0; var key = id + '@' + size + '#' + rar + 'm' + model; if (cache[key]) return cache[key];
+    var it = G.ITEMS[id], grp = it ? V.Gear.display(it, 0, rar, model) : V.relicMesh(id), holder = new T.Group();
     holder.add(grp);
     if (it && it.slot === 'weapon' && it.kind !== 'caestus') {
       grp.rotation.y = it.kind === 'crossbow' ? 0.2 : 1.25; holder.rotation.z = -0.78;
@@ -60,7 +60,7 @@
 
   // Chân dung toàn thân một đấu sĩ với đúng trang bị đang mang.
   V.portrait = function (g, w, h, pose) {
-    var fig = new V.Figure(g, 0, { ring: false, blob: false });
+    var fig = g.x && g.x.beast ? new V.Beast(g, 0, { ring: false }) : new V.Figure(g, 0, { ring: false, blob: false });
     fig.state = 'stand'; fig.place(0, 0, 0.42);
     if (pose === 'win') { fig.state = 'win'; fig.phase = 1.2; for (var i = 0; i < 50; i++) V.Anim.update(fig, 1 / 30); }
     var url = shoot(fig.group, w, h, 0.05);

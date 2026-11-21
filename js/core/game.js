@@ -2,7 +2,7 @@
 (function (G) {
   'use strict';
   var SAVE_KEY = 'lanista_save_v1';
-  var APPEAL_GOLD = [2, 3, 4, 4];
+  var APPEAL_GOLD = [2, 3, 4, 4, 4];
 
   function Game(state) { this.s = state; this.rng = new G.Rng(state.rs); }
   G.Game = Game;
@@ -10,7 +10,7 @@
   Game.create = function (seed) {
     seed = seed || (Date.now() & 0x7fffffff);
     var s = {
-      v: 1, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
+      v: 5, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
       roster: [], inv: [], relics: [], market: null, side: [], form: {}, fought: false, feasted: false, streak: 0,
       stat: { wins: 0, losses: 0, deaths: 0, deserted: 0, earned: 0, mainLosses: 0 }, news: [], seenIntro: false
     };
@@ -26,7 +26,17 @@
     try {
       var st = store(); if (!st) return null;
       var raw = st.getItem(SAVE_KEY); if (!raw) return null;
-      var s = JSON.parse(raw); if (!s || s.v !== 1) return null;
+      var s = JSON.parse(raw); if (!s || !(s.v >= 1 && s.v <= 5)) return null;
+      // bản lưu trước khi có Doanh trại biên giới: Colosseum từ hạng 3 thành hạng 4
+      if (s.v === 1) { if (s.tier >= 3) s.tier++; s.v = 2; }
+      // bản lưu trước 4 chỉ số: đổi Sức mạnh / Nhanh nhẹn / Thể chất cũ sang thang mới
+      if (s.v === 2) {
+        var cv = function (g) { if (g.vit == null) return; g.str = 10 + (g.str - 5.3) * 0.8; g.agi = 10 + (g.agi - 5.3) * 0.8; var f = 1 + (g.vit - 5.3) * 0.05; g.hp = Math.round(110 * f); g.sta = Math.round(90 * f); delete g.vit; };
+        s.roster.forEach(cv); if (s.market && s.market.slaves) s.market.slaves.forEach(function (o) { cv(o.g); });
+        s.v = 3;
+      }
+      // bản lưu thời có giải chính / giải phụ: quay về trận lẻ (trận chính giữ nguyên tiến độ, sinh lại hai trận phụ)
+      if (s.v < 5) { delete s.mainT; delete s.sideT; s.stage = Math.max(0, Math.min(6, s.stage || 0)); s.v = 5; var gm0 = new Game(s); if (!s.side || !s.side.length || !s.side[0]) s.side = [gm0.genSide(0), gm0.genSide(1)]; return gm0; }
       return new Game(s);
     } catch (e) { return null; }
   };
@@ -64,7 +74,7 @@
       slaves[0] = { g: a, price: 0, auct: true };
     }
     // cửa hàng
-    var shopTier = s.tier + 1, shop = this.genShop(), k;
+    var shopTier = this.tierDef().gear, shop = this.genShop(), k;   // vật của lanista vẫn mở dần theo đấu trường
     // vật của lanista
     var relic = null, rk = [];
     for (k in G.RELICS) if (!this.has(k) && G.RELICS[k].tier <= shopTier) rk.push(k);
@@ -77,20 +87,17 @@
   Game.REROLL_COST = 5;
   // Bày hàng cho lò rèn: 4 vũ khí, 4 giáp/khiên, 1 phụ kiện; mỗi món được gieo độ hiếm theo hạng đấu trường.
   Game.SHOP_WEAPONS = 5; Game.SHOP_ARMOR = 5;   // mỗi lượt hàng: 5 vũ khí, 5 giáp (mũ, thân, tay, chân, khiên), 1 phụ kiện
+  // Lò rèn (không còn bậc đồ): mỗi món gieo độ hiếm theo đấu trường trước, rồi chọn một món đúng kiểu của độ hiếm ấy.
   Game.prototype.genShop = function () {
-    var s = this.s, rng = this.rng, shopTier = s.tier + 1, pool = { weapon: [], armor: [], trinket: [] }, k, shop = [], self = this;
-    for (k in G.ITEMS) {
-      var it = G.ITEMS[k]; if (it.tier > shopTier) continue;
-      var w = it.tier === shopTier ? 5 : (it.tier === shopTier - 1 ? 2 : 0.3);
-      var cat = it.slot === 'weapon' ? 'weapon' : (it.slot === 'trinket' ? 'trinket' : 'armor');
-      pool[cat].push({ id: k, w: w });
-    }
+    var s = this.s, rng = this.rng, shop = [], self = this, used = {};
+    function catOf(it) { return it.slot === 'weapon' ? 'weapon' : (it.slot === 'trinket' ? 'trinket' : 'armor'); }
     function draw(cat, cnt) {
-      var p = pool[cat].slice();
-      for (var j = 0; j < cnt && p.length; j++) {
-        var idx = rng.weighted(p.map(function (o) { return o.w; }));
-        var id = p[idx].id; p.splice(idx, 1);
-        var o = G.rollItem(rng, id, s.tier);
+      for (var j = 0; j < cnt; j++) {
+        var r = G.rollRar(rng, s.tier), kt = G.rarKind(r), cand = [];
+        for (var k in G.ITEMS) { var it = G.ITEMS[k]; if (catOf(it) === cat && it.tier === Math.min(kt, G.maxKind(it)) && !used[k + ':' + r]) cand.push(k); }
+        if (!cand.length) continue;
+        var id = rng.pick(cand); used[id + ':' + r] = 1;   // không bày hai món giống hệt nhau cùng độ hiếm
+        var o = G.rollItem(rng, id, s.tier, r);
         o.price = self.itemPrice({ price: G.instPrice(o) }, rng.range(0.92, 1.12));
         shop.push(o);
       }
@@ -106,13 +113,15 @@
     this.save(); return { ok: true };
   };
   Game.prototype.slavePrice = function (g, f) { return Math.max(6, Math.round(G.gladValue(g) * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
-  Game.prototype.itemPrice = function (it, f) { return Math.max(2, Math.round(it.price * (f || 1) * (this.has('anvil') ? 0.85 : 1))); };
+  Game.prototype.hasTalent = function (t) { return this.s.roster.some(function (g) { return g.talent === t; }); };
+  Game.prototype.itemPrice = function (it, f) { return Math.max(2, Math.round(it.price * (f || 1) * (this.has('anvil') ? 0.85 : 1) * (this.hasTalent('merchant') ? 0.9 : 1))); };
+  Game.prototype.itemSellValue = function (inst) { return Math.round(G.instPrice(inst) * 0.5 * (this.hasTalent('merchant') ? 1.2 : 1)); };
 
   var W_KINDS = ['caestus', 'gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'bow', 'crossbow'];
   Game.prototype.genSide = function (hard) {
     var s = this.s, rng = this.rng, T = G.TIERS[s.tier];
     var st = Math.min(6, s.stage);
-    var L = T.lvl + st * 0.42 + (hard ? 0.4 : -0.9);
+    var L = T.lvl + st * 0.42 + (hard ? 1.2 : -0.3);   // trận phụ khó hơn, thưởng nhiều hơn
     var n = T.field + (hard ? (rng.chance(0.5) ? 1 : 0) : (rng.chance(0.35) ? -1 : 0));
     n = Math.max(1, n);
     if (!hard) {
@@ -123,7 +132,8 @@
     }
     var foes = [], cells = [];
     for (var c = 0; c < 2; c++) for (var r = 0; r < 5; r++) cells.push([c, r]);
-    var gearTier = Math.max(1, s.tier + (hard ? 1 : (rng.chance(0.5) ? 1 : 0)) - (st < 2 && s.tier > 0 ? 1 : 0));
+    var gt = T.gear - 1;   // bậc đồ của hạng (0..3); Biên giới và Colosseum cùng bán đồ bậc IV
+    var gearTier = Math.max(1, gt + (hard ? 1 : (rng.chance(0.5) ? 1 : 0)) - (st < 2 && gt > 0 ? 1 : 0));
     var nm = G.SIDE_NAMES[rng.int(0, G.SIDE_NAMES.length - 1)];
     var foeName = rng.pick(G.FOE_NAMES);
     for (var i = 0; i < n; i++) {
@@ -131,12 +141,13 @@
       var wt = Math.max(1, gearTier - (rng.chance(0.4) ? 1 : 0));
       var wid = (s.tier === 0 && st < 2 && rng.chance(0.4)) ? null : kind + wt;
       var gear = [], K = wid ? G.WKIND[kind] : G.WKIND.fist;
-      var pieces = Math.max(0, Math.round((hard ? 1.2 : 0.4) + s.tier * 0.8 + st * 0.12 + rng.range(-0.8, 0.8)));
+      var pieces = Math.max(0, Math.round((hard ? 1.2 : 0.4) + gt * 0.8 + (s.tier > gt ? 0.4 : 0) + st * 0.12 + rng.range(-0.8, 0.8)));
       var slots = rng.shuffle(['head', 'body', 'arms', 'legs', 'shield']);
       for (var j = 0; j < slots.length && pieces > 0; j++) {
         if (slots[j] === 'shield' && K.hands === 2) continue;
         var cand = [];
-        for (var k in G.ITEMS) { var it = G.ITEMS[k]; if (it.slot === slots[j] && it.tier <= gearTier && it.tier >= gearTier - 1) cand.push(k); }
+        var sr = G.rollRar(rng, s.tier), skt = Math.max(1, Math.min(G.rarKind(sr), gearTier));
+        for (var k in G.ITEMS) { var it = G.ITEMS[k]; if (it.slot === slots[j] && it.tier === skt) cand.push(k); }
         if (cand.length) { gear.push(rng.pick(cand)); pieces--; }
       }
       // xếp: tầm xa đứng sau
@@ -145,18 +156,35 @@
       do { row = rng.int(0, 4); tries++; } while (foes.some(function (f) { return f.c === col && f.r === row; }) && tries < 20);
       foes.push(G.e(foeName, body, Math.max(1, Math.round(L + rng.range(-0.6, 0.6))), wid, gear, col, row, wid ? null : { hpMul: 0.7 }));   // kẻ tay không trong trận phụ: dân thường, mau gục
     }
+    // từ Làng trở lên, đôi khi bầy chó săn được thả ra cùng
+    if (s.tier >= 1 && rng.chance(0.25)) {
+      var nd = Math.max(2, Math.min(4, Math.round(n * 0.7))), dl = Math.max(1, Math.round(L));
+      for (i = 0; i < nd && foes.length < 9; i++) foes.push(G.e('Chó săn', 'agi', dl, null, [], 0, [0, 4, 1, 3][i], { beast: 'dog', hpMul: 0.45, dmgMul: 0.85 }));
+      nm = ['Bầy chó săn', 'Gã chủ chó thả cả bầy ra sân.'];
+    }
     var base = T.reward * (1 + 0.08 * st), bored = this.boredMul();
     return {
       side: true, hard: !!hard, name: nm[0] + (hard ? ' (nặng)' : ' (nhẹ)'), desc: nm[1], foes: foes,
       bored: bored < 1 ? { n: s.sideRun || 0, pct: Math.round((1 - bored) * 100) } : null,
-      gold: Math.round(base * (hard ? 0.42 : 0.23) * bored), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
+      gold: Math.round(Game.PURSE * base * (hard ? 0.6 : 0.3) * bored), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
+    };
+  };
+
+  Game.PURSE = 0.65;   // túi thưởng mọi trận chỉ còn một nửa (giảm vàng)
+  Game.prototype.locked = function () { return false; };   // không còn giải chính khóa chợ
+  Game.prototype.mainFightAt = function (stage) {
+    var s = this.s, d = G.CAMPAIGN[s.tier][stage], T = G.TIERS[s.tier];
+    return {
+      main: true, boss: !!d.boss, final: !!d.final, name: d.name, desc: d.desc, hint: d.hint, foes: d.foes,
+      gold: Math.round(Game.PURSE * T.reward * (1 + 0.14 * stage) * (d.boss ? 2.6 : 1)),
+      xp: Math.round((40 + s.tier * 25 + stage * 4) * (d.boss ? 1.5 : 1)), seed: 0, tier: s.tier, stage: stage
     };
   };
 
   // Thua chỉ nhận tiền xuất trận: 15% túi thưởng.
   Game.LOSS_PAY = 0.15;
-  // Chuỗi thắng: mỗi trận thắng liền trước đó cộng thêm 20% túi thưởng cho trận thắng này, tối đa +100%. Thua một trận là mất chuỗi.
-  Game.STREAK_STEP = 0.2; Game.STREAK_MAX = 5;
+  // Chuỗi thắng: mỗi trận thắng liền trước đó cộng thêm 10% túi thưởng cho trận thắng này, tối đa +50%. Thua một trận là mất chuỗi.
+  Game.STREAK_STEP = 0.1; Game.STREAK_MAX = 5;
   Game.prototype.streakBonus = function () { return Game.STREAK_STEP * Math.min(Game.STREAK_MAX, this.s.streak || 0); };
 
   // Khán giả chán: mỗi trận phụ kể từ lần thắng trận chính gần nhất làm túi thưởng trận phụ vơi đi 5%, thấp nhất còn một nửa.
@@ -166,18 +194,16 @@
   // ---------------------------------------------------------------- Trận đấu hiện có
   Game.prototype.mainFight = function () {
     var s = this.s;
-    if (s.stage >= 7) return null;
-    var d = G.CAMPAIGN[s.tier][s.stage], T = G.TIERS[s.tier];
-    return {
-      main: true, boss: !!d.boss, final: !!d.final, name: d.name, desc: d.desc, hint: d.hint, foes: d.foes,
-      gold: Math.round(T.reward * (1 + 0.14 * s.stage) * (d.boss ? 2.6 : 1)),
-      xp: Math.round((40 + s.tier * 25 + s.stage * 4) * (d.boss ? 1.5 : 1)), seed: 0, tier: s.tier, stage: s.stage
-    };
+    if (s.won || s.stage >= 7) return null;
+    return this.mainFightAt(s.stage);
   };
   Game.prototype.fight = function (kind) { return kind === 'main' ? this.mainFight() : this.s.side[kind === 'side1' ? 1 : 0]; };
   Game.prototype.foeTeam = function (fight) {
     var out = [];
-    for (var i = 0; i < fight.foes.length; i++) { var d = fight.foes[i]; out.push({ g: G.makeFoe(d, i, fight.seed || 0), c: d.c, r: d.r }); }
+    var T = G.TIERS[fight.tier != null ? fight.tier : this.s.tier];
+    // trận phụ ăn một phần hệ số của đấu trường (nặng 40%, nhẹ 20%), kẻo ở Biên giới và Colosseum chúng yếu hẳn so với trận chính
+    if (fight.side) { var k = fight.hard ? 0.4 : 0.2; T = { foe: [1 + (T.foe[0] - 1) * k, 1 + (T.foe[1] - 1) * k], boss: [1, 1] }; }
+    for (var i = 0; i < fight.foes.length; i++) { var d = fight.foes[i]; out.push({ g: G.makeFoe(d, i, fight.seed || 0, T), c: d.c, r: d.r }); }
     return out;
   };
   Game.prototype.playerTeam = function () {
@@ -243,14 +269,14 @@
     if (!o || o.sold) return { ok: false, msg: 'Đã bán.' };
     if (s.gold < o.price) return { ok: false, msg: 'Không đủ tiền.' };
     s.gold -= o.price; o.sold = true;
-    var inst = { id: o.id, uid: G.newUid(this.rng), r: o.r || 0 }; if (o.aff) inst.aff = o.aff; if (o.fx) inst.fx = o.fx; if (o.ep != null) inst.ep = o.ep;
+    var inst = { id: o.id, uid: G.newUid(this.rng), r: o.r || 0, q: o.q, m: o.m || 0 }; if (o.aff) inst.aff = o.aff; if (o.fx) inst.fx = o.fx; if (o.ep != null) inst.ep = o.ep;
     s.inv.push(inst);
     this.save(); return { ok: true, inst: inst };
   };
   Game.prototype.sellItem = function (uid) {
     var s = this.s;
     for (var i = 0; i < s.inv.length; i++) if (s.inv[i].uid === uid) {
-      var inst = s.inv[i], val = Math.round(G.instPrice(inst) * 0.5);
+      var inst = s.inv[i], val = this.itemSellValue(inst);
       s.gold += val; s.inv.splice(i, 1); this.save(); return { ok: true, inst: inst, gold: val };
     }
     return { ok: false };
@@ -294,20 +320,25 @@
     var g = this.glad(gid); if (!g || !g.gear[slot]) return { ok: false };
     this.s.inv.push(g.gear[slot]); delete g.gear[slot]; this.save(); return { ok: true };
   };
-  Game.prototype.feastCost = function () { return Math.round(5 * Math.max(1, this.s.roster.length) * this.tierDef().upkeepMul); };
-  Game.prototype.feast = function () {
-    var s = this.s, c = this.feastCost();
-    if (s.feasted) return { ok: false, msg: 'Hôm nay đã đãi tiệc rồi.' };
+  // Thưởng riêng một đấu sĩ (thay cho đãi tiệc, như bản Unity): +10 tinh thần cho người đó, không giới hạn số lần.
+  Game.REWARD_GOLD = 10; Game.REWARD_MORALE = 10;
+  Game.MORALE = { win: 10, kill: 3, lose: -20, death: -20, injury: -10, permTeam: -10, permSelf: -30, unpaid: -5 };
+  Game.INJ_WIN = 0.4; Game.INJ_LOSS = 0.6;   // khả năng bị thương khi gục (đội thắng / đội thua)
+  Game.TREAT_MUL = 1.25;                       // thầy thuốc đắt hơn
+  Game.prototype.rewardCost = function () { return Math.max(Game.REWARD_GOLD, Math.round(Game.REWARD_GOLD * this.tierDef().upkeepMul)); };
+  Game.prototype.reward = function (gid) {
+    var s = this.s, g = this.glad(gid), c = this.rewardCost();
+    if (!g) return { ok: false };
+    if (g.morale >= 100) return { ok: false, msg: g.name + ' đã hăng hái hết mức.' };
     if (s.gold < c) return { ok: false, msg: 'Không đủ tiền.' };
-    s.gold -= c; s.feasted = true;
-    for (var i = 0; i < s.roster.length; i++) this.addMorale(s.roster[i], 14);
-    this.save(); return { ok: true };
+    s.gold -= c; this.addMorale(g, Game.REWARD_MORALE);
+    this.save(); return { ok: true, cost: c };
   };
   // Gọi thầy thuốc: trả tiền để chữa ngay mọi vết thương tạm thời của một người (thương tật vĩnh viễn thì không).
   Game.prototype.treatCost = function (g) {
     var c = 0; if (!g) return 0;
     for (var i = 0; i < g.injuries.length; i++) if (!g.injuries[i].perm) c += 4 + 3 * Math.max(1, g.injuries[i].days);
-    return c ? Math.max(3, Math.round(c * this.tierDef().upkeepMul * 1.2)) : 0;
+    return c ? Math.max(3, Math.round(c * this.tierDef().upkeepMul * 1.2 * Game.TREAT_MUL)) : 0;
   };
   Game.prototype.treat = function (gid) {
     var s = this.s, g = this.glad(gid), c = this.treatCost(g);
@@ -339,8 +370,9 @@
     return b;
   };
   // Thử n trận giả lập (không đổi trạng thái) → tỉ lệ thắng
-  Game.prototype.trial = function (kind, n) {
-    var fight = this.fight(kind), team = this.playerTeam(), w = 0;
+  Game.prototype.trial = function (kind, n) { return this.trialFight(this.fight(kind), n); };
+  Game.prototype.trialFight = function (fight, n) {
+    var team = this.playerTeam(), w = 0;
     if (!fight || !team.length) return 0;
     var foes = this.foeTeam(fight);
     for (var i = 0; i < n; i++) { var b = G.runBattle(team, foes, { seed: 1000 + i * 7717 }); if (b.winner === 0) w++; }
@@ -393,7 +425,7 @@
         if (g.talent === 'survivor' && win) pDeath = 0;
         if (died) pDeath *= 0.4;   // khán giả đã thấy đủ máu: sau cái chết đầu tiên trong một trận, những kẻ gục còn lại dễ được tha hơn
         if (rng.chance(pDeath)) { fate.fate = 'dead'; died++; }
-        else if (rng.chance(Math.min(0.95, (win ? 0.32 : 0.5) * st.injuryMul))) {
+        else if (rng.chance(Math.min(0.95, (win ? Game.INJ_WIN : Game.INJ_LOSS) * st.injuryMul))) {
           var loc = f.downLoc || 'body';
           var perm = rng.chance(0.1 + Math.min(0.12, f.overkill * 0.25));
           if (g.injuries.filter(function (x) { return x.perm; }).length >= Game.MAX_PERM) perm = false;   // một người chỉ mang tối đa hai thương tật
@@ -411,14 +443,22 @@
       }
       res.fates.push(fate);
     }
-    // tinh thần
-    for (i = 0; i < mine.length; i++) {
-      g = mine[i].g;
-      var dm = win ? 8 + (mine[i].stats.kills > 0 ? 3 : 0) : -12 * (G.hasTrait(g, 'proud') ? 2 : 1) * (this.has('nemesis') ? 0.5 : 1);
-      dm += mine[i].st.moraleFight || 0;
+    // tinh thần (luật bản Unity): thắng +10 cả trường (+3 cho người ra sân hạ được địch); thua −20 cả trường;
+    // mỗi người chết −30 cả trường; bị thương tạm −10 riêng người đó; tật vĩnh viễn −10 cả trường và −30 riêng người đó.
+    // Thủ lĩnh ra trận: người ra sân cùng hắn không mất tinh thần khi thua. Kiêu ngạo: thua mất gấp đôi. Bàn thờ Nemesis: mọi khoản trừ còn một nửa.
+    var M = Game.MORALE, nem = this.has('nemesis') ? 0.5 : 1, inF = {}, perm = 0;
+    var chief = mine.some(function (m) { return G.hasTrait(m.g, 'chief'); });
+    for (i = 0; i < mine.length; i++) { inF[mine[i].g.id] = mine[i]; mine[i].g.foughtDay = s.day; }
+    for (i = 0; i < res.fates.length; i++) if (res.fates[i].fate === 'injury') { var ig = this.glad(res.fates[i].id), ij = ig && ig.injuries[ig.injuries.length - 1]; if (ij && ij.perm) { perm++; res.fates[i].perm = true; } }
+    for (i = 0; i < s.roster.length; i++) {
+      g = s.roster[i]; var fm = inF[g.id], dm;
+      if (win) dm = M.win + (fm && fm.stats.kills > 0 ? M.kill : 0);
+      else dm = (fm && chief) ? 0 : M.lose * (G.hasTrait(g, 'proud') ? 2 : 1) * nem;
+      dm += (died * M.death + perm * M.permTeam) * nem;
+      if (fm) dm += fm.st.moraleFight || 0;
       this.addMorale(g, dm);
     }
-    if (died) for (i = 0; i < s.roster.length; i++) this.addMorale(s.roster[i], -7 * died * (this.has('nemesis') ? 0.5 : 1));
+    for (i = 0; i < res.fates.length; i++) if (res.fates[i].fate === 'injury') { g = this.glad(res.fates[i].id); if (g) this.addMorale(g, (res.fates[i].perm ? M.permSelf : M.injury) * nem); }
     // kinh nghiệm
     var baseXp = fight.xp * (win ? 1 : 0.4);
     var inFight = {};
@@ -442,7 +482,7 @@
     if (win && fight.main) {
       s.stage++;
       if (s.stage >= 7) {
-        if (s.tier < 3) { s.tier++; s.stage = 0; res.unlocked = G.TIERS[s.tier]; }
+        if (s.tier < G.TIERS.length - 1) { s.tier++; s.stage = 0; res.unlocked = G.TIERS[s.tier]; }
         else { s.won = true; res.final = true; }
       }
     }
@@ -491,13 +531,14 @@
     var s = this.s, rng = this.rng, news = [], i, g;
     var up = this.upkeep(), paid = true;
     if (s.gold >= up) s.gold -= up; else { paid = false; s.gold = 0; }
-    news.push(paid ? 'Trả ' + up + ' vàng tiền nuôi người.' : 'Không đủ ' + up + ' vàng tiền nuôi: cả trường nhịn đói. Tinh thần sụt mạnh.');
-    var medicus = s.roster.some(function (x) { return x.talent === 'medicus'; });
+    news.push(paid ? 'Trả ' + up + ' vàng tiền nuôi người.' : 'Không đủ ' + up + ' vàng tiền nuôi: cả trường nhịn đói: −5 tinh thần mỗi người.');
+    var medicus = s.roster.some(function (x) { return x.talent === 'medicus'; }), warden = this.hasTalent('warden');
     for (i = s.roster.length - 1; i >= 0; i--) {
       g = s.roster[i];
-      if (!paid) this.addMorale(g, -12);
+      if (!paid) this.addMorale(g, Game.MORALE.unpaid);
       if (!s.fought) this.addMorale(g, 2);
       if (G.hasTrait(g, 'sullen')) this.addMorale(g, -1);
+      if (G.hasTrait(g, 'unruly') && g.foughtDay !== s.day) this.addMorale(g, -3);
       // lành thương
       var heal = (G.hasTrait(g, 'healer') ? 2 : 1) * (medicus ? 2 : 1);
       for (var j = g.injuries.length - 1; j >= 0; j--) {
@@ -506,7 +547,7 @@
         if (inj.days <= 0) { news.push(g.name + ' đã lành: ' + G.INJURIES[inj.id].name + '.'); g.injuries.splice(j, 1); }
       }
       // bỏ trốn
-      if (g.morale < 15 && !G.hasTrait(g, 'loyal') && rng.chance(0.5)) {
+      if (g.morale < 15 && !G.hasTrait(g, 'loyal') && !warden && rng.chance(G.hasTrait(g, 'runaway') ? 1 : 0.5)) {
         news.push(g.name + ' đã bỏ trốn trong đêm, mang theo mọi thứ trên người.');
         s.roster.splice(i, 1); delete s.form[g.id]; s.stat.deserted++;
       } else if (g.morale < 25 && !G.hasTrait(g, 'loyal')) {

@@ -390,7 +390,7 @@
     return (cache[key] = url);
   };
   // Icon của một chỉ số: str, agi, vit, hp, move, aspd.
-  var STAT = { str: 'str', agi: 'agi', vit: 'vit', hp: 'hp', move: 'fleet', aspd: 'aspd', dmg: 'dmg', armor: 'armor', block: 'block', wt: 'wt' };
+  var STAT = { str: 'str', agi: 'agi', vit: 'vit', sta: 'porter', hp: 'hp', move: 'fleet', aspd: 'aspd', dmg: 'dmg', armor: 'armor', block: 'block', wt: 'wt' };
   V.statIcon = function (key, size) { return V.cardIcon(STAT[key] || key, size || 28); };
   V.CARD_ICONS = E;
 })(window.G = window.G || {});

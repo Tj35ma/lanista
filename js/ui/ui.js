@@ -2,7 +2,7 @@
 (function (G) {
   'use strict';
 
-  var UI = G.UI = { game: null, state: 'title', tab: 'market', sel: null, fightKind: 'main', battle: null };
+  var UI = G.UI = { game: null, state: 'title', tab: 'market', sel: null, fightKind: 'main', battle: null, deploy: false };
   var root, elTop, elHint, elLeft, elRight, elBottom, elTip, elToasts, elModals, elTitle, elHud, elPop, elTags, elEquip, elStash;
   var tagList = [], drag = null, fdrag = null, noRowClick = 0;
   var mouse = { x: 0, y: 0 };
@@ -26,6 +26,7 @@
   function snd(n) { try { if (G.Audio && G.Audio.play) G.Audio.play(n); } catch (e) { } }
   function amb(n) { try { if (G.Audio && G.Audio.ambience) G.Audio.ambience(n); } catch (e) { } }
   function vsub(name) { return (G.V && G.V[name]) ? G.V[name] : null; }
+  function spaceName() { return UI.tab === 'ready' ? (UI.deploy ? 'ready' : 'lobby') : UI.tab; }
   function vgo(name, opts) { try { if (G.V && G.V.go) G.V.go(name, opts || {}); } catch (e) { if (window.console) console.error(e); } }
   function vtry(fn) { try { return fn(); } catch (e) { if (window.console) console.error(e); } }
 
@@ -145,14 +146,15 @@
     H.push('<div class="tt-h ' + (o.foe ? 'foe' : 'own') + '">' + (g.boss ? '☠ ' : '') + esc(g.name) + '</div>');
     var sub = [];
     if (!o.foe && g.origin && G.ORIGINS[g.origin]) sub.push('Người ' + G.ORIGINS[g.origin].name);
-    sub.push(B.name);
+    var X = g.x || {};
+    sub.push(X.beast ? { bear: 'Gấu', dog: 'Chó trận', lion: 'Sư tử' }[X.beast] : B.name + (X.mount === 'elephant' ? ' · cưỡi voi' : (X.mount ? ' · cưỡi ngựa' : '')));
     sub.push('Cấp ' + g.lvl + (!o.foe && g.lvl >= G.MAX_LVL ? ' (tối đa)' : ''));
     H.push('<div class="tt-sub">' + sub.join(' · ') + '</div>');
     if (!o.foe && G.TIERS[tier].cap != null && g.lvl >= G.TIERS[tier].cap && g.lvl < G.MAX_LVL) H.push('<div class="tt-sub">Đã chạm trần của ' + esc(G.TIERS[tier].name) + ' (cấp ' + G.TIERS[tier].cap + '): kinh nghiệm ở đấu trường này chỉ còn một nửa, và giảm tiếp một nửa cho mỗi cấp sau đó.</div>');
     H.push('<div class="tt-grid">' +
       kv('Sức mạnh', num(st.str, 1)) + kv('Máu', st.hp) +
       kv('Nhanh nhẹn', num(st.agi, 1)) + kv('Sát thương', num(w.dmg * st.dmgMul, 1) + (st.kind === 'twin' ? ' ×2' : '')) +
-      kv('Thể chất', num(st.vit, 1)) + kv('Nhịp đánh', num(K.interval / st.aspd, 2) + ' giây') +
+      kv('Thể lực', num(st.sta, 0)) + kv('Nhịp đánh', num(K.interval / st.aspd, 2) + ' giây') +
       kv('Né', pct(st.dodge)) + kv('Tốc độ', num(st.move, 1) + ' m/s') +
       kv('Chặn', st.block > 0 ? pct(st.block) : (st.deflect > 0 ? 'gạt ' + pct(st.deflect) : '—')) + kv('Chí mạng', pct(st.crit)) +
       kv('Kháng hiệu ứng', pct(st.resist)) + kv('', '') +
@@ -164,8 +166,22 @@
     if (!o.foe) {
       H.push('<div class="tt-line"><span>Tinh thần</span> <b class="' + (g.morale <= 30 ? 'warn' : (g.morale >= 80 ? 'ok' : '')) + '">' + g.morale + ' — ' + moraleWord(g.morale) + '</b></div>');
       H.push('<div class="tt-line"><span>Sức hút</span> <b class="tal">' + stars(st.appeal) + '</b> &nbsp; <span>Phí nuôi</span> <b>' + G.upkeepOf(g, tier, gm ? gm.s.relics : []) + ' vàng/ngày</b></div>');
-    } else if (g.x && g.x.enrage) {
-      H.push('<div class="warn">Còn nửa máu sẽ nổi điên: đánh nhanh gấp rưỡi.</div>');
+    } else {
+      // kẻ địch đặc biệt: cách nó đánh và kỹ năng của trùm
+      var nt = [];
+      if (X.beast) nt.push(esc(K.strength) + ' ' + esc(K.special.name) + ': ' + esc(K.special.desc));
+      if (X.roar) nt.push('Gầm: làm choáng mọi kẻ đứng sát.');
+      if (X.mount === 'elephant') nt.push('Voi chiến: giẫm và hất văng mọi người đứng trên đường nó đi.');
+      else if (X.mount) nt.push(K.ranged ? 'Kỵ xạ: vừa phi vòng quanh sân vừa bắn; người đi bộ không đuổi kịp.' : 'Kỵ binh: phi vòng quanh sân, xông vào móc kéo kẻ đứng lẻ. Giáo đón đầu làm ngựa khựng lại.');
+      if (X.formation) nt.push(X.leader ? 'Chỉ huy đội hình: hắn gục là cả hàng tan.' : 'Đứng trong đội hình: giữ hàng khiên, ' + (X.pila ? 'ném một loạt pilum, ' : '') + 'không đuổi theo ai.');
+      if (X.cleave) nt.push('Đánh lan: mỗi đòn còn trúng những người đứng cạnh mục tiêu (' + Math.round(X.cleave * 100) + '% sát thương).');
+      if (X.howl) nt.push((X.beast ? 'Hú' : 'Gầm thét') + ': cứ ' + X.howl.every + ' giây mạnh thêm ' + Math.round(X.howl.dmg * 100) + '% (tối đa ' + X.howl.max + ' lần).');
+      if (X.summon) nt.push('Gọi viện binh: ' + (X.summon.at ? 'khi còn ' + X.summon.at.map(function (a) { return Math.round(a * 100) + '%'; }).join(' và ') + ' máu' : 'cứ ' + X.summon.every + ' giây') + ' có thêm ' + X.summon.foes.map(function (d) { return esc(d.name); }).filter(function (v, i, a) { return a.indexOf(v) === i; }).join(', ') + ' ra sân' + (X.summon.max ? ' (tối đa ' + X.summon.max + ')' : '') + '.');
+      if (X.ccRes) nt.push('Kháng hiệu ứng bất lợi: lưới, choáng, làm chậm, chảy máu, mất thế đỡ chỉ còn ' + Math.round((1 - X.ccRes) * 100) + '% thời gian.');
+      if (X.charge && X.charge.whirl) nt.push('Chém xoay: cứ ' + X.charge.every + ' giây xoay tròn lao tới kẻ đứng xa nhất (×' + String(X.charge.mul).replace('.', ',') + ' sát thương), chém mọi người trong ' + String(X.charge.whirl.r).replace('.', ',') + ' m trên đường đi (×' + String(X.charge.whirl.mul).replace('.', ',') + ').');
+      else if (X.charge) nt.push('Xung phong: cứ ' + X.charge.every + ' giây lao thẳng vào ' + (X.charge.far ? 'kẻ đứng xa nhất' : 'một người') + ', ×' + String(X.charge.mul).replace('.', ',') + ' sát thương, làm choáng' + (X.charge.path ? '; hất ngã mọi kẻ chắn đường' : '') + '.');
+      if (X.enrage) nt.push('Còn nửa máu sẽ nổi điên: đánh nhanh gấp rưỡi.');
+      for (i = 0; i < nt.length; i++) H.push('<div class="warn">' + nt[i] + '</div>');
     }
     // trang bị đang mang
     var gear = [];
@@ -205,7 +221,8 @@
     ['steady', function (v) { return '−' + pct(v) + ' choáng và bị đẩy lùi'; }],
     ['moveMul', function (v) { return (v > 0 ? '+' : '−') + pct(Math.abs(v)) + ' tốc độ di chuyển'; }],
     ['dodge', function (v) { return (v > 0 ? '+' : '−') + pct(Math.abs(v)) + ' né'; }],
-    ['cap', function (v) { return '+' + v + ' sức mang'; }],
+    ['sta', function (v) { return '+' + v + ' Thể lực'; }],
+    ['hp', function (v) { return '+' + v + ' Máu'; }],
     ['crit', function (v) { return '+' + pct(v) + ' chí mạng'; }],
     ['deathMul', function (v) { return '−' + pct(1 - v) + ' khả năng chết khi gục'; }],
     ['moraleFight', function (v) { return '+' + v + ' tinh thần mỗi lần ra sân'; }]
@@ -227,7 +244,7 @@
     if (inst && inst.aff) inst.aff.forEach(function (a) { if (G.AFFIX[a]) afx.push(G.AFFIX[a]); });
     afx.forEach(function (a) { rch += a.reach || 0; pn += a.pen || 0; });
     H.push('<div class="tt-h rr' + rr + '">' + esc(inst ? G.instName(inst) : it.name) + '</div>');
-    H.push('<div class="tt-sub">' + G.SLOT_NAME[it.slot] + (it.tier ? ' · Hạng ' + ROMAN[it.tier] : '') + (it.id !== 'fist' ? ' · <span class="rr' + rr + '">' + RR.name + '</span>' : '') + '</div>');
+    H.push('<div class="tt-sub">' + G.SLOT_NAME[it.slot] + (it.id !== 'fist' ? ' · <span class="rr' + rr + '">Độ hiếm ' + RR.name + '</span>' + (inst && inst.q ? ' · chất lượng ×' + num(inst.q, 2) : '') + ' · kiểu ' + ((inst && inst.m || 0) + 1) + '/3' : '') + '</div>');
     if (it.slot === 'weapon') {
       var K = G.WKIND[it.kind];
       H.push('<div class="tt-grid">' +
@@ -277,13 +294,13 @@
     if (!f) return '';
     var H = [];
     H.push('<div class="tt-h">' + (f.boss ? '☠ ' : '') + esc(f.name) + '</div>');
-    H.push('<div class="tt-sub">' + (f.main ? (f.boss ? 'Trận chính — nhà vô địch, một mình đấu cả đội' : 'Trận chính — thua thì hôm khác đấu lại') : 'Trận phụ — đấu lại bao nhiêu lần cũng được') + '</div>');
+    H.push('<div class="tt-sub">' + (f.main ? (f.boss ? 'Trận chính — trùm' : 'Trận chính — thua thì hôm khác đấu lại') : 'Trận phụ — đấu lại bao nhiêu lần cũng được') + '</div>');
     if (f.desc) H.push('<div>' + esc(f.desc) + '</div>');
     if (f.hint) H.push('<div class="tt-sec"><span class="tal">Lời mách:</span> ' + esc(f.hint) + '</div>');
     H.push('<div class="tt-sec"><span class="tt-price">Thưởng ' + f.gold + ' vàng</span>, ' + f.xp + ' kinh nghiệm mỗi người ra sân · Địch: ' + f.foes.length + ' người</div>');
     var gm = UI.game, sb = gm ? gm.streakBonus() : 0, sk = gm ? (gm.s.streak || 0) : 0;
     if (sb > 0) H.push('<div class="tt-sec good">Đang thắng liền ' + sk + ' trận: thắng trận này được thêm ' + Math.round(sb * 100) + '% túi thưởng (+' + Math.round(f.gold * sb * (gm.has('patron') ? 1.2 : 1)) + ' vàng). Thua là mất chuỗi.</div>');
-    else H.push('<div class="tt-desc">Thắng liên tiếp: từ trận thắng thứ hai liền nhau, mỗi trận thắng trước đó cộng thêm 20% túi thưởng (tối đa +100%). Thua là mất chuỗi.</div>');
+    else H.push('<div class="tt-desc">Thắng liên tiếp: từ trận thắng thứ hai liền nhau, mỗi trận thắng trước đó cộng thêm 10% túi thưởng (tối đa +50%). Thua là mất chuỗi.</div>');
     if (f.side && f.bored) H.push('<div class="tt-sec bad">Khán giả đã chán: túi thưởng vơi ' + f.bored.pct + '% (anh đã đấu ' + f.bored.n + ' trận phụ kể từ lần thắng trận chính gần nhất). Thắng một trận chính thì họ hào hứng lại.</div>');
     else if (f.side) H.push('<div class="tt-desc">Mỗi trận phụ làm khán giả chán thêm: túi thưởng trận phụ vơi 5% mỗi lần, thấp nhất còn một nửa, cho tới khi anh thắng một trận chính.</div>');
     H.push('<div class="tt-desc">Thua vẫn nhận tiền xuất trận: ' + Math.round(f.gold * G.Game.LOSS_PAY) + ' vàng.</div>');
@@ -408,9 +425,9 @@
   }
   function setTab(tab, force) {
     if (!force && UI.tab === tab) return;
-    UI.tab = tab;
+    UI.tab = tab; UI.deploy = false;
     tipHide();
-    vgo(tab, { tier: UI.game.s.tier });
+    vgo(spaceName(), { tier: UI.game.s.tier });
     amb(tab);
     if (tab === 'ready' && UI.game.fielded() === 0 && UI.game.s.roster.length) { UI.game.autoForm(); fillField(); UI.game.save(); }
     UI.refresh();
@@ -469,6 +486,12 @@
       };
       sh.onClick = function (i) { hlRow(i, true); };
       vtry(function () { if (sh.show) sh.show(s.market.shop, s.market.relic); });
+    } else if (!UI.deploy) {
+      var lb = vsub('lobby'); if (!lb) return;
+      lb.onPick = function (p) { if (p && p.type === 'glad' && gm.glad(p.id)) { UI.sel = p.id; UI.equipOpen = true; snd('click'); UI.refresh(); } };
+      lb.onHover = function (p, x, y) { if (p && p.type === 'glad') { var g = gm.glad(p.id); if (g) { tip3d('g' + p.id, function () { return gladTip(g, {}); }, x, y); return; } } tipHide('3d'); };
+      vtry(function () { if (lb.show) lb.show({ roster: s.roster, form: s.form }); });
+      vtry(function () { if (lb.select) lb.select(UI.sel); });
     } else {
       var rd = vsub('ready'); if (!rd) return;
       rd.onPick = onReadyPick;
@@ -564,8 +587,9 @@
     else {
       var bare = gm.playerTeam().some(function (p) { return !p.g.gear.weapon; });
       if (bare && UI.tab !== 'shop' && !s.inv.some(function (x) { return G.ITEMS[x.id].slot === 'weapon'; })) t = 'Có người ra sân tay không. Lò rèn có bán vũ khí.';
-      else if (bare && UI.tab === 'ready') t = 'Có vũ khí trong kho: bấm vào một người để mở bảng trang bị, rồi kéo món đồ thả vào người hắn.';
-      else if (UI.tab === 'ready' && gm.fielded() === 0) t = 'Chọn một người rồi bấm vào một ô trên sàn để xếp hắn ra sân.';
+      else if (bare && UI.tab === 'ready' && !UI.deploy) t = 'Có vũ khí trong kho: bấm vào một người để mở bảng trang bị, rồi kéo món đồ thả vào người hắn.';
+      else if (UI.tab === 'ready' && UI.deploy) t = 'Dàn quân: kéo người vào ô trên sân để xếp chỗ, thả vào ô có người để đổi chỗ. Xong thì bấm Chiến đấu.';
+      else if (UI.tab === 'ready' && gm.fielded() === 0) t = 'Bấm nút Ra trận cạnh tên để chọn người ra sân.';
     }
     elHint.textContent = t; show(elHint, !!t);
   }
@@ -689,7 +713,7 @@
     var gm = UI.game, s = gm.s, selG = gm.glad(UI.sel), inv = sortedInv(), total = 0, ls = UI.lastSold;
     if (ls && ls.day !== s.day) ls = UI.lastSold = null;
     clear(elStash); show(elStash, true);
-    inv.forEach(function (inst) { total += Math.round(G.instPrice(inst) * 0.5); });
+    inv.forEach(function (inst) { total += UI.game.itemSellValue(inst); });
     var hd = h('div', 'st-head'), ttl = h('h3', null, 'Bán đồ trong kho');
     add(ttl, h('small', null, inv.length ? inv.length + ' món · bán hết được ' + total + ' vàng' : 'kho trống'));
     add(hd, ttl);
@@ -706,7 +730,7 @@
     if (!inv.length) { add(elStash, h('div', 'note', 'Chưa có món nào để bán. Đồ đang mặc trên người phải tháo ra ở Phòng chờ trước.')); return; }
     var grid = h('div', 'st-grid');
     inv.forEach(function (inst) {
-      var it = G.ITEMS[inst.id], val = Math.round(G.instPrice(inst) * 0.5), cell = h('div', 'st-cell'), t = itemTile(it, '', inst), pr = h('div', 'st-price');
+      var it = G.ITEMS[inst.id], val = UI.game.itemSellValue(inst), cell = h('div', 'st-cell'), t = itemTile(it, '', inst), pr = h('div', 'st-price');
       pr.innerHTML = coin(val);
       add(cell, t, pr);
       function sell() {
@@ -732,10 +756,69 @@
     return inv;
   }
 
-  // ---------------------------------------------------------------- phòng chờ
+  // ---------------------------------------------------------------- phòng chờ (phòng đá): chọn ai ra trận, trang bị, xem đối thủ
+  function goDeploy() {
+    var gm = UI.game;
+    if (gm.s.fought) return;
+    if (!gm.fielded()) { snd('error'); toast('Chưa chọn ai ra trận.', 'err'); return; }
+    if (!currentFight()) { snd('error'); toast('Không có trận nào.', 'err'); return; }
+    UI.deploy = true; UI.equipOpen = false; tipHide(); snd('gate');
+    vgo('ready', { tier: gm.s.tier }); UI.refresh();
+  }
+  function backLobby() { UI.deploy = false; tipHide(); vgo('lobby', { tier: UI.game.s.tier }); UI.refresh(); }
+  function teamPower(list) { var p = 0; list.forEach(function (g) { try { p += G.power(g); } catch (e) { } }); return Math.round(p); }
+  // cột phải: đối thủ của trận đang chọn, so sánh sức mạnh
+  function renderFoes(el) {
+    var gm = UI.game, f = currentFight(), foes = currentFoes();
+    var hd = h('h3', null, f ? (f.main ? 'Đối thủ · trận chính ' + (f.stage + 1) + '/7' : 'Đối thủ · trận phụ') : 'Đối thủ'); add(el, hd);
+    if (!f || !foes) { add(el, h('div', 'note', 'Không có trận nào.')); return; }
+    add(el, h('div', 'foe-name', (f.boss ? '☠ ' : '') + f.name));
+    var mine = teamPower(gm.playerTeam().map(function (p) { return p.g; })), theirs = teamPower(foes.map(function (o) { return o.g; }));
+    var pw = h('div', 'power'); pw.innerHTML = 'Sức mạnh: ta <b class="' + (mine >= theirs ? 'ok' : 'warn') + '">' + mine + '</b> vs địch <b>' + theirs + '</b>';
+    bindTip(pw, function () { return '<div class="tt-h">Sức mạnh ước lượng</div><div>Tổng sức của người ra trận (sát thương × sức chịu đòn). Chỉ để tham khảo: khắc chế vũ khí, giáp, đội hình và kỹ năng trùm mới quyết định trận.</div>'; });
+    add(el, pw);
+    foes.forEach(function (o, i) {
+      var g = o.g, w = G.weaponOf(g), r = h('div', 'row');
+      add(r, h('span', 'nm', (g.boss ? '☠ ' : '') + g.name), h('small', null, 'cấp ' + g.lvl + ' · ' + (g.x && g.x.beast ? '' : w.name)));
+      bindTip(r, function () { return gladTip(g, { foe: true }); });
+      el.appendChild(r);
+    });
+    if (f.hint) add(el, h('div', 'note', f.hint));
+  }
   function renderReady() {
+    if (UI.deploy) return renderDeploy();
     var gm = UI.game, s = gm.s;
     clear(elLeft); clear(elRight); clear(elBottom); show(elLeft, true); show(elBottom, true);
+    var hd0 = h('h3', null, 'Đấu sĩ của anh'); add(hd0, h('small', null, s.roster.length + '/' + G.Game.MAX_ROSTER + ' · ra trận ' + gm.fielded() + '/' + gm.fieldLimit()));
+    add(elLeft, hd0);
+    if (!s.roster.length) {
+      add(elLeft, h('div', 'note', 'Chưa có ai. Không có người thì không có trận.'));
+      var a1 = h('div', 'acts'); add(a1, btn('Ra chợ nô lệ', null, function () { setTab('market'); })); add(elLeft, a1);
+    }
+    s.roster.forEach(function (g) {
+      var on = !!s.form[g.id], r = h('div', 'row click' + (g.id === UI.sel ? ' sel' : ''));
+      var nm = h('span', 'nm' + (g.talent ? ' tal' : ''), g.name);
+      var tg = btn(on ? 'Ra trận' : 'Dự bị', 'small toggle' + (on ? ' on' : ''), function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (on) gm.bench(g.id); else if (!quickPlace(g)) { snd('error'); toast('Đấu trường này chỉ cho ' + gm.fieldLimit() + ' người ra trận. Cho một người làm dự bị trước.', 'err'); return; }
+        snd('click'); gm.save(); UI.refresh();
+      }, true);
+      add(r, nm, markers(g), tg);
+      addStatusIcons('lobby', g);
+      r.addEventListener('click', function () { UI.sel = g.id; UI.equipOpen = true; snd('click'); UI.refresh(); });
+      bindTip(r, function () { return gladTip(g, { sell: gm.sellValue(g) }); });
+      elLeft.appendChild(r);
+    });
+    if (s.roster.length) add(elLeft, h('div', 'note', 'Bấm nút cạnh tên để chọn ai ra trận, ai dự bị. Bấm vào người để mở bảng trang bị. Dàn quân làm ở ngoài đấu trường, ngay trước khi đánh.'));
+    var g = gm.glad(UI.sel);
+    if (g && UI.equipOpen) { show(elRight, false); renderEquip(g); }
+    else { show(elEquip, false); show(elRight, true); renderFoes(elRight); }
+    renderFightBar(false);
+  }
+  // Dàn quân: ngoài đấu trường, kéo người vào ô trên lưới rồi bấm Chiến đấu
+  function renderDeploy() {
+    var gm = UI.game, s = gm.s;
+    clear(elLeft); clear(elRight); clear(elBottom); show(elLeft, true); show(elBottom, true); show(elEquip, false); show(elRight, true);
     // --- trái: danh sách người
     var hd = h('h3', null, 'Người của anh'); add(hd, h('small', null, 'Ra sân ' + gm.fielded() + '/' + gm.fieldLimit()));
     add(elLeft, hd);
@@ -755,14 +838,13 @@
       bindTip(r, function () { return gladTip(g, { sell: gm.sellValue(g) }); });
       elLeft.appendChild(r);
     });
-    if (s.roster.length) add(elLeft, h('div', 'note', 'Kéo một người (trên sân, trên ghế hoặc từ danh sách này) thả vào ô để xếp chỗ; thả vào ô có người để đổi chỗ; thả ra ghế để rút về. Bấm vào người để mở bảng trang bị. ◆ = ra sân.'));
-
-    // --- phải: người đang chọn
-    var g = gm.glad(UI.sel);
-    if (g && UI.equipOpen) { show(elRight, false); renderEquip(g); }
-    else { show(elEquip, false); show(elRight, !!g); if (g) renderGladPanel(g); }
-
-    // --- dưới: chọn trận
+    if (s.roster.length) add(elLeft, h('div', 'note', 'Kéo một người (trên sân, trên ghế hoặc từ danh sách này) thả vào ô để xếp chỗ; thả vào ô có người để đổi chỗ; thả ra ghế để rút về. ◆ = ra sân.'));
+    renderFoes(elRight);
+    renderFightBar(true);
+  }
+  // thanh dưới: chọn giải (ở phòng chờ) hoặc nút Chiến đấu (khi dàn quân)
+  function renderFightBar(deploy) {
+    var gm = UI.game, s = gm.s;
     var fights = h('div', 'fights'), mf = gm.mainFight();
     function fb(kind, f, label) {
       var b = h('button', 'fbtn' + (UI.fightKind === kind ? ' on' : '') + (f.boss ? ' boss' : ''));
@@ -779,21 +861,19 @@
     if (s.streak > 0) {
       var sb = gm.streakBonus(), chip = h('span', 'streak' + (sb >= G.Game.STREAK_STEP * G.Game.STREAK_MAX ? ' max' : ''), 'Chuỗi thắng ' + s.streak + ' · +' + Math.round(sb * 100) + '%');
       bindTip(chip, function () {
-        return '<div class="tt-h">Chuỗi thắng: ' + s.streak + ' trận</div><div>Trận thắng tới được thêm <b>' + Math.round(sb * 100) + '%</b> túi thưởng. Mỗi trận thắng liền nhau cộng thêm 20%, tối đa +100%.</div><div class="tt-desc">Thua một trận (kể cả xin thua) là mất cả chuỗi. Nghỉ ngày không mất chuỗi.</div>';
+        return '<div class="tt-h">Chuỗi thắng: ' + s.streak + ' trận</div><div>Trận thắng tới được thêm <b>' + Math.round(sb * 100) + '%</b> túi thưởng. Mỗi trận thắng liền nhau cộng thêm 10%, tối đa +50%.</div><div class="tt-desc">Thua một trận (kể cả xin thua) là mất cả chuỗi. Nghỉ ngày không mất chuỗi.</div>';
       });
       add(line, chip);
     }
     add(line, h('span', 'cnt' + (nF ? '' : ' zero'), 'Ra sân ' + nF + '/' + gm.fieldLimit()));
-    var fc = gm.feastCost();
-    var fbn = btn('Đãi tiệc ' + coin(fc), s.feasted || !s.roster.length ? 'off' : '', function () {
-      var res = gm.feast();
-      if (res.ok) { snd('buy'); toast('Rượu và thịt cho cả trường: +14 tinh thần.'); UI.refresh(); } else fail(res);
-    }, true);
-    bindTip(fbn, function () { return '<div class="tt-h">Đãi tiệc</div><div>Rượu chua và thịt lợn cho cả trường: mọi người +14 tinh thần. Mỗi ngày một lần.</div><div class="tt-sec tt-price">Giá: ' + fc + ' vàng</div>' + (s.feasted ? '<div class="warn">Hôm nay đã đãi rồi.</div>' : ''); });
-    var go = btn(s.fought ? 'Hôm nay đã đấu' : 'Ra đấu trường ▸', 'big', startFight);
-    go.disabled = s.fought || nF === 0;
-    add(line, fbn, go);
-    add(elBottom, fights, line);
+    if (deploy) {
+      add(line, btn('‹ Về phòng chờ', null, backLobby));
+      var go = btn('CHIẾN ĐẤU ▸', 'big', startFight); go.disabled = s.fought || nF === 0; add(line, go);
+      add(elBottom, line);
+    } else {
+      var gd = btn(s.fought ? 'Hôm nay đã đấu' : 'RA ĐẤU TRƯỜNG ▸', 'big', goDeploy); gd.disabled = s.fought || nF === 0; add(line, gd);
+      add(elBottom, fights, line);
+    }
   }
 
   function barline(lb, frac, tx, cls) {
@@ -811,6 +891,12 @@
       if (quickPlace(g)) { gm.save(); UI.refresh(); }
       else { snd('error'); toast('Đấu trường này chỉ cho ' + gm.fieldLimit() + ' người ra sân.', 'err'); }
     }));
+    var rc = gm.rewardCost(), rb = btn('Thưởng ' + coin(rc), 'small' + (g.morale >= 100 ? ' off' : ''), function () {
+      var r = gm.reward(g.id);
+      if (r.ok) { snd('buy'); toast(g.name + ': +' + G.Game.REWARD_MORALE + ' tinh thần.'); UI.refresh(); } else fail(r);
+    }, true);
+    bindTip(rb, function () { return '<div class="tt-h">Thưởng riêng ' + esc(g.name) + '</div><div>Vài đồng bạc và một bình rượu: +' + G.Game.REWARD_MORALE + ' tinh thần cho người này. Thưởng bao nhiêu lần cũng được.</div><div class="tt-sec tt-price">Giá: ' + rc + ' vàng</div>'; });
+    add(acts, rb);
     var tc = gm.treatCost ? gm.treatCost(g) : 0;
     if (tc > 0) {
       var tb = btn('Gọi thầy thuốc ' + coin(tc), 'small', function () {
@@ -863,13 +949,13 @@
 
   // ---------------------------------------------------------------- icon trang bị
   var ROMAN = ['', 'I', 'II', 'III', 'IV'];
-  function iconUrl(id, size, rar) { try { return (G.V && G.V.itemIcon) ? G.V.itemIcon(id, size || 64, rar || 0) : ''; } catch (e) { if (window.console) console.error(e); return ''; } }
+  function iconUrl(id, size, rar, model) { try { return (G.V && G.V.itemIcon) ? G.V.itemIcon(id, size || 64, rar || 0, model || 0) : ''; } catch (e) { if (window.console) console.error(e); return ''; } }
   function itemTile(it, cls, inst) {
     var rr = (inst && inst.r) || 0;
-    var t = h('div', 'itile t' + (it.tier || 0) + ' r' + rr + (cls ? ' ' + cls : '')), u = iconUrl(it.id, 64, rr);
+    var t = h('div', 'itile t' + (it.tier || 0) + ' r' + rr + (cls ? ' ' + cls : '')), u = iconUrl(it.id, 64, rr, inst && inst.m);
     if (u) { var im = document.createElement('img'); im.src = u; im.draggable = false; im.alt = ''; t.appendChild(im); }
     else t.appendChild(h('span', 'ph', it.name));
-    if (it.tier) t.appendChild(h('i', 'tr', ROMAN[it.tier]));
+    if (it.id !== 'fist') t.appendChild(h('i', 'tr', G.ROMAN[rr]));
     return t;
   }
 
@@ -884,16 +970,16 @@
   }
   // Cột chỉ số luôn hiện bên trái một nô lệ trên bục: icon + con số, rê chuột lên từng dòng để xem nó làm gì.
   var STAT_ROWS = [
-    ['str', 'Sức mạnh', 'Mỗi điểm trên 5: +7% sát thương. Mỗi điểm: +2,5 sức mang.'],
-    ['agi', 'Nhanh nhẹn', 'Mỗi điểm trên 5: +5% tốc độ đánh. Mỗi điểm: +2% né và chạy nhanh hơn một chút.'],
-    ['vit', 'Thể chất', 'Mỗi điểm: +14 máu và +2 sức mang.'],
-    ['hp', 'Máu', 'Hết máu là gục. Tính từ Thể chất và cấp.'],
+    ['str', 'Sức mạnh', 'Mỗi điểm trên 10: +5% sát thương. +1 mỗi cấp.'],
+    ['agi', 'Nhanh nhẹn', 'Mỗi điểm trên 10: +3% tốc độ đánh, +2% né (tối đa 30%), chạy nhanh hơn một chút. +0,5 mỗi cấp. Mang nặng làm mất Nhanh nhẹn: từ 20% Thể lực −1, 35% −2, 50% −4, 65% −6, 80% −8, 90% −10.'],
+    ['sta', 'Thể lực', 'Sức mang: tổng trọng lượng đồ không được vượt Thể lực. +8 mỗi cấp.'],
+    ['hp', 'Máu', 'Hết máu là gục. +6 mỗi cấp.'],
     ['move', 'Tốc chạy', 'Mét mỗi giây. Đồ nặng làm chậm lại.'],
     ['aspd', 'Tốc đánh', 'Số giây giữa hai đòn với thứ đang cầm — càng nhỏ càng nhanh.']
   ];
   function statValues(g) {
     var st = G.calcStats(g), K = G.WKIND[st.kind];
-    return { str: num(st.str, 1), agi: num(st.agi, 1), vit: num(st.vit, 1), hp: String(st.hp), move: num(st.move, 1), aspd: num(K.interval / st.aspd, 2) + 's' };
+    return { str: num(st.str, 1), agi: num(st.agi, 1) + (st.agiRaw > st.agi + 0.01 ? ' (−' + num(st.agiRaw - st.agi, 0) + ')' : ''), sta: num(st.sta, 0), hp: String(st.hp), move: num(st.move, 1), aspd: num(K.interval / st.aspd, 2) + 's' };
   }
   function addStatCol(space, i, g) {
     var col = h('div', 'tag3d statcol'), v = statValues(g);
@@ -913,7 +999,7 @@
     dmg: ['Sát thương', 'Mỗi đòn trúng, trước khi nhân với Sức mạnh của người cầm và trừ giáp của địch.'],
     armor: ['Giáp', 'Giảm sát thương của những đòn trúng vào vùng món này che.'],
     block: ['Chặn', 'Tỉ lệ đỡ hẳn một đòn đánh tới từ phía trước.'],
-    wt: ['Cân nặng', 'Tổng đồ càng nặng so với sức mang, người càng chậm cả tay lẫn chân.']
+    wt: ['Cân nặng', 'Tổng đồ không được vượt Thể lực. Càng nặng so với Thể lực, người càng mất Nhanh nhẹn và chạy chậm.']
   };
   function addItemStats(space, i, inst) {
     var it = G.ITEMS[inst.id], inf = G.instInfo(inst), rows = [];
@@ -938,11 +1024,13 @@
   }
   // Hàng icon trên đầu một người ở Phòng chờ: tinh thần, thiên phú, nét tốt/xấu, từng chấn thương.
   var TRAIT_ICON = { tough: 'hp', quick: 'aspd', keen: 'sharp', darling: 'showman', loyal: 'bond', frugal: 'food', healer: 'inj', lefty: 'riposte', learner: 'drilled', brave: 'mor_hi',
-    coward: 'mor_flee', drunk: 'food', brittle: 'bone', slow: 'fleet', proud: 'mor_low', plain: 'showman', sullen: 'mor_low', lazy: 'drilled', glutton: 'food', clumsy: 'agi' };
+    coward: 'mor_flee', drunk: 'food', brittle: 'bone', slow: 'fleet', proud: 'mor_low', plain: 'showman', sullen: 'mor_low', lazy: 'drilled', glutton: 'food', clumsy: 'agi',
+    fleetfoot: 'fleet', bloodthirst: 'bloodlust', hardy: 'grit', chief: 'bond', supple: 'vit', broad: 'porter', thickskin: 'hide', shieldhand: 'block', stamina: 'second', steadyhead: 'stubborn',
+    slowhand: 'aspd', rash: 'mor_flee', unruly: 'mor_low', weakling: 'vit', sickly: 'hp', thinskin: 'armor', winded: 'second', jumpy: 'stubborn', poorsight: 'sharp', runaway: 'mor_flee' };
   function moraleState(m) { return m < 15 ? 'flee' : (m <= 30 ? 'low' : (m >= 80 ? 'hi' : 'ok')); }
   function moraleTip(g) {
     var m = g.morale, st = moraleState(m), eff = st === 'hi' ? '+6% sát thương.' : (st === 'low' ? '−10% sát thương.' : (st === 'flee' ? '−10% sát thương, và hắn có thể bỏ trốn khi qua ngày.' : 'Không cộng, không trừ.'));
-    return '<div class="tt-h">Tinh thần ' + m + ' — ' + esc(moraleWord(m)) + '</div><div>' + eff + '</div><div class="tt-sec tt-desc">Từ 80 trở lên: +6% sát thương. Từ 30 trở xuống: −10%. Dưới 15: có thể bỏ trốn. Thắng trận và đãi tiệc làm tinh thần lên.</div>';
+    return '<div class="tt-h">Tinh thần ' + m + ' — ' + esc(moraleWord(m)) + '</div><div>' + eff + '</div><div class="tt-sec tt-desc">Từ 80 trở lên: +6% sát thương. Từ 30 trở xuống: −10%. Dưới 15: có thể bỏ trốn. Thắng trận +10 cả trường; thua −20 cả trường; mỗi người chết −30 cả trường; bị thương −10 riêng người đó; mang tật vĩnh viễn −10 cả trường và −30 riêng người đó. Thưởng riêng (nút Thưởng ở bảng của từng người) +10.</div>';
   }
   function addStatusIcons(space, g) {
     var row = h('div', 'tag3d sticons'), n = 0;
@@ -969,7 +1057,7 @@
   function tagLoop() {
     requestAnimationFrame(tagLoop);
     if (!tagList.length || UI.state !== 'hub') return;
-    var sp = vsub(UI.tab), ok = sp && sp.anchors && G.V.cur === sp, list = ok ? vtry(function () { return sp.anchors(); }) : null, i, j;
+    var sp = vsub(spaceName()), ok = sp && sp.anchors && G.V.cur === sp, list = ok ? vtry(function () { return sp.anchors(); }) : null, i, j;
     for (i = 0; i < tagList.length; i++) {
       var t = tagList[i], a = null;
       if (list) for (j = 0; j < list.length; j++) if (list[j].i === t.key) { a = list[j]; break; }
@@ -1119,7 +1207,7 @@
 
   // ---------------------------------------------------------------- kéo thả đội hình (phòng chờ)
   function formDragStart(id, e, src) {
-    if (e.button !== 0 || UI.state !== 'hub' || UI.tab !== 'ready') return;
+    if (e.button !== 0 || UI.state !== 'hub' || UI.tab !== 'ready' || !UI.deploy) return;
     fdrag = { id: id, x0: e.clientX, y0: e.clientY, on: false, src: src, ghost: null };
   }
   // Chỗ con trỏ đang chỉ nghĩa là gì với người đang kéo.
@@ -1290,7 +1378,7 @@
     vgo('arena', { tier: tier });
     buildHud(b);
     var intro = h('div', 'intro');
-    add(intro, h('div', 'a', b.fight.main ? (b.fight.boss ? 'Nhà vô địch' : 'Trận chính ' + (b.fight.stage + 1) + '/7') : 'Trận phụ'), h('div', 'b', b.fight.name), h('div', 'c', b.fight.desc || ''));
+    add(intro, h('div', 'a', b.fight.main ? (b.fight.boss ? 'Trùm' : 'Trận chính ' + (b.fight.stage + 1) + '/7') : 'Trận phụ'), h('div', 'b', b.fight.name), h('div', 'c', b.fight.desc || ''));
     elHud.appendChild(intro);
     setTimeout(function () { intro.style.opacity = '0'; setTimeout(function () { if (intro.parentNode) intro.parentNode.removeChild(intro); }, 600); }, 1500);
     setTimeout(function () {
@@ -1414,6 +1502,8 @@
         if (ev.type === 'stun') logLine(nm(d) + ' choáng váng', 'big');
         else if (ev.type === 'net') logLine(nm(d) + ' dính lưới', 'big');
         else if (ev.type === 'bleed') logLine(nm(d) + ' chảy máu');
+        else if (ev.type === 'poison') logLine(nm(d) + ' trúng độc');
+        else if (ev.type === 'skull') logLine(nm(d) + ' bị đập sọ, choáng');
         else if (ev.type === 'shieldoff') logLine('Khiên của ' + nm(d) + ' bị lao ghim — vô dụng', 'big');
         else if (ev.type === 'enrage') logLine(nm(d) + ' NỔI ĐIÊN!', 'big crit');
         else if (ev.type === 'heal') logLine(nm(d) + ' gượng lại, hồi sức');
@@ -1474,7 +1564,7 @@
     if (res.win) {
       add(p, ln('Thưởng trận', '+' + res.gold + ' vàng', 'g'));
       if (res.streakGold > 0) add(p, ln('Chuỗi thắng ' + res.streak + ' trận liền (+' + res.streakPct + '%)', '+' + res.streakGold + ' vàng', 'g'));
-      else if (res.streak === 1) add(p, ln('Chuỗi thắng', 'bắt đầu: thắng trận tới được thêm 20%', 'meh'));
+      else if (res.streak === 1) add(p, ln('Chuỗi thắng', 'bắt đầu: thắng trận tới được thêm 10%', 'meh'));
       res.appealBy.forEach(function (a) { add(p, ln('Khán giả ném tiền cho ' + a.name, '+' + a.gold + ' vàng', 'g')); });
       if (!res.appealBy.length) add(p, ln('Tiền khán giả', 'không ai còn đứng để nhận', 'meh'));
     } else {

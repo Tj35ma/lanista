@@ -365,4 +365,14 @@ body.fdragging, body.fdragging * { cursor: grabbing !important; user-select: non
 .tag3d.rr1 .btn.price { border-color: #6fa050; } .tag3d.rr2 .btn.price { border-color: #4a8ad0; }
 .tag3d.rr3 .btn.price { border-color: #a070d8; box-shadow: 0 0 8px rgba(160, 112, 216, .5); }
 .tag3d.rr4 .btn.price { border-color: #f2b23e; box-shadow: 0 0 10px rgba(242, 178, 62, .6); }
+.rr5 { color: #ff8a4d; } .rr6 { color: #ff6ad8; } .row .nm.rr5, .row .nm.rr6 { text-shadow: 0 0 6px rgba(0, 0, 0, .7); }
+.itile.r5 { border-color: #ff7a3d; box-shadow: inset 0 0 10px rgba(255, 122, 61, .55), 0 0 7px rgba(255, 122, 61, .4); background: radial-gradient(circle at 50% 38%, #5e2e16 0%, #28140a 78%); }
+.itile.r6 { border-color: #ff5ad2; box-shadow: inset 0 0 12px rgba(255, 90, 210, .6), 0 0 9px rgba(255, 90, 210, .45); background: radial-gradient(circle at 50% 38%, #5a1c4c 0%, #260a20 78%); }
+.tag3d.rr5 .btn.price { border-color: #ff7a3d; box-shadow: 0 0 11px rgba(255, 122, 61, .6); } .tag3d.rr6 .btn.price { border-color: #ff5ad2; box-shadow: 0 0 12px rgba(255, 90, 210, .7); }
 #tip .aff { font-size: 13px; } #tip .fx { color: #f6bd4a; font-size: 13.5px; margin-top: 2px; }
+
+/* ---------- phòng chờ: nút Ra trận / Dự bị, bảng đối thủ */
+.row .btn.toggle { margin-left: auto; min-width: 74px; background: #3a2e22; border-color: #5a4630; color: #b9a98a; }
+.row .btn.toggle.on { background: #2f6b2c; border-color: #4f9a46; color: #eaf5d8; }
+.foe-name { font-size: 15px; color: #f0d9a8; margin: 2px 0 4px; }
+.power { margin: 2px 0 8px; color: #cdbb98; } .power b.ok { color: #8fd36a; } .power b.warn { color: #ff8a5a; }

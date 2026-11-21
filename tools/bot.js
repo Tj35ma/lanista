@@ -181,7 +181,7 @@ function shopping(gm, opt, log) {
   // 7) tiệc
   if (s.roster.length) {
     const am = avg(s.roster.map(g => g.morale));
-    if (am < 35 && s.gold >= gm.feastCost() + buffer()) { if (gm.feast().ok) log.feasts++; }
+    s.roster.forEach(g => { while (g.morale < 45 && s.gold >= gm.rewardCost() + buffer()) { if (!gm.reward(g.id).ok) break; log.feasts++; } });
   }
 }
 
@@ -234,7 +234,7 @@ function tryCounter(gm, opt, log, p0) {
 function runCampaign(seed, opt) {
   const gm = G.Game.create(seed), s = gm.s;
   const log = { seed, bought: 0, replaced: 0, relics: 0, feasts: 0, sides: 0, sideWins: 0, mains: 0, rests: 0,
-    treats: 0, treatGold: 0, maxGold: 0, swaps: 0, attempts: {}, first: {}, fdur: {}, stageDays: {}, arriveP: {}, winLvl: {}, winGear: {}, winGold: {}, tierDays: [0, 0, 0, 0], tierEndGold: [], tierEndGoldPre: [], tierEndLvl: [], tierEndDay: [], dur: [[], [], [], []], sideDur: [], upkeep: 0, income: 0, deadEnd: false, mainWinRate: [] };
+    treats: 0, treatGold: 0, maxGold: 0, swaps: 0, attempts: {}, first: {}, fdur: {}, stageDays: {}, arriveP: {}, winLvl: {}, winGear: {}, winGold: {}, tierDays: G.TIERS.map(() => 0), tierEndGold: [], tierEndGoldPre: [], tierEndLvl: [], tierEndDay: [], dur: G.TIERS.map(() => []), sideDur: [], upkeep: 0, income: 0, deadEnd: false, mainWinRate: [] };
   let stuck = 0, dead = 0;
   while (!s.won && s.day <= 400) {
     const tier = s.tier;
@@ -307,16 +307,16 @@ function main() {
   console.log('\n=== TỔNG HỢP (' + RUNS + ' lượt, ' + ((Date.now() - t0) / 1000).toFixed(0) + 's' + (opt.noarmor ? ', KHÔNG GIÁP' : '') + (opt.noside ? ', KHÔNG TRẬN PHỤ' : '') + ') ===');
   console.log('Hoàn thành: ' + won.length + '/' + RUNS + ' (' + Math.round(won.length / RUNS * 100) + '%)');
   if (won.length) console.log('Số ngày để thắng: trung vị ' + median(won.map(l => l.days)) + ', min ' + Math.min(...won.map(l => l.days)) + ', max ' + Math.max(...won.map(l => l.days)));
-  console.log('Ngày mỗi hạng (trung vị, các lượt đã qua hạng đó): ' + [0, 1, 2, 3].map(t => { const a = logs.filter(l => l.tier > t || l.won).map(l => l.tierDays[t]); return a.length ? median(a) : '-'; }).join(' / '));
-  console.log('Vàng cuối mỗi hạng (trung vị): ' + [0, 1, 2, 3].map(t => { const a = logs.map(l => l.tierEndGold[t]).filter(x => x != null); return a.length ? median(a) : '-'; }).join(' / '));
-  console.log('Vàng ngay trước trận trùm thắng (trung vị): ' + [0, 1, 2, 3].map(t => { const a = logs.map(l => l.tierEndGoldPre[t]).filter(x => x != null); return a.length ? median(a) : '-'; }).join(' / ') + '     Cấp tb đội ra sân cuối hạng: ' + [0, 1, 2, 3].map(t => { const a = logs.map(l => l.tierEndLvl[t]).filter(x => x != null && !isNaN(x)); return a.length ? avg(a).toFixed(1) : '-'; }).join(' / '));
+  console.log('Ngày mỗi hạng (trung vị, các lượt đã qua hạng đó): ' + G.TIERS.map((_, i) => i).map(t => { const a = logs.filter(l => l.tier > t || l.won).map(l => l.tierDays[t]); return a.length ? median(a) : '-'; }).join(' / '));
+  console.log('Vàng cuối mỗi hạng (trung vị): ' + G.TIERS.map((_, i) => i).map(t => { const a = logs.map(l => l.tierEndGold[t]).filter(x => x != null); return a.length ? median(a) : '-'; }).join(' / '));
+  console.log('Vàng ngay trước trận trùm thắng (trung vị): ' + G.TIERS.map((_, i) => i).map(t => { const a = logs.map(l => l.tierEndGoldPre[t]).filter(x => x != null); return a.length ? median(a) : '-'; }).join(' / ') + '     Cấp tb đội ra sân cuối hạng: ' + G.TIERS.map((_, i) => i).map(t => { const a = logs.map(l => l.tierEndLvl[t]).filter(x => x != null && !isNaN(x)); return a.length ? avg(a).toFixed(1) : '-'; }).join(' / '));
   console.log('Chết: tb ' + avg(logs.map(l => l.deaths)).toFixed(1) + ' (trung vị ' + median(logs.map(l => l.deaths)) + ', min ' + Math.min(...logs.map(l => l.deaths)) + ', max ' + Math.max(...logs.map(l => l.deaths)) + ')   Bỏ trốn: tb ' + avg(logs.map(l => l.deserted)).toFixed(1) +
     '   Trận phụ: tb ' + avg(logs.map(l => l.sides)).toFixed(0) + ' (thắng ' + Math.round(avg(logs.map(l => l.sideWins / Math.max(1, l.sides))) * 100) + '%)   Ngày nghỉ: tb ' + avg(logs.map(l => l.rests)).toFixed(0) + '   Người mua: tb ' + avg(logs.map(l => l.bought)).toFixed(1) + '   Vật lanista: tb ' + avg(logs.map(l => l.relics)).toFixed(1));
   console.log('Phí nuôi / thu nhập: ' + Math.round(avg(logs.map(l => l.upkeep / Math.max(1, l.income))) * 100) + '%   Vàng nhiều nhất từng cầm (trung vị / max): ' + median(logs.map(l => l.maxGold)) + ' / ' + Math.max(...logs.map(l => l.maxGold)) +
     '   Thầy thuốc: tb ' + avg(logs.map(l => l.treats)).toFixed(1) + ' lần, ' + avg(logs.map(l => l.treatGold)).toFixed(0) + ' vàng   Đổi vũ khí khi kẹt: tb ' + avg(logs.map(l => l.swaps)).toFixed(1));
   { const pp = [].concat(...logs.map(l => l.perm || [])); console.log('Thương tật vĩnh viễn cuối chiến dịch: tb ' + avg(pp).toFixed(2) + '/người, nhiều nhất ' + (pp.length ? Math.max(...pp) : 0) + ', tb mỗi trường ' + avg(logs.map(l => (l.perm || []).reduce((a, b) => a + b, 0))).toFixed(1)); }
   console.log('\nTrận chính: lần thử tb | thắng ngay | lượt tới | ngày ở trận | p lúc mới tới | cấp tb khi thắng | giá trị đồ | vàng trong túi | thời lượng');
-  for (let t = 0; t < 4; t++) for (let st = 0; st < 7; st++) {
+  for (let t = 0; t < G.TIERS.length; t++) for (let st = 0; st < 7; st++) {
     const key = t + '.' + st, a = logs.map(l => l.won || l.tier > t || (l.tier === t && l.stage > st) ? l.attempts[key] : null).filter(x => x != null);
     const reached = logs.filter(l => l.attempts[key] != null);
     const f = reached.map(l => l.first[key]);
@@ -324,7 +324,7 @@ function main() {
     console.log(`  ${t + 1}.${st + 1} ${G.CAMPAIGN[t][st].name.padEnd(36)} ${a.length ? avg(a).toFixed(2).padStart(5) : '    -'} | ${f.length ? (Math.round(avg(f) * 100) + '%').padStart(4) : '   -'} | ${String(reached.length).padStart(3)} | ${avg(reached.map(l => l.stageDays[key] || 0)).toFixed(1).padStart(5)} | ${(Math.round(avg(reached.map(l => l.arriveP[key] || 0)) * 100) + '%').padStart(4)} | ${avg(reached.map(l => l.winLvl[key]).filter(x => x != null && !isNaN(x))).toFixed(1).padStart(4)} | ${avg(reached.map(l => l.winGear[key]).filter(x => x != null)).toFixed(0).padStart(5)} | ${avg(reached.map(l => l.winGold[key]).filter(x => x != null)).toFixed(0).padStart(5)} | ${avg([].concat(...reached.map(l => l.fdur[key] || []))).toFixed(0).padStart(3)}s${stuckN ? '  (kẹt lại: ' + stuckN + ', đã thử tb ' + avg(reached.filter(l => !(l.won || l.tier > t || (l.tier === t && l.stage > st))).map(l => l.attempts[key])).toFixed(1) + ')' : ''}`);
   }
   console.log('\nThời lượng trận chính theo hạng (giây, tb | <10s | <12s | >35s):');
-  for (let t = 0; t < 4; t++) {
+  for (let t = 0; t < G.TIERS.length; t++) {
     const d = [].concat(...logs.map(l => l.dur[t]));
     if (!d.length) { console.log('  Hạng ' + (t + 1) + ': -'); continue; }
     console.log('  Hạng ' + (t + 1) + ': ' + avg(d).toFixed(1) + ' | ' + Math.round(d.filter(x => x < 10).length / d.length * 100) + '% | ' + Math.round(d.filter(x => x < 12).length / d.length * 100) + '% | ' + Math.round(d.filter(x => x > 35).length / d.length * 100) + '%   (n=' + d.length + ')');

@@ -50,6 +50,33 @@
   var uidN = 1;
   G.newUid = function (rng) { return 'u' + Math.floor(rng.next() * 1e9).toString(36) + (uidN++); };
 
+  // Nét tính cách (như bản Unity): ít nhất 1 tốt và 1 xấu, nhiều nhất 3 mỗi loại, hai số chênh nhau không quá 1;
+  // hai nét trái ngược nhau không bao giờ đi cùng.
+  var TRAIT_PAIRS = [[1, 1, 40], [2, 1, 15], [1, 2, 15], [2, 2, 18], [3, 2, 4], [2, 3, 4], [3, 3, 4]];
+  G.TRAIT_OPP = { tough: 'sickly', quick: 'slowhand', keen: 'poorsight', darling: 'plain', loyal: 'runaway', frugal: 'glutton', healer: 'brittle', learner: 'lazy', brave: 'coward',
+    fleetfoot: 'slow', supple: 'weakling', thickskin: 'thinskin', steadyhead: 'jumpy', stamina: 'winded', chief: 'unruly', shieldhand: 'clumsy', hardy: 'drunk', lefty: 'rash', bloodthirst: 'proud', broad: 'sullen' };
+  G.traitsClash = function (a, b) { return G.TRAIT_OPP[a] === b || G.TRAIT_OPP[b] === a; };
+  G.rollTraits = function (rng, g) {
+    var pr = TRAIT_PAIRS[rng.weighted(TRAIT_PAIRS.map(function (p) { return p[2]; }))], want = [pr[0], pr[1]], keys = Object.keys(G.TRAITS);
+    g.traits = [];
+    for (var good = 1; good >= 0; good--) {
+      var pool = keys.filter(function (k) { return (G.TRAITS[k].good ? 1 : 0) === good; }), n = want[good ? 0 : 1], guard = 0;
+      while (n > 0 && guard++ < 200) {
+        var k = rng.pick(pool);
+        if (g.traits.indexOf(k) >= 0 || g.traits.some(function (t) { return G.traitsClash(t, k); })) continue;
+        g.traits.push(k); n--;
+      }
+    }
+    return g.traits;
+  };
+
+  // Bốn chỉ số (như bản Unity): giá trị cấp 1 của thân Cân đối và mức tăng mỗi cấp
+  G.STAT0 = { str: 10, agi: 10, hp: 110, sta: 90 };
+  G.STAT_LV = { str: 1, agi: 0.5, hp: 6, sta: 8 };
+  // mang nặng (tổng trọng lượng ÷ Thể lực) làm mất Nhanh nhẹn theo bậc
+  G.LOAD_AGI = [[0.9, 10], [0.8, 8], [0.65, 6], [0.5, 4], [0.35, 2], [0.2, 1]];
+  G.loadAgiLoss = function (load) { for (var i = 0; i < G.LOAD_AGI.length; i++) if (load >= G.LOAD_AGI[i][0]) return G.LOAD_AGI[i][1]; return 0; };
+
   // opts: {tier, talent(bool|id), lvl, quality}
   G.makeGladiator = function (rng, opts) {
     opts = opts || {};
@@ -59,19 +86,16 @@
     var body = ['big', 'bal', 'agi'][rng.weighted(o.body)];
     var B = G.BODY[body];
     var q = opts.quality != null ? opts.quality : rng.range(-1.2, 1.2) + tier * 0.25;
-    function st(base) { return Math.max(1, Math.round(base + q * 0.5 + rng.range(-1.1, 1.1))); }
+    // chỉ số lúc sinh (cấp 1): Sức mạnh / Nhanh nhẹn 10 ± chút, Máu 110, Thể lực 90 (−10%…+15%), lệch theo thể hình và chất lượng
+    function st(off) { return Math.max(5, Math.round((10 + off + rng.pick([-1, -0.5, 0, 0.5, 1, 1.5]) + q * 0.4) * 2) / 2); }
+    function big(base, mul) { return Math.round(base * mul * rng.range(0.9, 1.15) * (1 + q * 0.04)); }
     var g = {
       id: G.newUid(rng), name: rng.pick(o.names), origin: originId, body: body,
-      lvl: 1, xp: 0, str: st(B.str), agi: st(B.agi), vit: st(B.vit),
+      lvl: 1, xp: 0, str: st(B.str), agi: st(B.agi), hp: big(G.STAT0.hp, B.hp), sta: big(G.STAT0.sta, B.sta),
       traits: [], talent: null, cards: [], morale: rng.int(50, 70), fame: 0, wins: 0, kills: 0, fights: 0,
       injuries: [], gear: {}, look: genLook(rng, originId), pending: 0, cardSeed: Math.floor(rng.next() * 1e9)
     };
-    // nét tính cách: 0–2
-    var keys = Object.keys(G.TRAITS), n = rng.weighted([2, 5, 3]);
-    while (g.traits.length < n) {
-      var k = rng.pick(keys);
-      if (g.traits.indexOf(k) < 0) g.traits.push(k);
-    }
+    G.rollTraits(rng, g);
     var wantTalent = opts.talent === true || (opts.talent == null && rng.chance(0.09 + tier * 0.03));
     if (typeof opts.talent === 'string') g.talent = opts.talent;
     else if (wantTalent) g.talent = rng.pick(Object.keys(G.TALENTS));
@@ -87,15 +111,16 @@
   };
 
   // Kẻ địch từ định nghĩa chiến dịch
-  G.makeFoe = function (def, idx, seed) {
+  // mul: { foe: [máu, sát thương], boss: [máu, sát thương] } — hệ số của hạng đấu trường cho trận chính
+  G.makeFoe = function (def, idx, seed, mul) {
     var rng = new Rng(G.hashStr(def.name) + idx * 977 + (seed || 0));
     var B = G.BODY[def.body];
     var x = def.x || {};
-    var grow = (def.lvl - 1) * 0.42;
+    if (mul) { var mm = x.boss ? mul.boss : mul.foe; if (mm && (mm[0] !== 1 || mm[1] !== 1)) { var x2 = {}; for (var xk in x) x2[xk] = x[xk]; x2.hpMul = (x.hpMul || 1) * mm[0]; x2.dmgMul = (x.dmgMul || 1) * mm[1]; x = x2; } if (x.summon && !x.summonMul) { var x3 = {}; for (xk in x) x3[xk] = x[xk]; x3.summonMul = { foe: mul.foe, boss: mul.foe }; x = x3; } }
     var originId = x.origin || rng.pick(Object.keys(G.ORIGINS));
     var g = {
       id: 'foe' + idx, foe: true, name: def.name, origin: originId, body: def.body, lvl: def.lvl, xp: 0,
-      str: B.str + grow, agi: B.agi + grow, vit: B.vit + grow,
+      str: G.STAT0.str + B.str, agi: G.STAT0.agi + B.agi, hp: Math.round(G.STAT0.hp * B.hp), sta: Math.round(G.STAT0.sta * B.sta),
       traits: [], talent: x.talent || null, cards: x.cards || [], morale: 60, fame: 0, wins: 0, kills: 0, fights: 0,
       injuries: [], gear: {}, look: genLook(rng, originId), boss: !!x.boss, x: x
     };
@@ -153,7 +178,7 @@
   };
 
   // ---------------------------------------------------------------- Chỉ số
-  var MOD_KEYS = ['str', 'agi', 'vit', 'hpMul', 'dmgMul', 'aspd', 'moveMul', 'dodge', 'crit', 'appeal', 'cap', 'armorAll',
+  var MOD_KEYS = ['str', 'agi', 'hp', 'sta', 'hpMul', 'dmgMul', 'aspd', 'moveMul', 'dodge', 'crit', 'appeal', 'cap', 'armorAll',
     'upkeepMul', 'xpMul', 'antiBlock', 'deflect', 'netRes', 'steady', 'missileBlock', 'injuryMul', 'moraleFight', 'resist'];
   function addMods(m, src) { if (!src) return; for (var i = 0; i < MOD_KEYS.length; i++) { var k = MOD_KEYS[i]; if (src[k]) m[k] += src[k]; } }
 
@@ -162,33 +187,49 @@
   var SLOT_AFFIX = { body: 'hardy', head: 'steadfast', arms: 'nimble', legs: 'spry' };
   // Gieo một món cho cửa hàng ở hạng đấu trường tier (0..3). Trả về {id, r, aff, fx, ep}.
   G.rollItem = function (rng, id, tier, forceR) {
-    var it = G.ITEMS[id], r = forceR != null ? forceR : rng.weighted(G.RAR_ODDS[Math.max(0, Math.min(3, tier))]), R = G.RAR[r], o = { id: id, r: r };
+    var it = G.ITEMS[id], r = forceR != null ? forceR : G.rollRar(rng, tier), R = G.RAR[r], o = { id: id, r: r };
+    o.q = Math.round(rng.range(R.qLo, R.qHi) * 1000) / 1000;   // chất lượng trong khoảng của độ hiếm (±10%)
+    o.m = rng.int(0, 2);                                         // một trong 3 kiểu dáng của độ hiếm
     if (r > 0) {
       var pool = Object.keys(G.AFFIX).filter(function (k) { return fitsCat(G.AFFIX[k].on, it); });
       rng.shuffle(pool);
       var own = SLOT_AFFIX[it.slot];
       if (own) { pool.splice(pool.indexOf(own), 1); pool.unshift(own); }   // mũ luôn có kháng hiệu ứng, găng có tốc đánh, giày có tốc chạy, giáp thân có máu
       o.aff = pool.slice(0, R.aff);
-      if (R.fx) { var fp = Object.keys(G.EFFECT).filter(function (k) { return G.EFFECT[k].on.indexOf(it.slot) >= 0; }); if (fp.length) o.fx = rng.pick(fp); }
-      if (r === 4) o.ep = rng.int(0, G.LEGEND.length - 1);
+      if (R.fx) {
+        var fp = Object.keys(G.EFFECT).filter(function (k) { return !G.EFFECT[k].minR && G.EFFECT[k].on.indexOf(it.slot) >= 0; }); if (fp.length) o.fx = rng.pick(fp);
+        // Thần khí: chùy luôn mang Đập sọ, song đao luôn mang Hút máu
+        for (var sk in G.EFFECT) if (G.EFFECT[sk].minR && r >= G.EFFECT[sk].minR && G.EFFECT[sk].only === it.kind) o.fx = sk;
+      }
+      if (r >= 4) o.ep = rng.int(0, G.LEGEND.length - 1);
     }
     return o;
   };
-  G.instName = function (inst) { var it = G.itemOf(inst); return it ? it.name + (inst && inst.r === 4 && inst.ep != null ? ' ' + G.LEGEND[inst.ep] : '') : ''; };
-  G.instPrice = function (inst) { var it = G.ITEMS[inst.id]; return Math.round(it.price * G.RAR[inst.r || 0].price); };
+  // kiểu cao nhất mà loại món này có (phụ kiện bậc IV chỉ có một món…)
+  var _mk = null;
+  G.maxKind = function (it) { if (!_mk) { _mk = {}; for (var k in G.ITEMS) { var i2 = G.ITEMS[k], c = i2.slot === 'weapon' ? 'w' : i2.slot; _mk[c] = Math.max(_mk[c] || 0, i2.tier); } } return _mk[it.slot === 'weapon' ? 'w' : it.slot] || 4; };
+  G.rollRar = function (rng, tier) { return rng.weighted(G.RAR_ODDS[Math.max(0, Math.min(G.RAR_ODDS.length - 1, tier))]); };
+  // chất lượng của một món: q đã gieo, hoặc giữa khoảng của độ hiếm
+  G.instQ = function (inst) { return inst && inst.q ? inst.q : G.RAR[(inst && inst.r) || 0].dmg; };
+  G.instName = function (inst) { var it = G.itemOf(inst); return it ? it.name + (inst && inst.r >= 4 && inst.ep != null ? ' ' + G.LEGEND[inst.ep] : '') : ''; };
+  // giá: hệ số độ hiếm, chất lượng cao trong khoảng đắt hơn tới ±10%
+  G.instPrice = function (inst) {
+    var it = G.ITEMS[inst.id], R = G.RAR[inst.r || 0], span = R.qHi - R.qLo, sh = span > 0 && inst.q ? ((inst.q - R.qLo) / span - 0.5) * 0.2 : 0;
+    return Math.round(it.price * R.price * (1 + sh));
+  };
   // Số liệu thật của một món sau độ hiếm và phụ tố (để hiển thị)
   G.instInfo = function (inst) {
-    var it = G.itemOf(inst), R = G.RAR[(inst && inst.r) || 0], o = { dmg: it.dmg, armor: it.armor || 0, wt: it.wt || 0, block: it.block || 0 }, armMul = R.arm, wtMul = R.wt, wd = 1, list = [];
+    var it = G.itemOf(inst), R = G.RAR[(inst && inst.r) || 0], Q = G.instQ(inst), o = { dmg: it.dmg, armor: it.armor || 0, wt: it.wt || 0, block: it.block || 0 }, armMul = Q, wtMul = R.wt, wd = 1, list = [];
     if (inst && inst.aff) inst.aff.forEach(function (a) { if (G.AFFIX[a]) list.push(G.AFFIX[a]); });
     if (inst && inst.fx && G.EFFECT[inst.fx]) list.push(G.EFFECT[inst.fx]);
     list.forEach(function (a) { if (a.armMul) armMul += a.armMul; if (a.wtMul) wtMul += a.wtMul; if (a.block) o.block += a.block; if (a.wdmg) wd += a.wdmg; });
-    if (it.dmg) o.dmg = it.dmg * R.dmg * wd;
-    o.armor *= armMul; o.wt *= wtMul; if (it.block) o.block += R.blk;
+    if (it.dmg) o.dmg = it.dmg * Q * wd;
+    o.armor *= armMul; o.wt = o.wt > 0 ? o.wt * wtMul + R.wtAdd : 0; if (it.block) o.block += R.blk;
     return o;
   };
 
   G.itemOf = function (inst) { return inst ? (inst.id === 'fist' ? FIST : G.ITEMS[inst.id]) : null; };
-  G.weaponOf = function (g) { return g.gear.weapon ? G.ITEMS[g.gear.weapon.id] : FIST; };
+  G.weaponOf = function (g) { if (g.x && g.x.beast) return G.BEAST_W[g.x.beast]; return g.gear.weapon ? G.ITEMS[g.gear.weapon.id] : FIST; };
   G.has = function (g, card) { return g.cards.indexOf(card) >= 0; };
   G.hasTrait = function (g, t) { return g.traits.indexOf(t) >= 0; };
 
@@ -210,7 +251,7 @@
       if (!it) continue;
       // khiên vô dụng nếu vũ khí cần hai tay
       if (s === 'shield' && K.hands === 2) continue;
-      var R = G.RAR[inst.r || 0], armMul = R.arm, wtMul = R.wt, blk = R.blk, fxs = [];
+      var R = G.RAR[inst.r || 0], Q = G.instQ(inst), armMul = Q, wtMul = R.wt, blk = R.blk, fxs = [];
       addMods(m, it);
       if (it.perk) perks[it.perk] = 1;
       if (it.deathMul) deathMul *= it.deathMul;
@@ -223,43 +264,75 @@
         if (af.wdmg) wdmg += af.wdmg; if (af.reach) wreach += af.reach; if (af.pen) wpen += af.pen;
         if (af.spCd) spcd *= af.spCd; if (af.perk) perks[af.perk] = 1; if (af.deathMul) deathMul *= af.deathMul;
       }
-      if (s === 'weapon') { wdmg *= R.dmg; wreach += it.reach || 0; wpen += it.pen || 0; wspd = it.spd || 1; }
-      var wt = (it.wt || 0) * wtMul;
+      if (s === 'weapon') { wdmg *= Q; wreach += it.reach || 0; wpen += it.pen || 0; wspd = it.spd || 1; }
+      var wt = it.wt ? it.wt * wtMul + R.wtAdd : 0;   // càng hiếm càng nặng
       if (fitted && s !== 'weapon' && s !== 'trinket') wt *= 0.8;
       weight += wt;
       if (armor[s] != null) armor[s] += (it.armor || 0) * armMul;
       if (s === 'shield') block = (it.block || 0) + blk;
     }
     if (wdmg !== 1) { var w0 = w; w = {}; for (k in w0) w[k] = w0[k]; w.dmg = w0.dmg * wdmg; }
-    if (g.talent === 'giant') { m.cap += 12; m.hpMul += 0.2; m.dodge -= 0.10; }
+    if (g.talent === 'giant') { m.sta += 36; m.hpMul += 0.2; m.dodge -= 0.10; }
     if (g.talent === 'idol') m.appeal += 4;
     if (g.talent === 'twinborn' && K.hands === 2) m.aspd += 0.15;
-    var str = g.str + m.str, agi = g.agi + m.agi, vit = g.vit + m.vit;
-    var cap = 2 + str * 2.5 + vit * 2 + B.cap + m.cap + (x.capAdd || 0);   // người khỏe và dai sức mới gánh nổi giáp nặng
+    if (g.talent === 'twohand' && K.hands === 2 && !K.beast) m.dmgMul += 0.15;   // mọi món cầm hai tay, kể cả cung, nỏ và găng (như bản Unity)
+    if (g.talent === 'fistmaster' && (w.kind === 'caestus' || w.kind === 'fist')) { m.dmgMul += 0.15; m.dodge += 0.05; }
+    var shIt = g.gear.shield && K.hands !== 2 ? G.itemOf(g.gear.shield) : null, shM = shIt ? shIt.look.m : null, bigShield = !!(shIt && shIt.cls === 'big'), smallShield = !!(shIt && shIt.cls === 'small');
+    if (g.talent === 'parry' && shM && !bigShield) block += 0.08;
+    if (g.talent === 'phalanx' && bigShield) block += 0.05;
+    if (g.talent === 'slippery') { m.netRes += 1; perks.unslowed = 1; }
+    var loadA = g.talent === 'strongman' ? 0 : 1;   // lực sĩ: nặng không làm chậm tay, không làm khó né
+    var lv = g.lvl - 1, L = G.STAT_LV;
+    var str = g.str + lv * L.str + m.str, agiRaw = g.agi + lv * L.agi + m.agi, hpBase = g.hp + lv * L.hp + m.hp;
+    var sta = (g.sta + lv * L.sta + m.sta + (x.capAdd || 0)) * (G.hasTrait(g, 'supple') ? 1.15 : (G.hasTrait(g, 'weakling') ? 0.85 : 1));
+    if (G.hasTrait(g, 'broad')) weight *= 0.85;
+    if (g.foe) sta = Math.max(sta, weight / (g.boss ? 0.19 : 0.5));   // kẻ địch đủ Thể lực cho bộ đồ được thiết kế (trùm không bị chậm)
+    var armK = G.hasTrait(g, 'thickskin') ? 1.15 : (G.hasTrait(g, 'thinskin') ? 0.85 : 1);
+    if (armK !== 1) for (k in armor) armor[k] *= armK;
+    if (block > 0 && G.hasTrait(g, 'shieldhand')) block += 0.06;
+    var cap = sta;   // Thể lực = sức mang
     var load = Math.min(1.3, weight / Math.max(1, cap));
+    var agi = agiRaw - (loadA ? G.loadAgiLoss(load) : 0);   // mang nặng: mất Nhanh nhẹn
     for (k in armor) armor[k] += m.armorAll;
     var mor = g.morale >= 80 ? 1.06 : (g.morale <= 30 ? 0.9 : 1);
     var st = {
-      str: str, agi: agi, vit: vit, cap: cap, weight: weight, load: load,
-      hp: Math.round((70 + vit * 14 + g.lvl * 8) * (1 + m.hpMul) * (x.hpMul || 1)),
-      dmgMul: (1 + (str - 5) * 0.07) * (1 + m.dmgMul) * mor * (x.dmgMul || 1) * (g.talent === 'venator' && (w.kind === 'javelin' || w.kind === 'hasta') ? 1.25 : 1) * (perks.heavy && (w.kind === 'axe' || w.kind === 'trident') ? 1.18 : 1),
-      aspd: Math.max(0.4, (1 + (agi - 5) * 0.05 + m.aspd) * (1 - 0.22 * Math.min(1, load))),
-      move: (2.6 + agi * 0.13) * (1 + m.moveMul) * (1 - 0.4 * Math.min(1, load)) * (x.moveMul || 1),
-      dodge: Math.max(0, Math.min(0.45, (agi * 0.02) * (1 - 0.65 * Math.min(1, load)) + m.dodge)),
+      str: str, agi: agi, agiRaw: agiRaw, sta: sta, cap: cap, weight: weight, load: load,
+      hp: Math.round(hpBase * (1 + m.hpMul) * (x.hpMul || 1)),
+      dmgMul: (1 + (str - 10) * 0.05) * (1 + m.dmgMul) * mor * (x.dmgMul || 1) * (g.talent === 'venator' && (w.kind === 'javelin' || w.kind === 'hasta') ? 1.15 : 1) * (perks.heavy && (w.kind === 'axe' || w.kind === 'trident') ? 1.18 : 1),
+      aspd: Math.max(0.5, 1 + 0.03 * (agi - 10) + m.aspd),
+      move: 3.3 * (1 + 0.015 * (agi - 10)) * (1 + m.moveMul) * (1 - 0.4 * Math.max(0, Math.min(1, (load - 0.25) / 0.75))) * (x.moveMul || 1),
+      dodge: Math.max(0, Math.min(0.30, 0.02 * (agi - 10) + m.dodge)),
       block: block > 0 ? block + (perks.wall ? 0.12 : 0) : 0,
       deflect: m.deflect, missileBlock: m.missileBlock, antiBlock: m.antiBlock,
       crit: Math.max(0, 0.05 + m.crit + (w.kind === 'gladius' ? 0.15 : 0)),
       armor: armor, netRes: Math.min(0.9, m.netRes), steady: Math.min(0.9, m.steady), resist: Math.max(0, Math.min(0.8, m.resist)),
       appeal: Math.max(0, 1 + m.appeal + Math.min(3, Math.floor((g.wins || 0) / 10))),
       upkeepMul: Math.max(0.25, 1 + m.upkeepMul), xpMul: 1 + m.xpMul, injuryMul: 1 + m.injuryMul, moraleFight: m.moraleFight,
-      hasShield: block > 0, weapon: w, kind: w.kind,
-      reach: K.reach + wreach, interval: K.interval * wspd, pen: Math.min(0.95, K.pen + wpen), perks: perks, deathMul: deathMul,
+      hasShield: block > 0, parry: smallShield && block > 0, weapon: w, kind: w.kind,   // khiên nhỏ: đỡ gạt
+      reach: K.reach + wreach, interval: K.interval * wspd, pen: Math.min(0.95, K.pen + wpen), perks: perks, deathMul: deathMul * (G.hasTrait(g, 'hardy') ? 0.5 : 1),
       radius: B.radius * (g.look ? g.look.w : 1),
       spCdMul: (perks.drilled ? 0.65 : 1) * spcd * (g.talent === 'veteran' ? 0.75 : 1) * (x.spCd || 1),
       boss: !!g.boss, enrage: !!x.enrage,
-      wall: !!x.wall,          // khiên che cả hai sườn (chỉ hở sau lưng)
+      wall: !!x.wall || (g.talent === 'phalanx' && bigShield),
+      ccMul: (G.hasTrait(g, 'steadyhead') ? 0.75 : (G.hasTrait(g, 'jumpy') ? 1.25 : 1)) * (1 - (x.ccRes || 0)), ccRes: x.ccRes || 0,   // thời gian choáng / lưới / chậm          // khiên che cả hai sườn (chỉ hở sau lưng)
       crush: x.crush || 0      // phần lực vẫn xuyên qua khi bị khiên chặn
     };
+    // Kỵ binh: ngựa chạy nhanh gấp đôi, thân to khó né, khó bị đẩy lùi, chở được giáp nặng.
+    if (x.mount) { st.cap += 120; st.load = Math.min(1.3, weight / Math.max(1, st.cap)); st.move = 3.3 * (1 + 0.015 * (agiRaw - 10)) * (1 + m.moveMul) * (x.moveMul || 1); }   // con thú gánh giáp, người không bị chậm vì nặng
+    if (x.mount === 'elephant') {   // voi chiến: chậm hơn ngựa, to như bức tường, giẫm nát mọi thứ trên đường
+      st.move *= 1.0; st.radius = 1.05; st.dodge = 0; st.hp = Math.round(st.hp * 2.6); st.steady = 0.92; st.resist = Math.max(st.resist, 0.4); st.mounted = 'elephant';
+    } else if (x.mount) {
+      st.move *= 1.75; st.radius = 0.62; st.dodge = Math.max(0, st.dodge * 0.4);
+      st.hp = Math.round(st.hp * 1.3); st.steady = Math.max(st.steady, 0.6); st.mounted = x.mount;
+    }
+    // Thú: không mặc giáp mà có da lông; gấu to và lì, chó nhỏ và nhanh.
+    if (x.beast) {
+      var A0 = x.armor || 0; for (k in armor) armor[k] = A0;
+      st.beast = x.beast; st.hasShield = false; st.block = 0; st.load = 0;
+      if (x.beast === 'bear') { st.radius = 0.62 * (x.scale || 1); st.reach += st.radius - 0.62; st.steady = Math.max(st.steady, 0.7 + Math.min(0.25, (x.scale || 1) * 0.05)); st.resist = Math.max(st.resist, 0.3); st.dodge = 0; st.move = 3.1 * (x.moveMul || 1) * (x.scale > 2 ? 1.15 : 1); st.crush = Math.max(st.crush, 0.5); }
+      else if (x.beast === 'dog') { st.radius = 0.3; st.move = 4.6 * (x.moveMul || 1); st.dodge = Math.min(0.45, st.dodge + 0.1); }
+      else if (x.beast === 'lion') { st.radius = 0.46 * (x.scale || 1); st.move = 5.0 * (x.moveMul || 1); st.dodge = Math.min(0.45, st.dodge + 0.08); st.steady = Math.max(st.steady, 0.4); st.resist = Math.max(st.resist, 0.15); }
+    }
     st.armorAvg = armor.head * 0.15 + armor.body * 0.45 + armor.arms * 0.18 + armor.legs * 0.22;
     return st;
   };
@@ -285,13 +358,75 @@
   };
 
   // ---------------------------------------------------------------- Giá cả
-  G.gladValue = function (g) {
-    var v = 26 + (g.str + g.agi + g.vit - 15) * 6 + (g.lvl - 1) * 24 + (g.lvl - 1) * (g.lvl - 1) * 4;
-    for (var i = 0; i < g.traits.length; i++) v += G.TRAITS[g.traits[i]].good ? 9 : -8;
-    if (g.talent) v = v * 1.35 + 45;
-    for (i = 0; i < g.injuries.length; i++) v *= g.injuries[i].perm ? 0.75 : 0.9;
-    return Math.max(8, Math.round(v));
+  // Định giá đấu sĩ = giá trị chiến đấu + giá trị kinh tế, rồi trừ thương tật.
+  //  • Chiến đấu: mọi thứ quy về ĐCT (điểm chỉ số tương đương: 1 ĐCT = sức của +1 điểm chỉ số trung bình),
+  //    đo bằng mô phỏng ghép cặp (tools/value.js). Tổng ĐCT lệch so với nô lệ chuẩn đổi thành "cấp hiệu dụng",
+  //    rồi tra bảng giá theo cấp — nên một điểm chỉ số ở cấp 9 đắt hơn ở cấp 1, đúng như sức kiếm tiền của nó.
+  //  • Kinh tế: vàng hắn làm ra / tốn đi trong thời gian thường được giữ (phí nuôi, sức hút, kinh nghiệm,
+  //    chấn thương, cái chết, bỏ trốn), đo từ bot chơi trọn chiến dịch (tools/bot.js).
+  G.VAL = {
+    STAT: { str: 1.0, agi: 0.5, hp: 3.85, sta: 0.2 },   // ĐCT mỗi điểm Sức mạnh / Nhanh nhẹn, mỗi 30 Máu, mỗi 10 Thể lực
+    REF: 0.5,         // ĐCT chỉ số của nô lệ chuẩn (thân cân đối 5,3/5,3/5,3 ≈ 16), chọn để giá trung bình ở chợ giữ gần như cũ
+    LVL: 3.8,          // một cấp = chỉ số tăng theo cấp (≈2,4) + một thẻ trung bình (≈1,6) ĐCT; 1 ĐCT = sức của +1 Sức mạnh
+    CARD: 1.6,         // ĐCT của thẻ trung bình (thẻ thật được tính theo 'esp' của nó)
+    // theo hạng đấu trường (suy từ cấp): số ngày giữ người đã chiết khấu ×0,6, trận/người/ngày,
+    // tỉ lệ thắng mà còn đứng (mới được tiền khán giả), vàng khán giả mỗi điểm sức hút, cấp lên/người/ngày,
+    // vết thương tạm/người/ngày, thương tật vĩnh viễn/người/ngày, chết/người/ngày, vàng làm ra/người/ngày, số người trong trường
+    H: [17, 14, 11, 7], FIGHT: [0.74, 0.77, 0.82, 0.80], ALIVEWIN: [0.66, 0.62, 0.60, 0.51], APPEAL: [2, 3, 4, 4],
+    UPS: [0.23, 0.28, 0.29, 0.25], TEMP: [0.068, 0.099, 0.103, 0.132], TEMP_DAYS: 4.2, PERM: [0.010, 0.011, 0.016, 0.016],
+    DEATH: [0.0076, 0.0105, 0.0107, 0.0118], EARN: [25, 45, 92, 108], ROSTER: [2.9, 3.9, 4.9, 5.8],
+    INJ_DAY: 0.15,     // một ngày mang vết thương mất ~15% số vàng một người làm ra (thường có người dự bị thay); A/B 150 chiến dịch không thấy khác biệt lớn hơn
+    XP_USE: 0.5,       // nửa số kinh nghiệm thêm bị trần cấp của hạng nuốt mất
+    DESERT: { proud: 0.0015, sullen: 0.0005, loyal: -0.0003, runaway: 0.0012, unruly: 0.0008 },
+    SPEND: [6, 15, 35, 60],   // vàng tiêu ở lò rèn mỗi ngày (để định giá Lái buôn)   // bỏ trốn thêm/ngày so với người thường
+    UPKEEP: [0.75, 1.25, 2.0, 2.7]   // hệ số phí nuôi của bốn mức cấp (cấp 1–2, 3–5, 6–8, 9+)
   };
+  G.lvlTier = function (lvl) { return lvl >= 9 ? 3 : lvl >= 6 ? 2 : lvl >= 3 ? 1 : 0; };
+  // Bảng giá theo cấp (cấp có thể lẻ). Dưới cấp 1 giảm dần theo hàm mũ (cùng độ dốc tại cấp 1) để kẻ yếu không dồn cả về giá sàn.
+  G.lvlPrice = function (L) { var d = L - 1; return d >= 0 ? 26 + 24 * d + 4 * d * d : 26 * Math.exp(d * 24 / 26); };
+  G.gladValueParts = function (g) {
+    var V = G.VAL, i, t = G.lvlTier(g.lvl), H = V.H[t];
+    // --- chiến đấu
+    var espStat = (g.str - 10) * V.STAT.str + (g.agi - 10) * V.STAT.agi + (g.hp - 110) / 30 * V.STAT.hp + (g.sta - 90) / 10 * V.STAT.sta - V.REF;
+    var espTrait = 0, espTalent = g.talent ? (G.TALENTS[g.talent].esp || 0) : 0, espCard = 0;
+    for (i = 0; i < g.traits.length; i++) espTrait += G.TRAITS[g.traits[i]].esp || 0;
+    for (i = 0; i < g.cards.length; i++) espCard += (G.CARDS[g.cards[i]].esp || 0) - V.CARD;
+    var esp = espStat + espTrait + espTalent + espCard;
+    var effLvl = g.lvl + esp / V.LVL, combat = G.lvlPrice(effLvl), base = G.lvlPrice(g.lvl);
+    // --- kinh tế
+    var m = { upkeepMul: 0, appeal: 0, xpMul: 0, injuryMul: 0 };
+    var src = g.traits.map(function (t) { return G.TRAITS[t]; }).concat(g.cards.map(function (c) { return G.CARDS[c]; }));
+    for (i = 0; i < src.length; i++) for (var k in m) if (src[i][k]) m[k] += src[i][k];
+    if (g.talent === 'idol') m.appeal += 4;
+    var econ = {};
+    var upk = (1.5 + g.lvl * 0.5) * V.UPKEEP[t];
+    econ.upkeep = -m.upkeepMul * upk * H;
+    var units = (1 + m.appeal) * (g.talent === 'idol' ? 2 : 1) - 1;   // điểm sức hút ra tiền thêm so với người thường
+    econ.appeal = units * V.APPEAL[t] * V.FIGHT[t] * V.ALIVEWIN[t] * H;
+    var deathRatio = Math.max(0.5, 1 - 0.06 * (1 + m.appeal)) / 0.94;   // sức hút làm khán giả tha mạng
+    var lvlStep = G.lvlPrice(g.lvl + 1) - base;
+    econ.xp = m.xpMul * V.UPS[t] * H * V.XP_USE * lvlStep;
+    var injCost = V.TEMP[t] * H * V.TEMP_DAYS * V.INJ_DAY * V.EARN[t];   // giá của vết thương tạm trong cả thời gian giữ
+    econ.injury = -m.injuryMul * (injCost + V.PERM[t] * H * 0.25 * combat);
+    if (G.hasTrait(g, 'healer')) econ.injury += 0.5 * injCost;
+    var deathMul = deathRatio * (g.talent === 'survivor' ? 0.35 : 1) * (G.hasTrait(g, 'hardy') ? 0.5 : 1);   // kẻ sống sót không chết khi đội thắng (≈65% số cái chết)
+    econ.death = (1 - deathMul) * V.DEATH[t] * H * combat;
+    var desert = 0; for (i = 0; i < g.traits.length; i++) desert += V.DESERT[g.traits[i]] || 0;
+    econ.desert = -desert * H * combat;
+    var R = V.ROSTER[t];
+    if (g.talent === 'medicus') econ.team = R * (0.5 * injCost + 0.3 * V.DEATH[t] * H * base);
+    else if (g.talent === 'doctore') econ.team = R * 0.25 * V.UPS[t] * H * V.XP_USE * lvlStep;
+    else if (g.talent === 'merchant') econ.team = 0.14 * V.SPEND[t] * H;
+    var eco = 0; for (k in econ) eco += econ[k];
+    // Khoản lỗ không thể vượt quá giá trị đánh trận: chủ sẽ bán hắn sớm thay vì nuôi lỗ mãi → lỗ bị chặn mềm ở 60% giá chiến đấu.
+    if (eco < 0) eco = -0.6 * combat * (1 - Math.exp(eco / (0.6 * combat)));
+    // --- thương tật
+    var injMul = 1;
+    for (i = 0; i < g.injuries.length; i++) injMul *= g.injuries[i].perm ? 0.75 : 0.9;
+    var total = Math.max(8, Math.round((combat + eco) * injMul));
+    return { esp: esp, espStat: espStat, espTrait: espTrait, espTalent: espTalent, espCard: espCard, effLvl: effLvl, combat: combat, econ: econ, eco: eco, injMul: injMul, total: total };
+  };
+  G.gladValue = function (g) { return G.gladValueParts(g).total; };
   G.upkeepOf = function (g, tier, relics) {
     var st = G.calcStats(g);
     var u = (1.5 + g.lvl * 0.5) * G.TIERS[tier].upkeepMul * st.upkeepMul;

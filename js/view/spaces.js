@@ -21,7 +21,7 @@
       var env = V.getEnv('arena', tier, function () { return V.fallbackEnv({ pos: [0, 13.5, 14.5], look: [0, 0.6, 0.5], fov: 36 }); });
       // đấu trường càng cao thì nắng càng phải đứng hơn, nếu không khán đài che hết mặt cát
       if (env.sun && tier >= 1) {
-        var el = [0, 0.6, 0.76, 0.93][tier], sp = env.sun.position, d = sp.length(), az = Math.atan2(sp.x, sp.z);
+        var el = [0, 0.6, 0.76, 0.66, 0.93][tier], sp = env.sun.position, d = sp.length(), az = Math.atan2(sp.x, sp.z);
         sp.set(Math.sin(az) * Math.cos(el) * d, Math.sin(el) * d, Math.cos(az) * Math.cos(el) * d);
       }
       st = this.stages[tier] = V.makeStage(env);
@@ -59,13 +59,13 @@
   arena.idle = function (tier) { this.build(tier); this.stop(); this.mode = 'idle'; this.demo(); };
   arena.demo = function () {
     var rng = new G.Rng((Math.random() * 1e9) | 0), kinds = ['gladius', 'sica', 'mace', 'hasta', 'trident', 'twin', 'axe', 'javelin', 'caestus', 'bow', 'crossbow'];
-    var t = this.tier, wt = t + 1, armor = [['b_harness'], ['b_leather', 'h_legion'], ['b_linen', 'h_galea', 'l_ocrea'], ['b_hamata', 'h_murmillo', 'l_ocrea', 'a_scale']][t];
+    var t = this.tier, gt = G.TIERS[t].gear - 1, wt = gt + 1, armor = [['b_harness'], ['b_leather', 'h_legion'], ['b_linen', 'h_galea', 'l_ocrea'], ['b_hamata', 'h_murmillo', 'l_ocrea', 'a_scale']][gt];
     var shields = ['s_plank', 's_parma', 's_hoplon', 's_scutum'];
     function team(n, off) {
       var o = [];
       for (var i = 0; i < n; i++) {
         var k = rng.pick(kinds), gear = armor.slice(0, rng.int(0, armor.length));
-        if (G.WKIND[k].hands === 1 && rng.chance(0.6)) gear.push(shields[t]);
+        if (G.WKIND[k].hands === 1 && rng.chance(0.6)) gear.push(shields[gt]);
         var d = G.e('Demo', rng.pick(['big', 'bal', 'agi']), G.TIERS[t].lvl + 1, k + wt, gear, G.WKIND[k].ranged ? 1 : 0, [2, 1, 3][i]);
         o.push({ g: G.makeFoe(d, i + off, rng.int(1, 1e6)), c: d.c, r: d.r });
       }
@@ -165,7 +165,7 @@
   shop.show = function (list, relic) { this.list = list; this.relic = relic; if (this.scene) this.sync(); };
   shop.sync = function () {
     var list = this.list || [], relic = this.relic, i;
-    var key = list.map(function (o) { return o.id + ':' + (o.r || 0) + (o.sold ? 'x' : ''); }).join(',') + '|' + (relic ? relic.id + (relic.sold ? 'x' : '') : '');
+    var key = list.map(function (o) { return o.id + ':' + (o.r || 0) + '.' + (o.m || 0) + (o.sold ? 'x' : ''); }).join(',') + '|' + (relic ? relic.id + (relic.sold ? 'x' : '') : '');
     if (key === this.key) return; this.key = key;
     for (i = 0; i < this.objs.length; i++) { var o = this.objs[i]; this.scene.remove(o.grp); this.scene.remove(o.proxy); o.grp.traverse(function (m) { if (m.geometry) m.geometry.dispose(); }); }
     this.objs = [];
@@ -204,7 +204,7 @@
       var arr = sl[cat], slot = arr[used[cat]]; if (!slot) { slot = sl.armor[used.armor]; cat = 'armor'; if (!slot) continue; }
       used[cat]++;
       if (list[i].sold) continue;   // ô của món đã bán để trống; các món khác đứng yên tại ô của mình
-      var grp = V.Gear.display(it, 0, list[i].r || 0);
+      var grp = V.Gear.display(it, 0, list[i].r || 0, list[i].m || 0);
       if (slot.flat) putFlat(grp, slot, i, it);
       else { grp.scale.setScalar(1.2); if (it.slot === 'weapon') grp.rotation.z = PI / 2; put(grp, slot, false, i); }
     }
@@ -254,7 +254,56 @@
     return grp;
   };
 
-  // =================================================================== PHÒNG CHỜ
+  // =================================================================== PHÒNG CHỜ (phòng đá): xem đội, chọn người ra trận
+  var lobby = V.lobby = V.spaces.lobby = { figs: [], key: '', sel: null, data: null, onPick: null, onHover: null, hk: '' };
+  lobby.build = function () {
+    if (this.scene) return;
+    var env = V.getEnv('lobby', 0, function () { return V.fallbackEnv({ pos: [0, 2.35, 6.3], look: [0, 1.25, -1.2], fov: 42 }); });
+    var st = V.makeStage(env);
+    this.scene = st.scene; this.camera = st.camera; this.env = st.env; this.fov = st.fov;
+  };
+  lobby.show = function (d) { this.data = d; if (this.scene && V.cur === this) this.sync(); };
+  lobby.sync = function () {
+    var d = this.data; if (!d) return;
+    var key = d.roster.map(function (g) { return g.id + ':' + G.SLOTS.map(function (s) { return g.gear[s] ? g.gear[s].id + (g.gear[s].r || '') + (g.gear[s].m || '') : ''; }).join('/') + ':' + (d.form[g.id] ? 1 : 0) + ':' + g.injuries.length; }).join(',');
+    if (key === this.key) { this.select(this.sel); return; }
+    this.key = key;
+    var i; for (i = 0; i < this.figs.length; i++) { this.figs[i].fig.dispose(); this.scene.remove(this.figs[i].proxy); }
+    this.figs = [];
+    var sp = this.env.spots || { field: [], bench: [] }, nf = 0, nb = 0, self = this;
+    var fielded = d.roster.filter(function (g) { return d.form[g.id]; }), resv = d.roster.filter(function (g) { return !d.form[g.id]; });
+    var off = (6 - fielded.length) / 2;
+    function add(g, x, z, face, state) {
+      var fig = V.makeFig(g, 0); fig.state = state; self.scene.add(fig.group); fig.place(x, z, face);
+      var px = new T.Mesh(new T.CylinderGeometry(0.45, 0.45, 1.95, 6), invis); px.position.set(x, 0.98, z); px.userData = { type: 'glad', id: g.id }; self.scene.add(px);
+      self.figs.push({ type: 'glad', id: g.id, fig: fig, proxy: px });
+    }
+    fielded.forEach(function (g) { var p = sp.field[Math.min(5, Math.round(off + nf++))] || { x: 0, z: 0 }; add(g, p.x, p.z, 0, 'stance'); });
+    resv.forEach(function (g) { var p = sp.bench[nb++ % Math.max(1, sp.bench.length)] || { x: 4, z: -2 }; add(g, p.x, p.z, p.ry || 0, 'stand'); });
+    this.select(this.sel);
+  };
+  lobby.enter = function () { this.build(); V.cur = this; this.sync(); };
+  lobby.select = function (id) { this.sel = id; for (var i = 0; i < this.figs.length; i++) { var f = this.figs[i], on = f.id === id; if (f.fig.setSelected) f.fig.setSelected(on); if (f.fig.setRingVisible) f.fig.setRingVisible(on); } };   // vòng sáng chỉ dưới chân người đang chọn
+  lobby.update = function (dt) { if (this.env.update) this.env.update(V.time, dt); for (var i = 0; i < this.figs.length; i++) A.update(this.figs[i].fig, dt); };
+  lobby.pickAt = function (ray) {
+    if (!ray) return null;
+    var h = ray.intersectObjects(this.figs.map(function (f) { return f.proxy; }), false);
+    return h.length ? h[0].object.userData : null;
+  };
+  lobby.hover = function (ray, x, y) {
+    var p = this.pickAt(ray), k = p ? p.id : '';
+    if (k !== this.hk || p) { this.hk = k; if (this.onHover) this.onHover(p, x, y); }
+    V.canvas.style.cursor = p ? 'pointer' : '';
+  };
+  lobby.click = function (ray) { var p = this.pickAt(ray); if (p && this.onPick) this.onPick(p); };
+  var lp3 = new T.Vector3(), ls3 = { x: 0, y: 0, behind: false };
+  lobby.anchors = function () {
+    var out = []; if (V.cur !== this) return out;
+    for (var i = 0; i < this.figs.length; i++) { var f = this.figs[i]; f.fig.headTop(lp3); lp3.y += 0.12; V.project(lp3, ls3); if (!ls3.behind) out.push({ i: 'hd' + f.id, x: ls3.x, y: ls3.y }); }
+    return out;
+  };
+
+  // =================================================================== DÀN QUÂN (nửa đấu trường có lưới)
   var ready = V.ready = V.spaces.ready = { figs: [], key: '', sel: null, data: null, onPick: null, onHover: null, hoverCell: -1, stages: {}, tier: -1 };
   ready.build = function (tier) {
     tier = tier == null ? (this.tier < 0 ? 0 : this.tier) : tier;
@@ -263,10 +312,9 @@
     this.figs = []; this.key = '';
     var st = this.stages[tier];
     if (!st) {
-      var env = V.getEnv('ready', tier, function () {
-        var bench = []; for (var i = 0; i < 8; i++) bench.push({ x: -8.3 + i * 0.9, z: -4.1, ry: 0 });
-        return V.fallbackEnv({ pos: [-0.8, 9.6, 11.8], look: [-0.4, 0.7, 0], fov: 38 }, { bench: bench });
-      });
+      // dàn quân ngay trên sân đấu của đấu trường hiện tại: lưới nằm trên cát phía đội ta, địch đứng phía bên kia
+      var env = V.getEnv('arena', tier, function () { return V.fallbackEnv({ pos: [-1.2, 10.5, 11.5], look: [-0.6, 0.4, 0], fov: 40 }); });
+      env.cam = { pos: [-1.2, 10.5, 11.5], look: [-0.6, 0.4, 0], fov: 40 }; env.bench = [];
       st = this.stages[tier] = V.makeStage(env);
       st.cells = [];
       for (var c = 0; c < G.GRID.cols; c++) for (var r = 0; r < G.GRID.rows; r++) {
@@ -298,14 +346,14 @@
     this.figs = [];
     var bi = 0, self = this;
     function add(g, team, x, z, face, state, info) {
-      var fig = new V.Figure(g, team); fig.state = state; self.scene.add(fig.group); fig.place(x, z, face);
+      var fig = V.makeFig(g, team); fig.state = state; self.scene.add(fig.group); fig.place(x, z, face);
       var px = new T.Mesh(new T.CylinderGeometry(0.45, 0.45, 1.95, 6), invis); px.position.set(x, 0.98, z); px.userData = info; self.scene.add(px);
       info.fig = fig; info.proxy = px; self.figs.push(info);
     }
     for (i = 0; i < d.roster.length; i++) {
       var g = d.roster[i], f = d.form[g.id];
       if (f) { var p = G.cellPos(0, f[0], f[1]); add(g, 0, p.x, p.z, PI / 2, 'stance', { type: 'glad', id: g.id }); }
-      else { var nb = this.env.bench.length, b = this.env.bench[nb - 1 - (bi++ % nb)]; /* lấp từ phía cổng vào để không bị bảng giao diện che */ add(g, 0, b.x, b.z, b.ry || 0, 'stand', { type: 'glad', id: g.id }); }
+      else if (this.env.bench && this.env.bench.length) { var nb = this.env.bench.length, b = this.env.bench[nb - 1 - (bi++ % nb)]; /* lấp từ phía cổng vào để không bị bảng giao diện che */ add(g, 0, b.x, b.z, b.ry || 0, 'stand', { type: 'glad', id: g.id }); }   // ngoài sân chỉ hiện người ra trận
     }
     if (d.foes) for (i = 0; i < d.foes.length; i++) { var o = d.foes[i], q = G.cellPos(1, o.c, o.r); add(o.g, 1, q.x, q.z, -PI / 2, 'stance', { type: 'foe', idx: i }); }
     this.select(this.sel);

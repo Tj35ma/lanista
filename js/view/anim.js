@@ -165,7 +165,7 @@
   function Clip(fig) { this.fig = fig; this.keys = [{ t: 0, p: clonePose(fig.cur), ease: 'lin' }]; this.t = 0; this.i = 0; this.wins = []; }
   // nút đang vung (wR / wL / hand0 / hand1) tại thời điểm hiện tại của clip, hoặc null
   A.strikeNode = function (fig) {
-    var c = fig.clip; if (!c || fig.dead) return null;
+    var c = fig.clip; if (!c || fig.dead || fig.beast) return null;
     for (var i = 0; i < c.wins.length; i++) if (c.t >= c.wins[i].t0 && c.t <= c.wins[i].t1) return c.wins[i].node;
     return null;
   };
@@ -275,6 +275,7 @@
 
   A.attack = function (fig, ev, tf) {
     if (fig.dead) return;
+    if (fig.beast) return fig.attack(ev);
     var kind = ev.kind, sp = ev.special, c, wu = ev.windup, rec = Math.max(0.26, ev.recover), h0 = ev.hits[0];
     if (sp === 'net') {
       c = new Clip(fig);
@@ -339,10 +340,11 @@ c.k(wu + 0.16, { rh: [0.3, 1.08, 0.3], rd: [0.92, -0.08, 0.38], hr: [0.3, 0.1, 0
 
   // ---------------------------------------------------------------- Trạng thái và phản ứng
   A.setState = function (fig, st) { if (fig.dead) return; fig.state = st; };
-  A.cancel = function (fig) { if (fig.clip && !fig.dead) fig.clip = null; };
-  A.react = function (fig, type, o) { if (fig.dead) return; o = o || {}; o.type = type; o.t = 0; fig.rx.push(o); };
+  A.cancel = function (fig) { if (fig.beast) return fig.cancel(); if (fig.clip && !fig.dead) fig.clip = null; };
+  A.react = function (fig, type, o) { if (fig.dead) return; if (fig.beast) return fig.react(type, o); o = o || {}; o.type = type; o.t = 0; fig.rx.push(o); };
   A.die = function (fig, from) {
     if (fig.dead) return;
+    if (fig.beast) return fig.die(from);
     fig.toBase(from || tv.set(fig.base.x, 0, fig.base.z + 1), arr);
     var back = arr[2] >= 0;   // kẻ đánh ở phía trước → ngã ngửa
     var c = new Clip(fig), side = (Math.random() < 0.5 ? 1 : -1) * 0.25;
@@ -400,9 +402,15 @@ c.k(wu + 0.16, { rh: [0.3, 1.08, 0.3], rd: [0.92, -0.08, 0.38], hr: [0.3, 0.1, 0
   }
 
   // ---------------------------------------------------------------- Mỗi khung hình
-  var TG = null;
+  var TG = null, MOUNT_FEET = [[-0.27, 0.1, 0.1], [0.27, 0.1, -0.1]];
   A.update = function (fig, dt) {
+    if (fig.beast) return fig.update(dt);
     var b = fig.base, D = fig.D, S = D.S, R = fig.R, i;
+    if (fig.horse) {   // kỵ sĩ: ngựa chạy theo, người ngồi trên yên, ngựa ngã thì người rơi xuống đất
+      fig.horse.update(b.x, b.z, b.face, dt, fig.dead, fig.state === 'stun' || fig.state === 'net');
+      var sy = fig.mount === 'elephant' ? fig.horse.saddleY() : fig.horse.saddleY() - fig.stance.hip[1] + 0.04;   // trên voi: đứng trong tháp
+      fig.y0 = fig.dead ? Math.max(0, fig.y0 - dt * 2.2) : sy;
+    }
     fig.time += dt;
     // vận tốc thân
     if (dt > 0) {
@@ -436,7 +444,7 @@ c.k(wu + 0.16, { rh: [0.3, 1.08, 0.3], rd: [0.92, -0.08, 0.38], hr: [0.3, 0.1, 0
       if (fig.state === 'net' && !fig.clip) { R.ch[0] += Math.sin(t * 9) * 0.1; R.rh[0] += Math.sin(t * 11) * 0.04; R.lh[0] += Math.cos(t * 10) * 0.04; }
       applyReactions(fig, R, dt);
     }
-    fig.stepFeet(dt, [R.rf, R.lf]);
+    if (fig.horse && !fig.dead) fig.stepFeet(dt, fig.mount === 'elephant' ? [R.rf, R.lf] : MOUNT_FEET, true); else fig.stepFeet(dt, [R.rf, R.lf]);
     // tay → thế giới
     var H = fig.hand;
     fig.toWorld(R.rh[0], R.rh[1], R.rh[2], H[0].p); fig.dirToWorld(R.rd, H[0].d).normalize(); fig.dirToWorld(R.rhint, H[0].hint); fig.dirToWorld(R.rp, H[0].pole);

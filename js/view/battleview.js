@@ -27,9 +27,9 @@
     this.fx = new V.Fx(scene); this.sched = []; this.acc = 0; this.clock = 0; this.running = false; this.figs = []; this.bars = []; this.trails = []; this.drops = []; this.onShake = opts.onShake || null;
     var self = this;
     for (var i = 0; i < battle.f.length; i++) {
-      var f = battle.f[i], fig = new V.Figure(f.g, f.team);
+      var f = battle.f[i], fig = V.makeFig(f.g, f.team);
       scene.add(fig.group);
-      if (opts.intro) fig.place((f.team === 0 ? -1 : 1) * 8.3, f.z * 0.3, f.face); else fig.place(f.x, f.z, f.face);
+      if (opts.intro) fig.place((f.team === 0 ? -1 : 1) * 8.3, f.z * 0.3, f.ride ? f.hd : f.face); else fig.place(f.x, f.z, f.ride ? f.hd : f.face);
       fig.onStep = function (pos, s, yaw) { self.fx.print(pos, yaw); if (s > 2.4) self.fx.puff(pos, 1, 0.45); if (s > 1 && !self.quiet && Math.random() < 0.5) snd('step', { vol: 0.35, pitch: 0.85 + Math.random() * 0.3 }); };
       this.figs.push(fig);
     }
@@ -38,13 +38,21 @@
   }
   V.BattleView = BattleView;
 
-  BattleView.prototype.makeBars = function () {
-    for (var i = 0; i < this.b.f.length; i++) {
-      var f = this.b.f[i], el = document.createElement('div');
-      el.className = 'hpb t' + f.team + (f.st.boss ? ' boss' : '');
-      el.innerHTML = '<b>' + f.name + '</b><i style="width:100%"></i>';
-      V.overlay.appendChild(el); this.bars.push({ el: el, bar: el.querySelector('i'), hp: -1 });
-    }
+  BattleView.prototype.makeBars = function () { for (var i = 0; i < this.b.f.length; i++) this.makeBar(this.b.f[i]); };
+  BattleView.prototype.makeBar = function (f) {
+    var el = document.createElement('div');
+    el.className = 'hpb t' + f.team + (f.st.boss ? ' boss' : '');
+    el.innerHTML = '<b>' + f.name + '</b><i style="width:100%"></i>';
+    V.overlay.appendChild(el); this.bars.push({ el: el, bar: el.querySelector('i'), hp: -1 });
+  };
+  // viện binh của trùm chạy ra từ cổng
+  BattleView.prototype.on_spawn = function (ev) {
+    var self = this, f = this.b.f[ev.id], fig = V.makeFig(f.g, f.team);
+    this.scene.add(fig.group); fig.place(f.x, f.z, f.ride ? f.hd : f.face);
+    fig.onStep = function (pos, s, yaw) { self.fx.print(pos, yaw); if (s > 2.4) self.fx.puff(pos, 1, 0.45); };
+    this.figs[ev.id] = fig;
+    if (!this.quiet && V.overlay) { style(); this.makeBar(f); }
+    this.fx.puff(p2.set(f.x, 0, f.z), 6, 1.0);
   };
   BattleView.prototype.float = function (fig, text, cls, dy) {
     if (this.quiet || !V.overlay) return;
@@ -69,8 +77,9 @@
     if (this.introT >= 0) { this.introT += dt; iu = V.smooth(Math.min(1, this.introT / this.introDur)); if (this.introT >= this.introDur + 0.3) { this.introT = -1; this.running = true; } }
     for (i = 0; i < this.figs.length; i++) {
       var f = b.f[i], fig = this.figs[i];
-      if (iu < 1) { var gx = (f.team === 0 ? -1 : 1) * 8.3, gz = f.z * 0.3; fig.setBase(gx + (f.x - gx) * iu, gz + (f.z - gz) * iu, f.face); }
-      else fig.setBase(f.x, f.z, f.face);
+      var face = f.ride ? f.hd : f.face; if (f.rush && f.rush.spin) face += f.rush.spin;   // kỵ sĩ ngồi thẳng theo hướng ngựa chạy
+      if (iu < 1) { var gx = (f.team === 0 ? -1 : 1) * 8.3, gz = f.z * 0.3; fig.setBase(gx + (f.x - gx) * iu, gz + (f.z - gz) * iu, face); }
+      else fig.setBase(f.x, f.z, face);
       if (f.alive) A.setState(fig, f.stun > 0 ? 'stun' : (f.net > 0 ? 'net' : (this.won === f.team ? 'win' : 'stance')));
       A.update(fig, dt);
       var sn = A.strikeNode(fig);
@@ -102,11 +111,13 @@
     ev.length = 0;
   };
 
+  var SPN = { pila: 'Pilum', drag: 'Móc kéo', maul: 'Vồ', hamstring: 'Đớp gân' };
   BattleView.prototype.on_attack = function (ev) {
     var self = this, a = this.figs[ev.a], d = this.figs[ev.d], K = G.WKIND[ev.kind];
     A.attack(a, ev, d);
-    var missile = (K.ranged && !ev.melee) || ev.special === 'pin';
-    if (ev.special) this.float(a, K.special.name, 'sp', 0.2);
+    var missile = (K.ranged && !ev.melee) || ev.special === 'pin' || ev.special === 'pila';
+    if (ev.special) this.float(a, SPN[ev.special] || K.special.name, 'sp', 0.2);
+    if (ev.special === 'maul' || ev.special === 'drag') snd('swingHeavy', vary());
     var heavy = ev.kind === 'axe' || ev.kind === 'mace';
     ev.hits.forEach(function (h) {
       self.at(h.at - 0.11, function () { if (!a.dead) snd(heavy ? 'swingHeavy' : 'swing', vary()); });
@@ -166,11 +177,25 @@
     if (ev.type === 'stun') { this.float(fig, 'Choáng', 'bad', 0.15); snd('stun'); }
     else if (ev.type === 'net') { this.fx.drape(fig, ev.dur); this.float(fig, 'Dính lưới', 'bad', 0.15); }
     else if (ev.type === 'bleed') this.float(fig, 'Chảy máu', 'bad', 0.15);
+    else if (ev.type === 'poison') this.float(fig, 'Trúng độc', 'bad', 0.15);
+    else if (ev.type === 'skull') { this.float(fig, 'ĐẬP SỌ', 'crit', 0.25); if (this.onShake) this.onShake(0.06); }
     else if (ev.type === 'shieldoff') { this.float(fig, 'Khiên bị ghim', 'bad', 0.15); A.react(fig, 'hooked', {}); }
     else if (ev.type === 'enrage') { this.float(fig, 'NỔI ĐIÊN', 'crit', 0.2); snd('enrage'); if (fig.ring) fig.ring.material.color.set(0xff3a1a); this.cheer(0.8); }
     else if (ev.type === 'heal') this.float(fig, '+' + Math.round(ev.amount), 'heal', 0.1);
     else if (ev.type === 'survive') this.float(fig, 'Chưa chịu chết', 'sp', 0.15);
     else if (ev.type === 'guard') this.float(fig, 'Tỉnh đòn', 'sp', 0.15);
+    else if (ev.type === 'howl') { this.float(fig, (this.b.f[ev.id].st.beast ? 'HÚ' : 'GẦM THÉT') + ' +' + ev.pct + '%', 'crit', 0.25); snd('enrage'); if (fig.roar) fig.roar(); else A.react(fig, 'flinch', { power: 0.6 }); if (this.onShake) this.onShake(0.08); this.cheer(0.6); }
+    else if (ev.type === 'sunder') this.float(fig, 'Móp giáp −' + ev.n * 15 + '%', 'bad', 0.15);
+    else if (ev.type === 'crack') this.float(fig, 'Nứt khiên −' + ev.n * 12 + '%', 'bad', 0.15);
+    else if (ev.type === 'cover') this.float(fig, 'Đỡ thay', 'small', 0.15);
+    else if (ev.type === 'slip') this.float(fig, 'Tuột lưới', 'sp', 0.15);
+    else if (ev.type === 'whirl') { this.float(fig, 'CHÉM XOAY', 'crit', 0.3); snd('enrage'); if (this.onShake) this.onShake(0.1); this.cheer(0.8); }
+    else if (ev.type === 'charge') { this.float(fig, 'XUNG PHONG', 'crit', 0.3); snd('enrage'); if (fig.roar) fig.roar(); if (this.onShake) this.onShake(0.1); this.cheer(0.7); }
+    else if (ev.type === 'summon') { this.float(fig, 'GỌI VIỆN BINH', 'sp', 0.3); snd('enrage'); if (fig.roar) fig.roar(); this.cheer(0.8); }
+    else if (ev.type === 'roar') { this.float(fig, 'GẦM', 'crit', 0.25); snd('enrage'); if (fig.roar) fig.roar(); if (this.onShake) this.onShake(0.12); this.cheer(0.5); }
+    else if (ev.type === 'drag') { this.float(fig, 'Bị móc kéo', 'bad', 0.15); A.react(fig, 'flinch', { power: 1.5 }); this.cheer(0.6); }
+    else if (ev.type === 'dragend') { p2.set(fig.base.x, 0, fig.base.z); this.fx.puff(p2, 5, 1.0); snd('thud'); }
+    else if (ev.type === 'broken') this.float(fig, 'Vỡ đội hình', 'small', 0.15);
   };
   BattleView.prototype.on_bleed = function (ev) {
     var fig = this.figs[ev.id]; fig.point('body', null, p2); p3.set(0, 0, 0);
@@ -206,6 +231,13 @@
       d.obj.quaternion.slerp(d.q, Math.min(1, dt * 9));
       if (d.obj.position.y <= 0.03) { d.obj.position.y = 0.03; d.obj.quaternion.copy(d.q); d.done = true; this.fx.puff(d.obj.position, 1, 0.4); }
     }
+  };
+  BattleView.prototype.on_overtime = function () {
+    this.cheer(1); if (this.onShake) this.onShake(0.1); snd('enrage');
+    if (this.quiet || !V.overlay) return;
+    var el = document.createElement('div'); el.className = 'ft crit'; el.textContent = 'HIỆP PHỤ — sát thương, tốc đánh, hồi chiêu ×2';
+    el.style.left = '50%'; el.style.top = '22%'; el.style.fontSize = '26px'; el.style.animationDuration = '2.6s';
+    V.overlay.appendChild(el); setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2600);
   };
   BattleView.prototype.on_end = function (ev) {
     var self = this;

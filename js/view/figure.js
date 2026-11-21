@@ -132,7 +132,7 @@
     this.kind = it ? it.kind : 'fist';
     this.hasShield = !!g.gear.shield && G.WKIND[this.kind].hands !== 2;
     this.tip = V.WEAPON_TIP[this.kind] + ((it && it.look && it.look.dl) || 0);
-    if (this.hasShield) { var sm = G.itemOf(g.gear.shield).look.m; this.shieldOff = (sm === 'scutum' || sm === 'tower') ? -0.14 : (sm === 'plank' ? -0.05 : 0); }
+    if (this.hasShield) { var sm = G.itemOf(g.gear.shield).look.m; this.shieldOff = (sm === 'scutum' || sm === 'tower') ? -0.14 : (sm === 'pelta' ? -0.04 : 0); }
     // vòng nhận diện phe dưới chân
     if (this.ring) { this.group.remove(this.ring); this.ring.geometry.dispose(); this.ring = null; }
     if (this.team != null && this.opts.ring !== false) {
@@ -152,6 +152,7 @@
   };
 
   Figure.prototype.dispose = function () {
+    if (this.horse) this.horse.dispose();
     for (var i = 0; i < this.meshes.length; i++) this.meshes[i].geometry.dispose();
     if (this.ring) { this.ring.geometry.dispose(); this.ring.material.dispose(); }
     if (this.blob) this.blob.geometry.dispose();
@@ -310,8 +311,9 @@
     var grav = this.dead ? 0 : V.clamp(-R.hr[1] * 0.8, -0.6, 0.6), kk = dt ? Math.min(1, dt * 14) : 1;
     this.flapA[0] += ((grav - Math.asin(Math.min(1, fr)) * 0.92) - this.flapA[0]) * kk; this.flapA[1] += ((grav + Math.asin(Math.min(1, bk)) * 0.92) - this.flapA[1]) * kk;
     n.flapF.rotation.x = Math.min(0.15, this.flapA[0]); n.flapB.rotation.x = Math.max(-0.15, this.flapA[1]);
-    if (this.ring) { this.ring.position.set(b.x, this.y0 + 0.02, b.z); }
-    if (this.blob) { this.blob.position.set(n.hips.position.x, this.y0 + 0.014, n.hips.position.z); }
+    var gy = this.horse ? 0 : this.y0;
+    if (this.ring) { this.ring.position.set(b.x, gy + 0.02, b.z); if (this.horse) this.ring.scale.setScalar(1.45); }
+    if (this.blob) { this.blob.position.set(n.hips.position.x, gy + 0.014, n.hips.position.z); this.blob.visible = !this.horse; }
   };
 
   // Điểm trên cơ thể để đối thủ ngắm tới (thế giới). from: vị trí kẻ tấn công.

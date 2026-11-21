@@ -24,9 +24,15 @@ Cửa sổ nên rộng từ 1100×650 trở lên. Mỗi lần mở link (hoặc 
 - Mỗi ngày: ghé **Chợ nô lệ** mua người, **Lò rèn** mua vũ khí/giáp/vật của lanista, vào **Phòng chờ** trang bị và xếp đội hình trên lưới 3×5, chọn trận (trận chính hoặc hai trận phụ), bấm **Ra đấu trường**.
 - Trận đấu tự diễn ra; nút duy nhất là **Xin thua**. Sau trận có bảng "Vì sao" giải thích kết quả.
 - Mỗi ngày tối đa một trận; **Qua ngày** trả phí nuôi, chữa thương, đổi hàng ở chợ.
-- Bốn hạng đấu trường (Chợ → Làng → Thành phố → Colosseum), mỗi hạng 7 trận chính, trận thứ 7 là một nhà vô địch đấu một mình với cả đội.
+- Năm đấu trường (Chợ → Làng → Thành phố → Doanh trại biên giới → Colosseum), mỗi đấu trường 7 trận chính đánh lẻ từng ngày (thua thì hôm khác đấu lại), trận thứ 7 là trùm; mỗi ngày có thêm hai trận phụ (nhẹ, nặng).
+- Trận không giới hạn thời gian; từ giây 30 vào **hiệp phụ**: sát thương, tốc đánh và hồi chiêu của mọi người ×2.
+- Bốn chỉ số: Sức mạnh, Nhanh nhẹn, Máu, Thể lực (sức mang; mang nặng làm mất Nhanh nhẹn). Mỗi người có 1–3 nét tốt và 1–3 nét xấu; 21 thiên phú.
+- Đồ có 7 độ hiếm (I–VII), không còn bậc đồ; mỗi món gieo chỉ số ±10% và một trong 3 kiểu dáng. Khiên chia hai loại: khiên lớn (chặn 20–35%, nặng) và khiên nhỏ (chặn bằng 1/3, có đỡ gạt +70%).
+- Mỗi họ vũ khí một vai trò: kiếm khắc kẻ không giáp, chùy phá giáp, giáo tầm trung, đinh ba khống chế, song đao áp sát tuyến sau, rìu sát thương lan, đao cong gây chảy máu, lao khắc khiên, cung khắc tầm xa, nỏ khắc giáp dày.
+- Phòng chờ: chọn ai ra trận / dự bị và trang bị; bấm **Ra đấu trường** để dàn quân ngay trên sân rồi bấm **Chiến đấu**. Tinh thần tăng bằng nút **Thưởng** của từng người (không còn đãi tiệc).
+- Kẻ địch đặc biệt: kỵ binh (phi vòng quanh sân, móc kéo người đứng lẻ; cung kỵ vừa phi vừa bắn), đội hình lê dương (ném pilum, tiến thành hàng khiên, tan khi mất chỉ huy), gấu (quật trúng mọi người trước mặt, vồ, gầm làm choáng), chó trận (đớp gân), sư tử (vồ từ xa), voi chiến (giẫm hất văng mọi thứ trên đường đi).
 - Trận phụ đấu lại bao nhiêu lần cũng được, nhưng khán giả chán dần: mỗi trận phụ kể từ lần thắng trận chính gần nhất làm túi thưởng vơi 5% (thấp nhất còn một nửa).
-- **Chuỗi thắng:** thắng liền nhau (trận chính hay trận phụ đều tính) thì từ trận thắng thứ hai, mỗi trận thắng trước đó cộng thêm 20% túi thưởng: thắng liền 2 trận +20%, 3 trận +40%… tối đa +100%. Thua một trận (kể cả xin thua) là mất cả chuỗi; nghỉ ngày không mất. Chuỗi đang có hiện cạnh nút **Ra đấu trường**. Thua chỉ nhận tiền xuất trận bằng 15% túi thưởng (`Game.LOSS_PAY` trong `js/core/game.js`).
+- **Chuỗi thắng:** thắng liền nhau (trận chính hay trận phụ đều tính) thì từ trận thắng thứ hai, mỗi trận thắng trước đó cộng thêm 10% túi thưởng: thắng liền 2 trận +10%, 3 trận +20%… tối đa +50%. Thua một trận (kể cả xin thua) là mất cả chuỗi; nghỉ ngày không mất. Chuỗi đang có hiện cạnh nút **Ra đấu trường**. Thua chỉ nhận tiền xuất trận bằng 15% túi thưởng (`Game.LOSS_PAY` trong `js/core/game.js`).
 - Người bị thương tạm thời có thể chữa ngay bằng nút **Gọi thầy thuốc** trong Phòng chờ, nếu anh chịu trả tiền.
 - Ở Chợ nô lệ, bên trái mỗi người trên bục luôn có một cột sáu chỉ số kèm icon: Sức mạnh, Nhanh nhẹn, Thể chất, Máu, Tốc chạy, Tốc đánh — rê chuột lên từng dòng để xem chỉ số đó làm gì.
 - Ở Chợ nô lệ và Lò rèn, nút mua nằm ngay dưới chân từng nô lệ và dưới từng món hàng trong cảnh 3D (danh sách bên trái vẫn dùng được).
