@@ -206,9 +206,16 @@
       if (own) { pool.splice(pool.indexOf(own), 1); pool.unshift(own); }   // mũ luôn có kháng hiệu ứng, găng có tốc đánh, giày có tốc chạy, giáp thân có máu
       o.aff = pool.slice(0, R.aff);
       if (R.fx) {
-        var fp = Object.keys(G.EFFECT).filter(function (k) { return !G.EFFECT[k].minR && G.EFFECT[k].on.indexOf(it.slot) >= 0; }); if (fp.length) o.fx = rng.pick(fp);
-        // Thần khí: chùy luôn mang Đập sọ, song đao luôn mang Hút máu
-        for (var sk in G.EFFECT) if (G.EFFECT[sk].minR && r >= G.EFFECT[sk].minR && G.EFFECT[sk].only === it.kind) o.fx = sk;
+        var lv = it.look && it.look.v, gen = [], spec = [];
+        for (var ek in G.EFFECT) {
+          var E = G.EFFECT[ek]; if (E.on.indexOf(it.slot) < 0) continue;
+          if (!E.wk) { gen.push(ek); continue; }
+          if (E.wk.k.indexOf(it.kind) < 0 || (E.wk.v && E.wk.v.indexOf(lv) < 0) || (E.wk.nv && E.wk.nv.indexOf(lv) >= 0)) continue;
+          spec.push(ek);
+        }
+        var sig = spec.filter(function (k) { return G.EFFECT[k].sig && r >= G.EFFECT[k].sig; });
+        if (sig.length) o.fx = sig[0];                                                 // Thần khí: luôn là hiệu ứng riêng
+        else { var pool = gen.concat(spec, spec, spec); if (pool.length) o.fx = rng.pick(pool); }   // hiệu ứng riêng của loại vũ khí dễ ra gấp ba một hiệu ứng chung
       }
       if (r >= 4) o.ep = rng.int(0, G.LEGEND.length - 1);
     }

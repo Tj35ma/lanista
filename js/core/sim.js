@@ -25,7 +25,7 @@
     // hào quang đội hình
     for (i = 0; i < this.f.length; i++) {
       var f = this.f[i];
-      f.auraGuard = !!f.st.perks.guardian; f.auraLegion = f.g.talent === 'legionary';
+      f.auraGuard = !!f.st.perks.guardian; f.auraLegion = f.g.talent === 'legionary'; f.auraInspire = !!f.st.perks.inspire;
     }
     this.initForms();
   }
@@ -181,7 +181,7 @@
       g.id = 'sum' + this.f.length;
       var nf = this.mk(f.team, { g: g, c: 0, r: 2 });
       nf.x = gx; nf.z = (i % 2 ? 1 : -1) * (0.9 + Math.floor(i / 2) * 1.1); nf.face = nf.hd = side > 0 ? -PI / 2 : PI / 2; nf.cd = 0.6;
-      nf.auraGuard = !!nf.st.perks.guardian; nf.auraLegion = g.talent === 'legionary';
+      nf.auraGuard = !!nf.st.perks.guardian; nf.auraLegion = g.talent === 'legionary'; nf.auraInspire = !!nf.st.perks.inspire;
       this.f.push(nf); f.sumN++;
       this.emit({ e: 'spawn', id: nf.id, by: f.id });
     }
@@ -288,6 +288,8 @@
       if (f.slowT > 0) f.slowT -= dt;
       if (f.boostT > 0) f.boostT -= dt;
       if (f.noBlock > 0) f.noBlock -= dt;
+      if (f.goreT > 0) f.goreT -= dt;
+      if (f.st.perks.regen && f.hp < f.maxHp) f.hp = Math.min(f.maxHp, f.hp + f.maxHp * 0.01 * dt);   // Sinh lực
       if (f.hate) { var hd = Math.exp(-dt / 3.5); for (var hk in f.hate) f.hate[hk] *= hd; }
       if (f.poison) {
         var P = f.poison; P.acc += dt; P.t -= dt;
@@ -517,7 +519,7 @@
     }
 
     // --- di chuyển
-    var speed = f.st.move * (f.slowT > 0 ? f.slowF : 1) * (f.boostT > 0 ? 1.25 : 1) * (f.st.perks.sprint && this.time < 5 ? 1.4 : 1) * (f.kind === 'twin' && !f.opened ? 1.3 : 1);
+    var speed = f.st.move * (f.slowT > 0 ? f.slowF : 1) * (f.goreT > 0 ? 0.75 : 1) * (f.boostT > 0 ? 1.25 : 1) * (f.st.perks.sprint && this.time < 5 ? 1.4 : 1) * (f.kind === 'twin' && !f.opened ? 1.3 : 1);
     if (f.net > 0) return;
     var mx = 0, mz = 0, sp = speed;
     var rr0 = Math.sqrt(f.x * f.x + f.z * f.z);
@@ -598,8 +600,8 @@
     o = o || {};
     var fl = flankOf(f, t), can = t.stun <= 0;
     var pDodge = (can && t.net <= 0 && fl < 2) ? t.st.dodge * (fl === 1 ? 0.6 : 1) : 0;
-    var pBlock = 0, pDefl = 0;
-    if (can && !o.unblockable && fl < 2) {
+    var pBlock = 0, pDefl = 0, reap = !!f.reap;   // Lưỡi hái: đòn sau khi hạ gục không thể bị chặn và chắc chắn chí mạng
+    if (can && !o.unblockable && !reap && fl < 2) {
       if (t.st.hasShield && !t.shieldOff && t.noBlock <= 0) {
         pBlock = t.st.block + (o.missile ? t.st.missileBlock : 0) - f.st.antiBlock;
         // cựu lính lê dương đứng cạnh
@@ -618,7 +620,8 @@
     if (r < pBlock) return { out: 'block', fl: fl };
     r -= pBlock;
     if (r < pDefl) return { out: 'block', arm: true, fl: fl };
-    var crit = this.rng.next() < f.st.crit || (o.forceCrit);
+    var crit = this.rng.next() < f.st.crit || (o.forceCrit) || reap;
+    if (reap) f.reap = false;
     return { out: crit ? 'crit' : 'hit', fl: fl };
   };
 
@@ -695,7 +698,7 @@
     }
     this.strike(f, t, h);
     // đánh lan: mỗi đòn cận chiến của trùm còn trúng những kẻ đứng cạnh mục tiêu, phía trước mặt hắn
-    var cv = (f.g.x && f.g.x.cleave) || (f.kind === 'axe' ? 0.7 : 0);   // rìu hai tay: đòn nào cũng lan
+    var cv = (f.g.x && f.g.x.cleave) || (f.kind === 'axe' && !f.st.perks.quake ? 0.7 : 0);   // rìu hai tay: đòn nào cũng lan (búa Nứt đất lan theo vòng tròn quanh mục tiêu)
     if (cv && !a.missile && !h.sweep && f.alive && !this.over) {
       var fo = this.foesOf(f);
       for (i = 0; i < fo.length; i++) {
@@ -723,7 +726,7 @@
 
   Battle.prototype.strike = function (f, t, h, viaProj) {
     var rng = this.rng, K = f.K, out = h.out;
-    if (!t.alive || (!viaProj && dist(f, t) > f.st.reach * 1.25 + 0.4)) {
+    if (!t.alive || (!viaProj && !h.far && dist(f, t) > f.st.reach * 1.25 + 0.4)) {
       this.emit({ e: 'hit', a: f.id, d: t.id, out: 'whiff', loc: h.loc, dmg: 0, hand: h.hand }); return;
     }
     if ((out === 'dodge' || out === 'block') && t.stun > 0) out = 'hit';
@@ -745,17 +748,20 @@
     // sát thương gốc
     var base = f.st.weapon.dmg * f.st.dmgMul * h.mul * (0.88 + rng.next() * 0.24);
     var crit = out === 'crit';
-    if (crit) base *= 1.6;
+    if (crit) base *= f.st.perks.critDmg ? 2.0 : 1.6;   // Mắt đại bàng
     if (fl === 2) { base *= (f.kind === 'twin' || f.g.talent === 'assassin' ? (f.kind === 'twin' && f.g.talent === 'assassin' ? 1.75 : 1.5) : 1.25); }
     if (f.g.talent === 'archerhunter' && t.K.ranged) base *= 1.3;
     if (h.loc === 'head') base *= 1.35;
-    var g = f.g, notes = [];
+    var g = f.g, notes = h.notes ? h.notes.slice() : [];
     if (!f.opened) { f.opened = true; if (f.st.perks.opener) { base *= 2; notes.push('Phủ đầu'); } }
     if (f.riposte) { f.riposte = false; base *= f.g.talent === 'parry' ? 2.2 : 1.7; notes.push(f.st.parry ? 'Đỡ gạt' : 'Phản đòn'); }
     if (f.howlN) base *= 1 + f.howlN * f.g.x.howl.dmg;
     if (this.ot) base *= 2;   // hiệp phụ
     if (this.time > 20) { if (G.hasTrait(g, 'stamina')) base *= 1.2; else if (G.hasTrait(g, 'winded')) base *= 0.8; }
     if (f.st.perks.execute && t.hp < t.maxHp * 0.35) base *= 1.45;
+    if (f.st.perks.lastStand && f.hp < f.maxHp * 0.35) { base *= 1.3; notes.push('Tử thủ'); }
+    if (f.st.perks.fourth && out !== 'block' && out !== 'dodge') { f.hitN = (f.hitN || 0) + 1; if (f.hitN % 4 === 0) { base *= 1.6; notes.push('Sấm sét'); } }
+    if (!f.auraInspire) { var ia = this.alliesOf(f); for (var iq = 0; iq < ia.length; iq++) if (ia[iq].auraInspire && dist(ia[iq], f) < 3.1) { base *= 1.1; break; } } else if (this.alliesOf(f).some(function (o) { return o.auraInspire && dist(o, f) < 3.1; })) base *= 1.1;
     if (f.st.perks.gangup) {
       var al = this.alliesOf(f);
       for (var i = 0; i < al.length; i++) if (al[i].target === t && dist(al[i], t) < al[i].st.reach + 0.6) { base *= 1.25; break; }
@@ -784,6 +790,7 @@
     if (out === 'block') {
       t.stats.blocked++; f.stats.blockedBy++;
       if (t.st.perks.riposte || t.g.talent === 'parry' || t.st.parry) t.riposte = true;   // khiên nhỏ: đỡ gạt
+      if (t.st.perks.blockStun && !viaProj && !h.arm && f.alive) this.stunOn(f, 0.3, t);     // Khiên dội
       var through = h.arm ? 0 : Math.max(f.kind === 'axe' ? 0.5 : 0, f.st.crush || 0, f.st.perks.blockPierce ? 0.3 : 0);
       if (h.pin && !h.arm) { /* không thể xảy ra: pin là unblockable */ }
       if (through <= 0) {
@@ -848,6 +855,12 @@
     // hiệu ứng của đồ hiếm
     if (f.st.perks.bleedHit && !h.hook && !nb) t.bleed.push({ t: 3 * rs, dps: dmg * 0.1, src: f });
     if (f.st.perks.stagger && !h.stun && rng.next() < 0.18) this.stunOn(t, 0.5, f);
+    if (f.st.perks.critStun && crit && !h.stun) this.stunOn(t, 0.6, f);   // Tay búa
+    if (f.st.perks.venom && dmg > 0 && t.alive) {   // Tẩm độc: 1,5% máu tối đa mỗi giây trong 2 giây, không cộng dồn (cùng ô với độc của Độc sư: giữ liều mạnh hơn)
+      var vd = t.maxHp * 0.015 * (t.st.boss ? 0.35 : 1), fresh2 = !t.poison;
+      t.poison = { t: 2 * rs, dps: Math.max(vd, t.poison ? t.poison.dps : 0), src: f, acc: t.poison ? t.poison.acc : 0 };
+      if (fresh2) this.emit({ e: 'effect', id: t.id, type: 'poison', dur: 2 * rs, by: f.id });
+    }
     if (f.st.perks.skull && !h.stun && rng.next() < 0.2) { this.stunOn(t, 1.0, f); this.emit({ e: 'effect', id: t.id, type: 'skull', by: f.id }); }   // Đập sọ (chùy Thần khí)
     if (f.st.perks.leech && f.alive && dmg > 0 && f.hp < f.maxHp) { var lh = Math.min(f.maxHp - f.hp, dmg * 0.15); f.hp += lh; f.leechAcc = (f.leechAcc || 0) + lh; if (f.leechAcc >= f.maxHp * 0.04) { this.emit({ e: 'effect', id: f.id, type: 'heal', amount: f.leechAcc }); f.leechAcc = 0; } }   // Hút máu (song đao Thần khí)
     if (f.g.talent === 'poisoner' && dmg > 0 && t.alive) {   // Độc sư: trúng độc 2 giây, không cộng dồn — đòn sau làm mới
@@ -858,7 +871,57 @@
     if (t.st.perks.thorns && !viaProj && f.alive && !this.over) { var th = Math.max(1, dmg * 0.15); t.stats.dealt += th; this.emit({ e: 'bleed', id: f.id, dmg: th }); this.damage(t, f, th, 'arms', true); }
   };
 
-  // Làm choáng: tính cả giày bám cát, kháng hiệu ứng của mũ, "Tỉnh đòn"
+  // ---------------------------------------------------------------- hiệu ứng huyền thoại riêng của từng loại vũ khí
+  // Bọc quanh strike(): chỉnh hệ số trước khi đánh, rồi sinh các đòn phụ (echo) sau khi đòn chính đã xử xong.
+  var strikeCore = Battle.prototype.strike;
+  Battle.prototype.strike = function (f, t, h, viaProj) {
+    var P = f.st.perks, self = this, rng = this.rng, main = !h.echo, pre = t.hp;
+    function ext(o) { var c = {}; for (var k in h) c[k] = h[k]; for (k in o) c[k] = o[k]; return c; }
+    function echo(e, mul, note, proj) {   // một đòn phụ vào e
+      if (!e || !e.alive || self.over) return;
+      var ro = self.rollOutcome(f, e, { missile: !!proj });
+      strikeCore.call(self, f, e, { mul: mul, loc: self.rollLoc(f, e, 'def'), out: ro.out, arm: ro.arm, fl: ro.fl, kb: 0.5, hand: h.hand || 0, echo: true, sweep: true, far: true, notes: note ? [note] : null }, !!proj);
+    }
+    var second = null;
+    if (t.goreT > 0) h = ext({ mul: h.mul * 1.2 });                                                         // Máu loang: nạn nhân nhận thêm 20% từ mọi nguồn
+    if (main && viaProj) {
+      if (P.sniper) h = ext({ mul: h.mul * (1 + Math.min(0.4, 0.05 * dist(f, t))) });                       // Bắn tỉa
+      if (P.twoShot && !h.pin) {                                                                             // Song tiễn: kẻ địch gần mục tiêu nhất, còn trong tầm
+        var fo0 = this.foesOf(f), bd = 1e9;
+        for (var q = 0; q < fo0.length; q++) { var e0 = fo0[q]; if (e0 === t || dist(f, e0) > f.st.reach + 0.5) continue; var d0 = dist(t, e0); if (d0 < bd) { bd = d0; second = e0; } }
+        if (second) h = ext({ mul: h.mul * 0.75 });
+      }
+    }
+    var ux = t.x - f.x, uz = t.z - f.z, ul = Math.sqrt(ux * ux + uz * uz) || 1; ux /= ul; uz /= ul;
+    strikeCore.call(this, f, t, h, viaProj);
+    if (this.over) return;
+    var dealt = Math.max(0, pre - Math.max(0, t.hp)), landed = dealt > 0.01, fo, i, e;
+    if (second) { this.emit({ e: 'proj', type: f.K.proj || 'arrow', a: f.id, d: second.id, dur: 0.12, out: 'hit', loc: 'body' }); echo(second, h.mul, 'Song tiễn', true); }
+    if (main && landed) {
+      if (P.bloodaxe && !f.g.gear.body && f.alive && f.hp < f.maxHp) { var hl = Math.min(f.maxHp - f.hp, dealt * 0.4); f.hp += hl; f.leechAcc = (f.leechAcc || 0) + hl; if (f.leechAcc >= f.maxHp * 0.04) { this.emit({ e: 'effect', id: f.id, type: 'heal', amount: f.leechAcc }); f.leechAcc = 0; } }
+      if (P.gore) t.goreT = 4 * (1 - t.st.resist) * (t.st.ccMul || 1);
+      if (P.pinfoot && h.out === 'crit' && t.alive && !t.st.perks.unslowed) { var pd = 1.5 * (1 - t.st.resist) * (t.st.ccMul || 1); t.slowT = Math.max(t.slowT, pd); t.slowF = 0; this.emit({ e: 'effect', id: t.id, type: 'pinfoot', dur: pd, by: f.id }); }
+      if (P.combo3 && !viaProj) { f.c3 = (f.c3 || 0) + 1; if (f.c3 % 3 === 0) echo(t, 1.0, 'Liên hoàn'); }
+    }
+    if (main && !h.sweep && f.alive) {
+      if (P.quake && !viaProj) { fo = this.foesOf(f); for (i = 0; i < fo.length; i++) { e = fo[i]; if (e !== t && dist(t, e) <= 1.5 + e.st.radius) echo(e, h.mul * 0.7, 'Nứt đất'); } this.emit({ e: 'effect', id: t.id, type: 'quake', by: f.id }); }
+      if (P.whirl3 && !viaProj) { f.w3 = (f.w3 || 0) + 1; if (f.w3 % 3 === 0) { fo = this.foesOf(f); for (i = 0; i < fo.length; i++) { e = fo[i]; if (e !== t && dist(f, e) <= 2.0 + e.st.radius) echo(e, h.mul, 'Lốc xoáy'); } this.emit({ e: 'effect', id: f.id, type: 'whirlaxe' }); } }
+      if ((P.skewer && !viaProj) || (P.pierce && viaProj && !h.pin)) {   // Xiên que / Xuyên táo: một kẻ ngay sau mục tiêu theo hướng đòn
+        fo = this.foesOf(f); var best = null, bdist = P.skewer && !viaProj ? 1.5 : 2.0;
+        for (i = 0; i < fo.length; i++) { e = fo[i]; if (e === t) continue; var ex = e.x - t.x, ez = e.z - t.z, ed = Math.sqrt(ex * ex + ez * ez); if (ed <= bdist + e.st.radius && ex * ux + ez * uz > 0.2 * ed) { bdist = ed - e.st.radius; best = e; } }
+        if (best && landed) echo(best, h.mul * 0.6, viaProj ? 'Xuyên táo' : 'Xiên que', viaProj);
+      }
+    }
+    // Phản kiếm: người cầm kiếm không khiên chém trả kẻ vừa đánh mình
+    var TP = t.st.perks;
+    if (TP.counter && !h.counter && !viaProj && t.alive && f.alive && !t.st.hasShield && t.stun <= 0 && t.net <= 0 && dist(f, t) <= t.st.reach * 1.25 + 0.4 && rng.next() < 0.6) {
+      var rc = this.rollOutcome(t, f, {});
+      this.emit({ e: 'effect', id: t.id, type: 'counter', by: f.id });
+      strikeCore.call(this, t, f, { mul: 1, loc: this.rollLoc(t, f, 'def'), out: rc.out, arm: rc.arm, fl: rc.fl, kb: 0.4, hand: 0, echo: true, counter: true, notes: ['Phản kiếm'] }, false);
+    }
+  };
+
+  // Làm choáng: tính cả giày bám cát, kháng hiệu ứng của mũ, "Tỉnh đòn\"
   Battle.prototype.stunOn = function (t, base, f) {
     if (t.st.perks.stunGuard && !t.usedGuard) { t.usedGuard = true; this.emit({ e: 'effect', id: t.id, type: 'guard', by: f.id }); return; }
     var sd = base * (1 - t.st.steady) * (t.st.perks.stubborn ? 0.5 : 1) * (t.st.boss && !t.st.ccRes ? 0.4 : 1) * (1 - t.st.resist) * (t.st.ccMul || 1);
@@ -889,6 +952,7 @@
       if (f) {
         f.stats.kills++;
         if (G.hasTrait(f.g, 'bloodthirst')) f.thirst = (f.thirst || 0) + 1;
+        if (f.st.perks.reap && f.alive) f.reap = true;   // Lưỡi hái: đòn kế tiếp chắc chắn chí mạng
         if (f.st.perks.bloodlust && f.alive) { var hl = f.maxHp * 0.25; f.hp = Math.min(f.maxHp, f.hp + hl); this.emit({ e: 'effect', id: f.id, type: 'heal', amount: hl }); }
       }
       this.emit({ e: 'down', id: t.id, by: f ? f.id : -1, loc: loc, dot: !!dot });

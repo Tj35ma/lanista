@@ -178,6 +178,10 @@
     else if (ev.type === 'net') { this.fx.drape(fig, ev.dur); this.float(fig, 'Dính lưới', 'bad', 0.15); }
     else if (ev.type === 'bleed') this.float(fig, 'Chảy máu', 'bad', 0.15);
     else if (ev.type === 'poison') this.float(fig, 'Trúng độc', 'bad', 0.15);
+    else if (ev.type === 'counter') this.float(fig, 'Phản kiếm', 'sp', 0.15);
+    else if (ev.type === 'pinfoot') this.float(fig, 'Ghim chân', 'bad', 0.15);
+    else if (ev.type === 'quake') { if (this.onShake) this.onShake(0.07); }
+    else if (ev.type === 'whirlaxe') this.float(fig, 'LỐC XOÁY', 'crit', 0.2);
     else if (ev.type === 'skull') { this.float(fig, 'ĐẬP SỌ', 'crit', 0.25); if (this.onShake) this.onShake(0.06); }
     else if (ev.type === 'shieldoff') { this.float(fig, 'Khiên bị ghim', 'bad', 0.15); A.react(fig, 'hooked', {}); }
     else if (ev.type === 'enrage') { this.float(fig, 'NỔI ĐIÊN', 'crit', 0.2); snd('enrage'); if (fig.ring) fig.ring.material.color.set(0xff3a1a); this.cheer(0.8); }

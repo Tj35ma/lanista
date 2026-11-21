@@ -334,12 +334,12 @@
   // Bảy độ hiếm (như bản Unity, không còn bậc đồ theo đấu trường). Độ hiếm N gieo một món thuộc "kiểu" min(4, N)
   // (kiểu I–IV là các món cùng loại từ thô tới tinh), rồi gieo chất lượng q trong khoảng ±10% quanh mức của độ hiếm (qLo…qHi), nhân lên sát thương / giáp;
   // và gieo một trong 3 kiểu dáng (m = 0, 1, 2): cùng chỉ số, khác hình.
-  // Càng hiếm càng nặng (× wt rồi + wtAdd). price: hệ số giá. aff: số phụ tố. fx: có hiệu ứng đặc biệt.
+  // Càng hiếm càng nặng (× wt rồi + wtAdd). price: hệ số giá. aff: số phụ tố. fx: có hiệu ứng huyền thoại (từ độ hiếm V).
   G.RAR = [
     { name: 'I · Thường', css: '#b9ad98', qLo: 0.9, qHi: 1.1, wt: 1, wtAdd: 0, blk: 0, price: 1, aff: 0, fx: 0 },
     { name: 'II · Tốt', css: '#8cc46a', qLo: 0.945, qHi: 1.155, wt: 1.03, wtAdd: 1.5, blk: 0.012, price: 2, aff: 1, fx: 0 },
     { name: 'III · Hiếm', css: '#5aa2e0', qLo: 0.999, qHi: 1.221, wt: 1.06, wtAdd: 3, blk: 0.024, price: 3.6, aff: 2, fx: 0 },
-    { name: 'IV · Quý', css: '#b684e6', qLo: 1.044, qHi: 1.276, wt: 1.1, wtAdd: 4.5, blk: 0.036, price: 6.5, aff: 2, fx: 1 },
+    { name: 'IV · Quý', css: '#b684e6', qLo: 1.044, qHi: 1.276, wt: 1.1, wtAdd: 4.5, blk: 0.036, price: 6.5, aff: 2, fx: 0 },
     { name: 'V · Sử thi', css: '#f2b23e', qLo: 1.143, qHi: 1.397, wt: 1.15, wtAdd: 6, blk: 0.05, price: 11, aff: 3, fx: 1 },
     { name: 'VI · Huyền thoại', css: '#ff7a3d', qLo: 1.305, qHi: 1.595, wt: 1.2, wtAdd: 8, blk: 0.06, price: 18, aff: 3, fx: 1 },
     { name: 'VII · Thần khí', css: '#ff5ad2', qLo: 1.53, qHi: 1.87, wt: 1.3, wtAdd: 12, blk: 0.08, price: 30, aff: 3, fx: 1 }
@@ -377,38 +377,54 @@
     cheer: { n: 'Vui vẻ', on: ['trinket'], t: '+2 tinh thần mỗi lần ra sân', moraleFight: 2 }
   };
   // Hiệu ứng đặc biệt (chỉ có ở đồ Sử thi và Huyền thoại). on: ô trang bị nhận được.
+  // Hiệu ứng huyền thoại: chỉ đồ độ hiếm V trở lên mới có (mỗi món một hiệu ứng). Không hiệu ứng nào trùng với thẻ lên cấp
+  // (Phản đòn, Khát máu, Lì đòn, Phủ đầu, Đánh hội đồng, Hộ vệ, Sói đơn độc, Thuộc bài, Kết liễu, Chân nhanh, Bậc thầy khiên,
+  //  Ra đòn hiểm, Biết diễn, Cứng đầu, Hơi thở thứ hai, Tay nặng, Quen giáp) — thẻ là thứ đấu sĩ học được, hiệu ứng là thứ chỉ món đồ mới có.
   G.EFFECT = {
-    // hiệu ứng riêng của Thần khí (độ hiếm VII): only = loại vũ khí duy nhất mang nó
-    skull: { n: 'Đập sọ', on: ['weapon'], only: 'mace', minR: 6, t: '20% số đòn trúng làm địch choáng 1 giây.', perk: 'skull' },
-    leech: { n: 'Hút máu', on: ['weapon'], only: 'twin', minR: 6, t: 'Mỗi nhát chém trúng hồi máu bằng 15% sát thương gây ra.', perk: 'leech' },
-    serrated: { n: 'Răng cưa', on: ['weapon'], t: 'Mỗi đòn trúng làm địch chảy máu 3 giây.', perk: 'bleedHit' },
-    execute: { n: 'Đoạt mạng', on: ['weapon'], t: '+45% sát thương lên kẻ dưới 35% máu.', perk: 'execute' },
-    opener: { n: 'Phủ đầu', on: ['weapon'], t: 'Đòn đầu tiên trong trận gây gấp đôi.', perk: 'opener' },
+    // riêng theo loại vũ khí. wk = { k: [họ vũ khí], v: [chỉ các biến thể này], nv: [trừ các biến thể này] }.
+    // Vũ khí độ hiếm V trở lên bốc trong cả hai nhóm (hiệu ứng riêng của loại + hiệu ứng vũ khí chung); sig: từ độ hiếm này luôn là hiệu ứng riêng.
+    skull: { n: 'Đập sọ', on: ['weapon'], wk: { k: ['mace'] }, sig: 6, t: '20% số đòn trúng làm địch choáng 1 giây.', perk: 'skull' },
+    leech: { n: 'Hút máu', on: ['weapon'], wk: { k: ['twin'], nv: ['taxe'] }, sig: 6, t: 'Mỗi nhát chém trúng hồi máu bằng 15% sát thương gây ra.', perk: 'leech' },
+    bloodaxe: { n: 'Khát máu trần', on: ['weapon'], wk: { k: ['twin'], v: ['taxe'] }, sig: 6, t: 'Nếu không mặc giáp thân: mỗi nhát trúng hồi máu bằng 40% sát thương gây ra.', perk: 'bloodaxe' },
+    twinshot: { n: 'Song tiễn', on: ['weapon'], wk: { k: ['bow'] }, t: 'Bắn hai mục tiêu cùng lúc, mỗi mục tiêu nhận 75% sát thương.', perk: 'twoShot' },
+    counter: { n: 'Phản kiếm', on: ['weapon'], wk: { k: ['gladius'] }, t: 'Nếu không cầm khiên: mỗi khi bị đánh cận chiến, 60% chém trả ngay một nhát đủ sát thương.', perk: 'counter' },
+    quake: { n: 'Nứt đất', on: ['weapon'], wk: { k: ['axe'], v: ['maul'] }, t: 'Mỗi đòn làm nứt đất: mọi kẻ địch trong 1,5 m quanh mục tiêu nhận 70% sát thương.', perk: 'quake' },
+    whirl: { n: 'Lốc xoáy', on: ['weapon'], wk: { k: ['axe'], nv: ['maul'] }, t: 'Cứ đòn thứ ba là một vòng chém tròn: mọi kẻ địch trong 2 m quanh người cầm rìu đều trúng.', perk: 'whirl3' },
+    combo: { n: 'Liên hoàn', on: ['weapon'], wk: { k: ['caestus'] }, t: 'Cứ cú đấm trúng thứ ba thì đấm bồi thêm một cú ngay lập tức.', perk: 'combo3' },
+    gore: { n: 'Máu loang', on: ['weapon'], wk: { k: ['sica'] }, t: 'Kẻ bị chém trúng trong 4 giây: chậm 25% và nhận thêm 20% sát thương từ mọi nguồn.', perk: 'gore' },
+    skewer: { n: 'Xiên que', on: ['weapon'], wk: { k: ['hasta'] }, t: 'Mũi giáo xuyên qua mục tiêu: kẻ đứng ngay sau trong 1,5 m nhận 60% sát thương.', perk: 'skewer' },
+    pinfoot: { n: 'Ghim chân', on: ['weapon'], wk: { k: ['trident'] }, t: 'Đòn chí mạng ghim địch tại chỗ 1,5 giây.', perk: 'pinfoot' },
+    pierce: { n: 'Xuyên táo', on: ['weapon'], wk: { k: ['javelin'] }, t: 'Cây lao xuyên qua mục tiêu: kẻ phía sau trên đường bay, trong 2 m, nhận 60% sát thương.', perk: 'pierce' },
+    sniper: { n: 'Bắn tỉa', on: ['weapon'], wk: { k: ['crossbow'] }, t: 'Mục tiêu càng xa càng đau: +5% sát thương mỗi mét, tối đa +40%.', perk: 'sniper' },
+    // vũ khí
+    serrated: { n: 'Răng cưa', on: ['weapon'], t: 'Mỗi đòn trúng làm địch chảy máu 3 giây (30% sát thương của đòn, bỏ qua giáp).', perk: 'bleedHit' },
     stagger: { n: 'Chấn động', on: ['weapon'], t: '18% số đòn trúng làm địch choáng nửa giây.', perk: 'stagger' },
-    thirst: { n: 'Khát máu', on: ['weapon'], t: 'Hạ gục một địch thủ: hồi 25% máu.', perk: 'bloodlust' },
     breaker: { n: 'Xuyên khiên', on: ['weapon'], t: 'Đòn bị khiên chặn vẫn gây 30% sát thương.', perk: 'blockPierce' },
-    drilled: { n: 'Thuần tay', on: ['weapon'], t: 'Chiêu đặc biệt hồi nhanh hơn 35%.', perk: 'drilled' },
-    pack: { n: 'Bầy sói', on: ['weapon'], t: '+25% sát thương lên kẻ đang bị đồng đội đánh.', perk: 'gangup' },
+    thunder: { n: 'Sấm sét', on: ['weapon'], t: 'Cứ đòn trúng thứ tư gây thêm 60% sát thương.', perk: 'fourth' },
+    venom: { n: 'Tẩm độc', on: ['weapon'], t: 'Đòn trúng làm địch trúng độc 2 giây: mỗi giây mất 1,5% máu tối đa (trùm: 0,5%), bỏ qua giáp, không cộng dồn.', perk: 'venom' },
+    reaper: { n: 'Lưỡi hái', on: ['weapon'], t: 'Hạ gục một địch thủ: đòn kế tiếp chắc chắn chí mạng và không thể bị chặn.', perk: 'reap' },
+    // khiên, giáp thân
     spiked: { n: 'Gai nhọn', on: ['shield', 'body'], t: 'Kẻ đánh cận chiến trúng người này nhận lại 15% sát thương.', perk: 'thorns' },
-    grit: { n: 'Lì đòn', on: ['body'], t: 'Dưới 35% máu: nhận ít hơn 35% sát thương.', perk: 'grit' },
-    second: { n: 'Hơi thở thứ hai', on: ['body', 'trinket'], t: 'Một lần mỗi trận, khi xuống dưới 25% máu: hồi 20% máu.', perk: 'second' },
-    riposte: { n: 'Phản đòn', on: ['shield'], t: 'Sau khi chặn hoặc né, đòn kế tiếp +70% sát thương.', perk: 'riposte' },
-    stubborn: { n: 'Cứng đầu', on: ['head'], t: 'Choáng và lưới chỉ còn một nửa thời gian.', perk: 'stubborn' },
-    guardian: { n: 'Hộ vệ', on: ['shield', 'body'], t: 'Đồng đội trong 2 m nhận ít hơn 15% sát thương.', perk: 'guardian' },
-    bulwark: { n: 'Thành lũy', on: ['shield'], t: '+12% chặn.', perk: 'wall' },
+    bash: { n: 'Khiên dội', on: ['shield'], t: 'Mỗi lần chặn được một đòn cận chiến, kẻ ra đòn choáng 0,3 giây.', perk: 'blockStun' },
+    vigor: { n: 'Sinh lực', on: ['body'], t: 'Hồi 1% máu tối đa mỗi giây trong trận.', perk: 'regen' },
+    laststand: { n: 'Tử thủ', on: ['body'], t: 'Dưới 35% máu: +30% sát thương.', perk: 'lastStand' },
+    // mũ
     stunguard: { n: 'Tỉnh đòn', on: ['head'], t: 'Cú choáng đầu tiên trong trận bị vô hiệu.', perk: 'stunGuard' },
     coolhead: { n: 'Đầu lạnh', on: ['head'], t: 'Không bị chảy máu, không bị làm chậm.', perk: 'noBleed' },
     ironwill: { n: 'Ý chí sắt', on: ['head'], t: '+30% kháng hiệu ứng.', resist: 0.3 },
+    eagle: { n: 'Mắt đại bàng', on: ['head'], t: 'Đòn chí mạng gây ×2,0 sát thương thay vì ×1,6.', perk: 'critDmg' },
+    // giáp tay
     frenzy: { n: 'Dồn dập', on: ['arms'], t: 'Mỗi đòn trúng: +4% tốc độ đánh, cộng dồn tới +20%; mất khi bị choáng.', perk: 'frenzy' },
     quickdraw: { n: 'Ra tay trước', on: ['arms'], t: 'Đòn đầu tiên trong trận ra sớm hơn hẳn; +6% tốc độ đánh.', perk: 'quickdraw', aspd: 0.06 },
-    ambi: { n: 'Hai tay như một', on: ['arms'], t: '+10% tốc độ đánh.', aspd: 0.1 },
+    crusher: { n: 'Tay búa', on: ['arms'], t: 'Đòn chí mạng làm địch choáng 0,6 giây.', perk: 'critStun' },
+    // giáp chân
     sprint: { n: 'Xuất phát', on: ['legs'], t: '5 giây đầu trận: +40% tốc độ di chuyển.', perk: 'sprint' },
     slip: { n: 'Thoát vòng vây', on: ['legs'], t: 'Không thể bị làm chậm; lưới giữ ngắn hơn 30%.', perk: 'unslowed', netRes: 0.3 },
     sidestep: { n: 'Đảo chân', on: ['legs'], t: '+4% né; sau mỗi lần né: +25% tốc độ di chuyển trong 2 giây.', perk: 'dodgeStep', dodge: 0.04 },
-    fleet: { n: 'Nhẹ gót', on: ['legs'], t: '+12% tốc độ di chuyển.', moveMul: 0.12 },
     sure: { n: 'Bám cát', on: ['legs'], t: '−40% thời gian choáng và quãng bị đẩy lùi.', steady: 0.4 },
-    splendid: { n: 'Lộng lẫy', on: ['body', 'trinket', 'shield'], t: '+2 sức hút khán giả.', appeal: 2 },
-    ward: { n: 'Hộ thân', on: ['trinket', 'head'], t: 'Giảm một nửa khả năng chết khi gục.', deathMul: 0.5 }
+    // phụ kiện
+    ward: { n: 'Hộ thân', on: ['trinket', 'head'], t: 'Giảm một nửa khả năng chết khi gục.', deathMul: 0.5 },
+    banner: { n: 'Cờ hiệu', on: ['trinket'], t: 'Đồng đội trong 3 m gây thêm 10% sát thương.', perk: 'inspire' }
   };
   G.LEGEND = ['của Achilles', 'của Hector', 'của Leonidas', 'của Spartacus', 'của Hannibal', 'của Scipio', 'của Alexandros', 'của Hercules', 'của thần Mars', 'của Nemesis', 'của Romulus', 'của Ajax'];
   // trọng lượng tính theo đơn vị Thể lực (Thể lực 90 ở cấp 1)
@@ -627,22 +643,22 @@
     [
       { name: 'Lính đánh thuê xứ Gallia', desc: 'Bốn tên tóc vàng bôi vôi, hai rìu hai khiên, hát trước khi đánh.',
         hint: 'Hai cây rìu sẽ xông thẳng vào hàng đầu của anh. Khiên chỉ đỡ được nửa lực rìu — hãy giết chúng trước khi chúng vung lần hai.',
-        foes: [e('Brennos', 'big', 7, 'axe2', ['b_leather', 'h_cap'], 0, 1), e('Catuvolc', 'big', 7, 'axe2', ['b_leather'], 0, 3), e('Lính Gallia', 'bal', 7, 'gladius2', ['s_hoplon', 'b_linen', 'h_legion'], 1, 2), e('Lính Gallia', 'bal', 6, 'hasta2', ['s_parma', 'b_linen'], 1, 0)] },
+        foes: [e('Brennos', 'big', 7, 'axe3', ['b_quilt', 'h_boeo'], 0, 1), e('Catuvolc', 'big', 7, 'axe3', ['b_quilt'], 0, 3), e('Lính Gallia', 'bal', 7, 'gladius3', ['s_scutum', 'b_studded', 'h_gallic'], 1, 2), e('Lính Gallia', 'bal', 6, 'hasta3', ['s_parma', 'b_studded'], 1, 0)] },
       { name: 'Bóng ma hẻm tối', desc: 'Sát thủ thuê của khu Subura, bị bắt cả ổ. Không giáp, song đao, không bao giờ đánh trước mặt.',
         hint: 'Chúng sẽ bỏ qua hàng đầu để tìm kẻ mặc ít giáp nhất. Giáp cho cả những người đứng sau, hoặc xếp thành cụm để không ai hở lưng.',
-        foes: [e('Bóng ma', 'agi', 7, 'twin2', ['a_manica', 'l_sandal'], 0, 0, { hpMul: 1.2 }), e('Bóng ma', 'agi', 7, 'twin2', ['a_manica', 'l_sandal'], 0, 4, { hpMul: 1.2 }), e('Bóng ma', 'agi', 7, 'twin2', ['l_sandal', 't_oil'], 1, 1, { hpMul: 1.2 }), e('Kẻ cầm đầu', 'agi', 8, 'twin3', ['b_linen', 'a_manica', 'l_sandal'], 1, 3, { hpMul: 1.3 })] },
+        foes: [e('Bóng ma', 'agi', 7, 'twin3', ['a_vambrace', 'l_boot'], 0, 0, { hpMul: 1.2 }), e('Bóng ma', 'agi', 7, 'twin3', ['a_vambrace', 'l_boot'], 0, 4, { hpMul: 1.2 }), e('Bóng ma', 'agi', 7, 'twin3', ['l_boot', 't_oil'], 1, 1, { hpMul: 1.2 }), e('Kẻ cầm đầu', 'agi', 8, 'twin4', ['b_studded', 'a_vambrace', 'l_boot'], 1, 3, { hpMul: 1.3 })] },
       { name: 'Phalanx Hy Lạp', desc: 'Lính đánh thuê từ Tarentum. Hai khiên đồng phía trước, ba mũi giáo phía sau.',
         hint: 'Đánh trực diện là đánh vào khiên trong khi ba mũi giáo đâm anh. Kẻ vòng sườn và lao là câu trả lời.',
-        foes: [e('Hoplite', 'big', 5, 'gladius2', ['s_hoplon', 'b_linen', 'h_legion', 'l_ocrea'], 0, 1, { hpMul: 0.8, dmgMul: 1.15 }), e('Hoplite', 'big', 5, 'gladius2', ['s_hoplon', 'b_linen', 'h_legion', 'l_ocrea'], 0, 3, { hpMul: 0.8, dmgMul: 1.15 }), e('Lính giáo', 'bal', 5, 'hasta3', ['b_linen', 'h_cap'], 1, 1, { hpMul: 0.85 }), e('Lính giáo', 'bal', 5, 'hasta2', ['b_linen', 'h_cap'], 1, 2, { hpMul: 0.85 }), e('Lính giáo', 'bal', 5, 'hasta3', ['b_linen', 'h_cap'], 1, 3, { hpMul: 0.85 })] },
+        foes: [e('Hoplite', 'big', 5, 'gladius3', ['s_scutum', 'b_studded', 'h_gallic', 'l_ocrea'], 0, 1, { hpMul: 0.8, dmgMul: 1.15 }), e('Hoplite', 'big', 5, 'gladius3', ['s_scutum', 'b_studded', 'h_gallic', 'l_ocrea'], 0, 3, { hpMul: 0.8, dmgMul: 1.15 }), e('Lính giáo', 'bal', 5, 'hasta4', ['b_studded', 'h_boeo'], 1, 1, { hpMul: 0.85 }), e('Lính giáo', 'bal', 5, 'hasta3', ['b_studded', 'h_boeo'], 1, 2, { hpMul: 0.85 }), e('Lính giáo', 'bal', 5, 'hasta4', ['b_studded', 'h_boeo'], 1, 3, { hpMul: 0.85 })] },
       { name: 'Kỵ binh mất ngựa xứ Numidia', desc: 'Những tay ném lao giỏi nhất thế giới, nay đi bộ. Một gã khổng lồ đứng chắn trước họ.',
         hint: 'Bốn cây lao mỗi hai giây. Khiên lớn đi trước; kẻ nhanh chân vòng qua gã chắn đường để tới chỗ lính lao.',
-        foes: [e('Gã chắn đường', 'big', 6, 'mace2', ['s_scutum', 'b_hamata', 'h_legion'], 0, 2), e('Lính lao Numidia', 'agi', 6, 'javelin2', ['l_sandal'], 2, 0, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin3', ['l_sandal'], 2, 1, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin2', ['l_sandal'], 2, 3, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin3', ['l_sandal'], 2, 4, { hpMul: 0.7, dmgMul: 0.8 })] },
+        foes: [e('Gã chắn đường', 'big', 6, 'mace3', ['s_scutum', 'b_hamata', 'h_gallic'], 0, 2), e('Lính lao Numidia', 'agi', 6, 'javelin3', ['l_boot'], 2, 0, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin4', ['l_boot'], 2, 1, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin3', ['l_boot'], 2, 3, { hpMul: 0.7, dmgMul: 0.8 }), e('Lính lao Numidia', 'agi', 6, 'javelin4', ['l_boot'], 2, 4, { hpMul: 0.7, dmgMul: 0.8 })] },
       { name: 'Gã khổng lồ và bầy sói', desc: 'Một tù binh Germania cao hơn mọi người một cái đầu, và ba tên lâu la bám quanh hắn.',
         hint: 'Bầy sói chết nhanh nhưng cắn đau. Gã khổng lồ mặc giáp lưới: chùy và giáo xuyên giáp đáng giá hơn kiếm.',
-        foes: [e('Gerwulf Khổng Lồ', 'big', 9, 'mace3', ['b_hamata', 'h_legion', 'a_scale', 'l_ocrea'], 0, 2, { hpMul: 2.8, dmgMul: 1.3, scale: 1.1 }), e('Sói', 'agi', 8, 'twin2', [], 0, 0), e('Sói', 'agi', 8, 'sica2', [], 0, 4), e('Sói', 'agi', 8, 'twin2', [], 1, 2)] },
+        foes: [e('Gerwulf Khổng Lồ', 'big', 9, 'mace4', ['b_hamata', 'h_gallic', 'a_scale', 'l_ocrea'], 0, 2, { hpMul: 2.8, dmgMul: 1.3, scale: 1.1 }), e('Sói', 'agi', 8, 'twin3', [], 0, 0), e('Sói', 'agi', 8, 'sica3', [], 0, 4), e('Sói', 'agi', 8, 'twin3', [], 1, 2)] },
       { name: 'Nhà vô địch Capua', desc: 'Trường giàu nhất Campania gửi bốn người giỏi nhất. Mỗi tên có một bức vẽ trên tường quán rượu.',
         hint: 'Không có mẹo. Bốn người của chúng tốt ngang bốn người của anh — bên nào trang bị và xếp hình khéo hơn sẽ thắng.',
-        foes: [e('Murmillo Celadus', 'big', 10, 'gladius3', ['s_scutum', 'h_murmillo', 'b_linen', 'a_manica', 'l_ocrea'], 0, 1), e('Thraex Oceanus', 'bal', 10, 'sica3', ['s_parma', 'h_galea', 'b_linen', 'a_scale', 'l_ocrea'], 0, 3), e('Hoplomachus Rusticus', 'bal', 9, 'hasta3', ['s_parma', 'h_galea', 'b_linen'], 1, 2), e('Retiarius Crescens', 'agi', 9, 'trident3', ['a_galerus', 'l_sandal'], 1, 4)] },
+        foes: [e('Murmillo Celadus', 'big', 10, 'gladius4', ['s_scutum', 'h_murmillo', 'b_studded', 'a_vambrace', 'l_ocrea'], 0, 1), e('Thraex Oceanus', 'bal', 10, 'sica4', ['s_parma', 'h_gallic', 'b_studded', 'a_scale', 'l_ocrea'], 0, 3), e('Hoplomachus Rusticus', 'bal', 9, 'hasta4', ['s_parma', 'h_gallic', 'b_studded'], 1, 2), e('Retiarius Crescens', 'agi', 9, 'trident4', ['a_galerus', 'l_boot'], 1, 4)] },
       { name: 'Ferox — Bức Tường Sắt', boss: 1, desc: 'Ba mươi trận, chưa một vết sẹo. Hắn không tấn công: hắn đứng sau tấm scutum bọc sắt và chờ anh mệt.',
         hint: 'Tấm khiên của hắn che cả trước mặt lẫn hai sườn và chặn hơn nửa số đòn; chỉ sau lưng là hở. Giáp nuốt phần còn lại. Chùy bỏ qua giáp, rìu xuyên nửa lực qua khiên, đao cong vòng qua mép khiên; lao nặng ghim được khiên năm giây rồi hắn giật ra. Song đao và nắm đấm gần như vô hại trước lớp sắt ấy; một hàng kiếm khiên đứng trước mặt hắn chỉ tổ mỏi tay. Khi còn hai phần ba và một phần ba máu, hắn gọi hai học trò cầm khiên ra đứng cạnh: khiên kề khiên, chúng che cho nhau.',
         foes: [e('Ferox', 'big', 11, 'gladius3', ['s_tower', 'h_secutor', 'b_segment', 'a_plate', 'l_ocrea2'], 0, 2, { boss: 1, hpMul: 3.2, dmgMul: 2.55, scale: 1.08, spCd: 0.7, capAdd: 90, moveMul: 1.3, wall: 1, summon: { at: [0.66, 0.33], foes: [e('Học trò của Ferox', 'big', 8, 'gladius2', ['s_scutum', 'h_legion', 'b_hamata'], 0, 2, { hpMul: 0.75, dmgMul: 0.85, talent: 'legionary' }), e('Học trò của Ferox', 'big', 8, 'gladius2', ['s_scutum', 'h_legion', 'b_hamata'], 0, 2, { hpMul: 0.75, dmgMul: 0.85, talent: 'legionary' })] } })] }
@@ -652,9 +668,10 @@
       { name: 'Chó trận của doanh trại', desc: 'Năm con chó Molossus được nuôi để xé xác tù binh Germania, và gã lính già giữ xích chúng.',
         hint: 'Chó chạy nhanh hơn người, vòng ra sau lưng và đớp gân chân. Đứng sát nhau để không ai hở lưng; khiên và giáp chân giữ được bắp chân. Gã dắt chó ném lao từ phía sau.',
         foes: [e('Chó Molossus', 'agi', 8, null, [], 0, 0, { beast: 'dog', hpMul: 0.5 }), e('Chó Molossus', 'agi', 8, null, [], 0, 1, { beast: 'dog', hpMul: 0.5 }), e('Chó Molossus', 'agi', 8, null, [], 0, 2, { beast: 'dog', hpMul: 0.5 }), e('Chó Molossus', 'agi', 8, null, [], 0, 3, { beast: 'dog', hpMul: 0.5 }), e('Chó Molossus', 'agi', 8, null, [], 0, 4, { beast: 'dog', hpMul: 0.5 }), e('Người dắt chó', 'bal', 9, 'javelin3', ['b_linen', 'h_legion', 's_parma'], 2, 2)] },
-      { name: 'Đội tuần tra kỵ binh', desc: 'Hai kỵ binh trợ chiến xứ Pannonia với giáo móc, và ba cung thủ Syria nấp sau lưng ngựa.',
-        hint: 'Kỵ binh phi vòng quanh sân rồi bất ngờ xông vào móc kẻ đứng lẻ, kéo lê hắn đi. Đừng để ai đứng một mình; giáo và lao đón được ngựa đang lao tới; lưới và đòn choáng làm ngựa khựng lại.',
-        foes: [e('Kỵ binh Pannonia', 'bal', 9, 'hasta3', ['b_hamata', 'h_legion'], 1, 0, { mount: 'horse', hpMul: 1.15 }), e('Kỵ binh Pannonia', 'bal', 9, 'hasta3', ['b_hamata', 'h_legion'], 1, 4, { mount: 'horse', hpMul: 1.15 }), e('Cung thủ Syria', 'agi', 8, 'bow3', ['b_linen'], 2, 1, { hpMul: 0.8, dmgMul: 0.7 }), e('Cung thủ Syria', 'agi', 8, 'bow3', ['b_linen'], 2, 2, { hpMul: 0.8, dmgMul: 0.7 }), e('Cung thủ Syria', 'agi', 8, 'bow3', ['b_linen'], 2, 3, { hpMul: 0.8, dmgMul: 0.7 })] },
+      { name: 'Đội tuần tra kỵ binh', desc: 'Hai kỵ binh trợ chiến xứ Pannonia ngồi trên lưng ngựa với cây nỏ, và hai lính khiên giáo đi bộ chắn trước mặt họ.',
+        hint: 'Hai kỵ binh phi vòng quanh sân và bắn nỏ từ trên lưng ngựa: nỏ xuyên giáp dày, nhưng lên dây lâu. Hai lính khiên giáo giữ chân đội anh cho họ bắn. Cung và lao với tới người cưỡi ngựa; giáo và đinh ba đón được ngựa chạy ngang; lưới và đòn choáng làm ngựa khựng lại. Đánh hai lính bộ từ hai bên sườn, đừng húc thẳng vào khiên.',
+        foes: [e('Kỵ binh nỏ Pannonia', 'bal', 9, 'crossbow3', ['b_hamata', 'h_legion'], 2, 0, { mount: 'horse', hpMul: 1.1, dmgMul: 0.85 }), e('Kỵ binh nỏ Pannonia', 'bal', 9, 'crossbow3', ['b_hamata', 'h_legion'], 2, 4, { mount: 'horse', hpMul: 1.1, dmgMul: 0.85 }),
+          e('Lính khiên giáo', 'big', 9, 'hasta3', ['s_scutum', 'b_hamata', 'h_legion', 'l_ocrea'], 0, 1, { hpMul: 1.15 }), e('Lính khiên giáo', 'big', 9, 'hasta3', ['s_scutum', 'b_hamata', 'h_legion', 'l_ocrea'], 0, 3, { hpMul: 1.15 })] },
       { name: 'Người thuần gấu', desc: 'Một con gấu nâu bắt ở rừng Dacia, đói ba ngày, và hai thợ săn thú cầm giáo dồn nó về phía anh.',
         hint: 'Con gấu quật trúng mọi kẻ đứng trước mặt nó và vồ đè người xuống; khiên chỉ đỡ được nửa lực. Đừng dồn cả đội trước mặt nó: một người giữ chân, những người khác đánh từ hai bên và sau lưng. Nó gầm lên là choáng cả những ai đứng sát.',
         foes: [e('Gấu nâu Dacia', 'big', 10, null, [], 0, 2, { beast: 'bear', hpMul: 4.0, dmgMul: 1.3, armor: 3, roar: 1, scale: 2 }), e('Thợ săn thú', 'bal', 9, 'hasta3', ['b_linen', 'a_manica'], 1, 1), e('Thợ săn thú', 'bal', 9, 'hasta3', ['b_linen', 'a_manica'], 1, 3)] },
