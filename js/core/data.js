@@ -582,7 +582,7 @@
         foes: [e('Tên trộm gầy', 'agi', 1, null, [], 0, 1, { hpMul: 0.85, dmgMul: 1.2 }), e('Tên trộm lùn', 'bal', 1, null, [], 0, 3, { hpMul: 0.85, dmgMul: 1.2 })] },
       { name: 'Anh em thợ thuộc da', desc: 'Hai gã hôi mùi vôi và nước tiểu, mỗi gã một cây gậy sồi.',
         hint: 'Gậy chậm nhưng nặng. Kẻ nhanh tay sẽ đánh được hai đòn trước mỗi cú vung của chúng.',
-        foes: [e('Thợ thuộc da anh', 'big', 1, 'mace1', [], 0, 1, { hpMul: 1.05, dmgMul: 1.1 }), e('Thợ thuộc da em', 'bal', 1, 'mace1', ['a_wrap'], 0, 3, { hpMul: 1.05, dmgMul: 1.1 })] },
+        foes: [e('Thợ thuộc da anh', 'big', 1, 'mace1', [], 0, 1, { hpMul: 0.84, dmgMul: 1.1 }), e('Thợ thuộc da em', 'bal', 1, 'mace1', ['a_wrap'], 0, 3, { hpMul: 0.84, dmgMul: 1.1 })] },
       { name: 'Gã say và con dao', desc: 'Một lão lính già giữ khiên, và thằng cháu của lão lẩn phía sau với đôi dao găm.',
         hint: 'Thằng cầm dao sẽ vòng ra sau lưng người của anh. Đừng để ai đứng một mình.',
         foes: [e('Lão lính say', 'big', 2, 'gladius1', ['s_plank', 'b_harness'], 0, 2, { hpMul: 1.2, dmgMul: 1.1 }), e('Thằng cháu', 'agi', 1, 'twin1', [], 1, 3, { hpMul: 0.95, dmgMul: 1.0 })] },

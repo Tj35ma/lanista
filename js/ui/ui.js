@@ -378,12 +378,15 @@
       else newGame();
     }));
     add(menu, soundBtn('sm'));
+    var tb = btn('Hướng dẫn: ' + (tutOff() ? 'tắt' : 'bật'), 'sm', function () { tutSet(!tutOff()); tb.innerHTML = 'Hướng dẫn: ' + (tutOff() ? 'tắt' : 'bật'); });
+    add(menu, tb);
     add(menu, h('div', 'saveinfo dim', 'Mỗi lần mở link là một ván mới. Lỡ tải lại trang (F5) thì vẫn chơi tiếp được; đóng tab là mất ván.'));
     add(elTitle, logo, menu);
   }
   function newGame() {
     G.Game.clearSave();
     UI.game = G.Game.create();
+    if (!tutOff()) UI.game.s.tut = 1;
     UI.game.save();
     show(elTitle, false);
     UI.sel = null;
@@ -447,6 +450,7 @@
     else if (UI.tab === 'shop') renderShop();
     else renderReady();
     pushView();
+    tutApply();
   };
 
   var foeCache = { key: '', foes: null };
@@ -545,7 +549,7 @@
     var defs = [['market', 'Chợ nô lệ'], ['shop', 'Lò rèn'], ['ready', 'Phòng chờ']];
     var pend = s.roster.some(function (g) { return g.pending > 0; });
     defs.forEach(function (d) {
-      var b = h('button', 'tab' + (UI.tab === d[0] ? ' on' : ''));
+      var b = h('button', 'tab' + (UI.tab === d[0] ? ' on' : '')); b.setAttribute('data-tab', d[0]);
       b.innerHTML = d[1] + (d[0] === 'ready' && pend ? '<span class="pip">▲</span>' : '');
       b.addEventListener('click', function () { snd('click'); setTab(d[0]); });
       tabs.appendChild(b);
@@ -578,8 +582,57 @@
     }
     requestAnimationFrame(step);
   }
+  // ---------------------------------------------------------------- HƯỚNG DẪN NGÀY 1
+  // Bảy bước, suy ra từ trạng thái ván (không khóa người chơi): thanh gợi ý nói bước kế tiếp, vòng sáng chỉ vào thứ cần bấm.
+  // Chỉ chạy ở ngày 1 của ván vừa tạo; xong một lần thì tự tắt (nút "Hướng dẫn" ở màn hình đầu bật lại được).
+  var TUT_KEY = 'lanista_tut';
+  function tutOff() { try { return localStorage.getItem(TUT_KEY) === 'off'; } catch (e) { return false; } }
+  function tutSet(off) { try { if (off) localStorage.setItem(TUT_KEY, 'off'); else localStorage.removeItem(TUT_KEY); } catch (e) { } }
+  function tutOn() { var g = UI.game; return !!g && g.s.tut === 1 && g.s.day === 1 && !tutOff(); }
+  function tutStep() {
+    if (!tutOn()) return null;
+    var gm = UI.game, s = gm.s;
+    function q(root, sel) { return root ? [].slice.call(root.querySelectorAll(sel)) : []; }
+    function tab(id) { return q(elTop, '.tab[data-tab="' + id + '"]'); }
+    function byText(root, re) { return q(root, 'button').filter(function (b) { return re.test(b.textContent); }); }
+    if (UI.state === 'fight') return { n: 6, text: 'Trên cát họ tự đánh. Anh chỉ có một quyền: xin thua.', els: [] };
+    if (UI.state === 'result') return { n: 7, text: 'Tiền thưởng và thương tích của trận nằm trong bảng này. Bấm Qua ngày để sang ngày mới.', els: byText(root.querySelector('.panel.result'), /^Qua ngày/) };
+    if (UI.state !== 'hub') return null;
+    if (!s.roster.length) return { n: 1, text: 'Rê chuột lên từng người để xem, rồi mua một nô lệ.', els: UI.tab === 'market' ? q(elTags, '.tag3d .btn.price') : tab('market') };
+    var armed = s.roster.some(function (g) { return !!g.gear.weapon; });
+    var invW = s.inv.some(function (x) { return G.ITEMS[x.id].slot === 'weapon'; });
+    if (!armed && !invW && s.market.shop.some(function (o) { return !o.sold && G.ITEMS[o.id].slot === 'weapon' && o.price <= s.gold; })) {
+      var wt = [];
+      tagList.forEach(function (tg) { var o = tg.space === 'shop' && typeof tg.key === 'number' ? s.market.shop[tg.key] : null; if (o && G.ITEMS[o.id].slot === 'weapon' && o.price <= s.gold) { var b = tg.el.querySelector('.btn.price'); if (b) wt.push(b); } });
+      return { n: 2, text: 'Sang Lò rèn mua cho hắn một thứ vũ khí.', els: UI.tab === 'shop' ? wt : tab('shop') };
+    }
+    if (UI.tab === 'ready' && UI.deploy) return { n: 5, text: 'Kéo người vào ô trên sân; người đánh xa nên đứng sau. Xong thì bấm Chiến đấu.', els: byText(elBottom, /CHIẾN ĐẤU/) };
+    if (!armed && invW) {
+      var e3 = UI.tab !== 'ready' ? tab('ready') : (UI.equipOpen ? q(elEquip, '.eq-inv .itile') : q(elLeft, '.row.click'));
+      return { n: 3, text: 'Vào Phòng chờ, bấm vào hắn rồi kéo vũ khí thả lên người.', els: e3 };
+    }
+    if (UI.tab !== 'ready') return { n: 4, text: (armed ? '' : 'Không đủ tiền mua vũ khí thì cứ đánh tay không: thắng trận sẽ có tiền. ') + 'Vào Phòng chờ để ra trận.', els: tab('ready') };
+    if (!gm.fielded()) return { n: 4, text: 'Bấm nút Ra trận cạnh tên để chọn người ra sân.', els: q(elLeft, '.btn.toggle') };
+    return { n: 4, text: (UI.equipOpen ? 'Trang bị xong.' : 'Bên phải là đối thủ hôm nay.') + ' Bấm Ra đấu trường.', els: byText(elBottom, /RA ĐẤU TRƯỜNG/) };
+  }
+  function tutApply() {
+    [].slice.call(document.querySelectorAll('.tut-glow')).forEach(function (e) { e.classList.remove('tut-glow'); });
+    var st = tutStep();
+    elHint.classList.toggle('tut', !!st);
+    if (!st) return false;
+    clear(elHint);
+    add(elHint, h('b', null, 'Hướng dẫn ' + st.n + '/7'), document.createTextNode(' · ' + st.text + ' '));
+    var sk = h('button', 'tut-skip', 'Bỏ hướng dẫn');
+    sk.addEventListener('click', function (ev) { ev.stopPropagation(); tutSet(true); tutApply(); if (UI.state === 'hub') UI.refresh(); else show(elHint, false); });
+    add(elHint, sk);
+    show(elHint, true);
+    st.els.forEach(function (e) { e.classList.add('tut-glow'); });
+    return true;
+  }
   function renderHint() {
     var gm = UI.game, s = gm.s, t = '';
+    elHint.classList.remove('tut');
+    if (tutStep()) return;   // đang hướng dẫn: tutApply() ở cuối UI.refresh sẽ viết thanh gợi ý
     if (!s.roster.length) t = UI.tab === 'market' ? 'Trường chưa có ai. Nút mua nằm ngay dưới chân từng người — di chuột lên để xem hắn là ai.' : 'Trường chưa có ai. Sang Chợ nô lệ mua người trước.';
     else if (s.fought) t = 'Hôm nay đã đấu. Sắm sửa xong thì qua ngày.';
     else {
@@ -1330,7 +1383,10 @@
   function nextDay() {
     var gm = UI.game;
     closePop();
+    var tutEnd = gm.s.tut === 1 && !tutOff();
     var news = gm.nextDay();
+    if (gm.s.tut) { gm.s.tut = 0; if (tutEnd) tutSet(true); gm.save(); }
+    show(elHint, false);
     snd('day');
     UI.fightKind = gm.mainFight() ? 'main' : 'side0';
     foeCache.key = '';
@@ -1340,6 +1396,7 @@
     var ul = h('ul');
     (news || []).forEach(function (t) { add(ul, h('li', null, t)); });
     add(ul, h('li', null, 'Chợ có người mới, lò rèn đổi hàng.'));
+    if (tutEnd) add(ul, h('li', null, 'Hết phần hướng dẫn. Từ đây anh tự lo liệu: rê chuột lên bất cứ thứ gì để xem nó làm gì.'));
     d.appendChild(ul);
     if (!gm.s.roster.length) add(d, h('p', null, 'Trường của anh không còn ai. Ra chợ xem còn mua nổi người nào không.'));
     var f = h('div', 'foot'); add(f, btn('Tiếp', null, function () { m.close(); })); d.appendChild(f);
@@ -1359,6 +1416,7 @@
     gm.save();
     UI.state = 'fight'; UI.battle = b;
     closeAllModals(); tipHide(); showHub(false);
+    tutApply();
     snd('gate'); amb('arena');
     var tier = gm.s.tier;
     vgo('arena', { tier: tier });
@@ -1601,6 +1659,7 @@
     add(foot, btn(res.final ? 'Chơi tiếp ▸' : 'Qua ngày ▸', 'big', function () { afterResult(p); }));
     p.appendChild(foot);
     root.appendChild(p);
+    tutApply();
   }
   function afterResult(panel) {
     if (panel && panel.parentNode) panel.parentNode.removeChild(panel);
