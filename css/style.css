@@ -10,6 +10,7 @@ html, body {
 #fade { position: fixed; left: 0; top: 0; right: 0; bottom: 0; background: #000; opacity: 0; pointer-events: none; z-index: 2; }
 #ui { position: fixed; left: 0; top: 0; right: 0; bottom: 0; pointer-events: none; z-index: 3; min-width: 1100px; min-height: 650px; }
 #ui > * { pointer-events: none; }
+#left, #right, #bottom { pointer-events: auto; }   /* các bảng bấm được (dòng tên, ô chọn trận); phần còn lại của #ui để chuột xuyên xuống cảnh 3D */
 #fatal { position: fixed; left: 0; top: 0; right: 0; z-index: 60; display: none; justify-content: center; pointer-events: none; }
 #fatal .box { margin-top: 60px; max-width: 620px; padding: 14px 18px; background: rgba(40, 10, 6, .95); border: 1px solid #c4572e; color: #f1dcc0; pointer-events: auto; }
 #fatal .box h2 { margin: 0 0 6px; font-weight: normal; font-variant: small-caps; letter-spacing: .08em; color: #ff9a6a; }
