@@ -76,10 +76,10 @@
       special: { id: 'sweep', name: 'Quét vòng', cd: 9, desc: 'Quét ngang trúng mọi kẻ địch trước mặt (85% sát thương) và hất chúng ra xa.' }
     },
     javelin: {
-      name: 'Lao', reach: 5.5, interval: 2.4, windup: 0.64, recover: 0.56, hands: 1, ai: 'ranged', pen: 0.4, len: 1.5, ranged: true, meleeReach: 1.6, meleeMul: 0.7, proj: 'javelin', projSpeed: 16,
-      role: 'Khắc chế khiên', strength: 'Khiên chỉ còn 1/4 tác dụng trước lao. +50% sát thương vào kẻ cầm khiên. Mỗi cây lao trúng làm nứt khiên: −12% chặn tới hết trận (tối đa 3 lần).',
+      name: 'Lao', reach: 5.5, interval: 2.4, windup: 0.64, recover: 0.56, hands: 1, ai: 'ranged', pen: 0.6, len: 1.5, ranged: true, meleeReach: 1.6, meleeMul: 0.7, proj: 'javelin', projSpeed: 16,
+      role: 'Ném xa, xuyên giáp', strength: 'Lao nặng xuyên giáp tốt. Bị áp sát thì đâm bằng lao, yếu hơn 30%.',
       behave: 'Giữ khoảng cách mà ném, lùi khi địch tới gần. Một tay nên vẫn cầm được khiên.',
-      special: { id: 'pin', name: 'Lao ghim khiên', cd: 9, desc: 'Cây lao nặng cắm vào khiên làm khiên vô dụng đến hết trận (nhà vô địch thì giật ra được sau 5 giây); nếu địch không có khiên: ×1,6 sát thương.' }
+      special: { id: 'pin', name: 'Lao ghim khiên', cd: 9, desc: 'Cây lao cắm vào khiên: khiên vô dụng 3 giây. Nếu địch không có khiên: ×1,6 sát thương.' }
     },
     bow: {
       name: 'Cung', reach: 10, interval: 0.85, windup: 0.36, recover: 0.16, hands: 2, ai: 'ranged', pen: 0, len: 1.2, ranged: true, meleeReach: 1.15, meleeMul: 0.5, proj: 'arrow', projSpeed: 28,
@@ -143,7 +143,7 @@
   W('trident', 19.5, 5, 18, ['Chĩa ba ngư phủ', 'Đinh ba Fuscina', 'Đinh ba thép', 'Đinh ba Neptunus']);
   W('twin', 6, 2.6, 16, ['Đôi dao găm Pugio', 'Song kiếm ngắn', 'Song đao Dimachaerus', 'Song kiếm thép Noricum']);
   W('axe', 23, 8, 16, ['Rìu đốn củi', 'Rìu chiến Germania', 'Liềm Falx Dacia', 'Đại rìu Bipennis']);
-  W('javelin', 26, 6.5, 15, ['Lao gỗ tôi lửa', 'Lao Verutum', 'Lao Pilum', 'Pilum nặng lê dương']);
+  W('javelin', 26, 6.5, 15, ['Lao gỗ tôi lửa', 'Lao Verutum', 'Lao Lancea', 'Lao Spiculum']);
   W('bow', 12.5, 1.6, 15, ['Cung săn gỗ tần bì', 'Cung ngắn Numidia', 'Cung sừng Scythia', 'Cung ghép Parthia']);
   W('crossbow', 23.5, 2.6, 17, ['Nỏ gỗ thợ săn', 'Nỏ bụng Gastraphetes', 'Nỏ tay Manuballista', 'Nỏ thép Arcuballista']);
 
@@ -219,7 +219,7 @@
   WV('dolabra', 'axe', [1, 2], ['Rìu cuốc Dolabra', 'Dolabra lê dương'], { dmg: 0.9, spd: 0.9, wt: 0.85, v: 'dolabra', desc: 'Nhẹ hơn rìu chiến: vung nhanh hơn, đòn nhẹ hơn.' });
   WV('maul', 'axe', [2, 3, 4], ['Búa tạ', 'Búa tạ đầu sắt', 'Búa tạ Vulcanus'], { dmg: 0.96, pen: 0.3, v: 'maul', desc: 'Búa hai tay: bỏ qua 60% giáp.' });
   WV('labrys', 'axe', [3, 4], ['Rìu đôi Labrys', 'Labrys xứ Crete'], { dmg: 1.1, spd: 1.08, wt: 1.15, v: 'labrys', desc: 'Hai lưỡi: nặng và tàn bạo hơn, vung chậm hơn.' });
-  WV('dart', 'javelin', [2, 3, 4], ['Phi tiêu chì Plumbata', 'Plumbata lê dương', 'Plumbata nặng'], { dmg: 0.7, spd: 0.72, reach: -1.5, wt: 0.7, v: 'dart', dl: -0.35, desc: 'Ngắn, gắn chì: ném dày gần gấp rưỡi, tầm gần hơn 1,5 m, mỗi phát nhẹ hơn.' });
+  WV('dart', 'javelin', [2, 3, 4], ['Pilum nhẹ', 'Pilum lê dương', 'Pilum nặng gắn chì'], { dmg: 1.1, spd: 1.1, reach: -0.5, wt: 1.15, pen: 0.15, v: 'pilum', dl: 0.09, desc: 'Cọng sắt dài, mảnh: +15% xuyên giáp. Nặng: ném thưa hơn 10%, tầm gần hơn 0,5 m.' });   // id giữ tiền tố cũ (dart) để bản lưu không hỏng
   WV('venab', 'javelin', [1, 2, 3], ['Lao săn Venabulum', 'Venabulum lưỡi rộng', 'Venabulum thép'], { dmg: 1.2, spd: 1.15, wt: 1.25, v: 'venab', desc: 'Lao săn thú lớn: nặng tay hơn, ném thưa hơn.' });
   WV('spiked', 'caestus', [2, 3], ['Găng gai', 'Găng gai sắt'], { dmg: 1.1, pen: 0.12, v: 'spike', desc: 'Gai nhọn trên khớp tay: +12% xuyên giáp.' });
 

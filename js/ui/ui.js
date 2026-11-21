@@ -276,8 +276,7 @@
       var can = true, why = '';
       if (it.slot === 'shield' && G.WKIND[G.weaponOf(g).kind].hands === 2) { can = false; why = 'vũ khí của hắn cần cả hai tay'; }
       else if (!G.canCarry(g, it, inst)) { can = false; why = 'quá nặng với hắn'; }
-      H.push('<div class="tt-sec"><span class="tt-desc">' + esc(g.name) + ':</span> ' + c.join('') + '. ' +
-        (can ? '<span class="ok">Mang được.</span>' : '<span class="warn">Không dùng được — ' + why + '.</span>') + '</div>');
+      if (!can) H.push('<div class="tt-sec"><span class="warn">' + esc(g.name) + ' không dùng được — ' + why + '.</span></div>');   // chỉ báo khi người đang chọn không dùng nổi
     }
     if (o.worn) H.push('<div class="tt-sec tt-desc">Bấm để tháo ra, cất vào kho.</div>');
     if (o.price != null) H.push('<div class="tt-sec tt-price">Giá: ' + o.price + ' vàng</div>');
@@ -1491,7 +1490,7 @@
         else if (ev.type === 'bleed') logLine(nm(d) + ' chảy máu');
         else if (ev.type === 'poison') logLine(nm(d) + ' trúng độc');
         else if (ev.type === 'skull') logLine(nm(d) + ' bị đập sọ, choáng');
-        else if (ev.type === 'shieldoff') logLine('Khiên của ' + nm(d) + ' bị lao ghim — vô dụng', 'big');
+        else if (ev.type === 'shieldoff') logLine('Khiên của ' + nm(d) + ' bị lao ghim — vô dụng 3 giây', 'big');
         else if (ev.type === 'enrage') logLine(nm(d) + ' NỔI ĐIÊN!', 'big crit');
         else if (ev.type === 'heal') logLine(nm(d) + ' gượng lại, hồi sức');
         else if (ev.type === 'survive') logLine(nm(d) + ' đứng dậy sau đòn chí tử!', 'big');

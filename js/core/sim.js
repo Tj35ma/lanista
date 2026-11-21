@@ -594,9 +594,7 @@
         // cựu lính lê dương đứng cạnh
         var al = this.alliesOf(t);
         for (var i = 0; i < al.length; i++) if (al[i].auraLegion && dist(al[i], t) < 2.1) { pBlock += 0.12; break; }
-        pBlock -= 0.12 * (t.crack || 0);                       // khiên đã bị lao làm nứt
-        if (f.kind === 'javelin' && o.missile) pBlock *= 0.25;   // lao nặng xuyên khiên: khiên chỉ còn một phần tư tác dụng
-        else if (f.kind === 'caestus') pBlock *= 0.6;   // đấm trong tầm khiên
+        if (f.kind === 'caestus') pBlock *= 0.6;   // đấm trong tầm khiên
         if (fl === 1 && !t.st.wall) pBlock *= 0.5;
         if (o.missile && t.form && !t.form.broken) pBlock += 0.2;   // đội hình giơ khiên đón tên
         pBlock = Math.max(0, Math.min(0.8, pBlock));
@@ -763,7 +761,7 @@
     }
     if (f.kind === 'hasta' && !f.braced[t.id]) { f.braced[t.id] = 1; base *= 1.6; notes.push('Đón đầu'); }
     if (f.kind === 'bow' && viaProj && t.K.ranged) { base *= 1.4; notes.push('Khắc tầm xa'); }                    // cung: khắc chế kẻ đánh xa
-    if (f.kind === 'javelin' && viaProj && t.st.hasShield && !t.shieldOff) { base *= 1.5; if ((t.crack || 0) < 3) { t.crack = (t.crack || 0) + 1; this.emit({ e: 'effect', id: t.id, type: 'crack', n: t.crack }); } }
+
     if (f.kind === 'twin' && t.K.ranged) base *= 1.25;                                                                 // song đao: xử kẻ đánh xa
                                 // lao: khắc chế kẻ cầm khiên
     var aLoc = t.st.armor[h.loc] * (1 - 0.15 * (t.sunder || 0));
@@ -787,13 +785,10 @@
     }
     // lao ghim khiên
     if (h.pin) {
-      if (t.st.hasShield && !t.shieldOff && t.st.boss) {
-        // trùm giật được cây lao ra: khiên chỉ vô dụng 5 giây
-        t.noBlock = Math.max(t.noBlock, 5); base *= 0.5;
-        this.emit({ e: 'effect', id: t.id, type: 'shieldoff', by: f.id, dur: 5 });
-      } else if (t.st.hasShield && !t.shieldOff) {
-        t.shieldOff = true; base *= 0.5;
-        this.emit({ e: 'effect', id: t.id, type: 'shieldoff', by: f.id });
+      if (t.st.hasShield && !t.shieldOff) {
+        // cây lao cắm vào khiên: khiên vô dụng 3 giây, rồi giật ra được
+        t.noBlock = Math.max(t.noBlock, 3); base *= 0.5;
+        this.emit({ e: 'effect', id: t.id, type: 'shieldoff', by: f.id, dur: 3 });
       } else base *= 1.6;
     }
     // giáp

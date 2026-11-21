@@ -111,9 +111,14 @@
   };
   Wp.javelin = function (gm, gt, q, L) {
     var v = L && L.v, i;
-    if (v === 'dart') {
-      gm.cyl(0.011, 0.012, 0.6, 5, WOODS[q], {}); gt.ico(0.028, 0, 0x5a5d60, { y: 0.26, sy: 1.4 }); gt.cone(0.014, 0.12, 4, STEEL[q], { y: 0.36 });
-      for (i = 0; i < 3; i++) gm.box(0.004, 0.1, 0.045, 0xd8cdb4, { y: -0.24, ry: i * 2.09 });
+    if (v === 'pilum') {   // pilum La Mã: cán gỗ, khối nêm hình tháp, cọng sắt dài mảnh, mũi tháp nhỏ; bản nặng có quả chì
+      gm.cyl(0.014, 0.016, 0.95, 5, WOODS[q], { y: -0.3 });
+      gm.cyl(0.017, 0.032, 0.15, 4, WOODS[Math.min(3, q + 1)], { y: 0.22, ry: PI / 4 });
+      gt.box(0.012, 0.1, 0.05, P.ironDark, { y: 0.22 }); gt.box(0.05, 0.1, 0.012, P.ironDark, { y: 0.22 });   // đai sắt kẹp khối nêm
+      gt.cyl(0.005, 0.007, 0.5, 4, STEEL[q], { y: 0.54 });
+      gt.cone(0.017, 0.075, 4, STEEL[q], { y: 0.825 });
+      gt.cone(0.012, 0.09, 4, P.ironDark, { y: -0.82, rx: PI });   // đầu bịt nhọn ở đuôi
+      if (q >= 3) gt.ico(0.036, 0, 0x5a5d60, { y: 0.105 });        // quả chì
       return;
     }
     gm.cyl(v === 'venab' ? 0.014 : 0.011, v === 'venab' ? 0.016 : 0.012, 1.26, 5, WOODS[q], { y: -0.12 });
