@@ -423,11 +423,13 @@
           name: String(g.name || 'Vô danh').replace(/[<>&"']/g, '').slice(0, 22), origin: G.ORIGINS[g.origin] ? g.origin : Object.keys(G.ORIGINS)[0], body: g.body, lvl: lvl,
           str: num(g.str, 1, 40, 4.5), agi: num(g.agi, 1, 40, 4.5), hp: Math.round(num(g.hp, 70, 500, 110)), sta: Math.round(num(g.sta, 60, 300, 90)),
           traits: (g.traits || []).filter(function (t) { return !!G.TRAITS[t]; }).slice(0, 6), talent: G.TALENTS[g.talent] ? g.talent : null,
-          cards: (g.cards || []).filter(function (c) { return !!G.CARDS[c]; }).slice(0, lvl - 1), gear: gear } });
+          cards: (g.cards || []).filter(function (c) { return !!G.CARDS[c]; }).slice(0, lvl - 1), gear: gear,
+          morale: Math.round(num(g.morale, 0, 100, 60)),
+          injuries: (g.injuries || []).filter(function (x) { return x && !!G.INJURIES[x.id]; }).slice(0, 5).map(function (x) { return { id: x.id, days: x.perm ? -1 : 3, perm: x.perm ? 1 : 0 }; }) } });
       }
       var snap = { v: 1, run: Math.floor(num(x.run, 0, 2147483647, 0)), tier: Math.floor(num(x.tier, 0, G.TIERS.length - 1, 0)), stage: Math.floor(num(x.stage, 0, 6, 0)), day: Math.floor(num(x.day, 1, 9999, 1)), team: team };
       // sức mạnh không tin con số gửi tới: tính lại
-      var tmp = team.map(function (o, i) { var c = JSON.parse(JSON.stringify(o.g)); c.id = 'chk' + i; c.injuries = []; c.morale = 60; for (var k in c.gear) c.gear[k].uid = 'c' + i + k; return { g: c }; });
+      var tmp = team.map(function (o, i) { var c = JSON.parse(JSON.stringify(o.g)); c.id = 'chk' + i; for (var k in c.gear) c.gear[k].uid = 'c' + i + k; return { g: c }; });
       snap.pw = Math.round(Game.teamPower(tmp) * 10) / 10;
       return snap.pw > 0 ? snap : null;
     } catch (e) { return null; }
@@ -463,7 +465,7 @@
     try { if (typeof localStorage !== 'undefined' && localStorage) { var a = JSON.parse(localStorage.getItem(GHOST_KEY) || '[]'); if (a && a.length) this.local = a; } } catch (e) { }
     return this.local;
   };
-  // mọi đội trong kho đều đi qua clean(): sức mạnh được tính lại đúng như lúc đội ấy ra sân làm đối thủ (tinh thần 60, không thương tích)
+  // mọi đội trong kho đều đi qua clean(): sức mạnh được tính lại đúng như lúc đội ấy ra sân làm đối thủ (kể cả tinh thần và thương tích đã chụp)
   Ghosts.seed = function () { if (!this._seed) { var self = this; this._seed = (G.GHOST_SEED || []).map(function (x) { return self.clean(x); }).filter(Boolean); } return this._seed; };
   Ghosts.all = function () { var self = this; return this.seed().concat(this.loadRemote(), this.loadLocal().map(function (x) { return self.clean(x); }).filter(Boolean)); };
   Ghosts.record = function (snap) {
@@ -488,9 +490,10 @@
     for (var i = 0; i < team.length; i++) {
       var g = team[i].g, gear = {};
       for (var sl in g.gear) if (g.gear[sl]) { var it = g.gear[sl], o = { id: it.id }; if (it.r) o.r = it.r; if (it.q) o.q = it.q; if (it.m) o.m = it.m; if (it.aff) o.aff = it.aff; if (it.fx) o.fx = it.fx; gear[sl] = o; }
-      out.push({ g: { name: g.name, origin: g.origin, body: g.body, lvl: g.lvl, str: g.str, agi: g.agi, hp: g.hp, sta: g.sta, traits: g.traits.slice(), talent: g.talent || null, cards: g.cards.slice(), gear: gear, look: g.look }, c: team[i].c, r: team[i].r });
+      out.push({ g: { name: g.name, origin: g.origin, body: g.body, lvl: g.lvl, str: g.str, agi: g.agi, hp: g.hp, sta: g.sta, traits: g.traits.slice(), talent: g.talent || null, cards: g.cards.slice(), gear: gear, look: g.look,
+        morale: Math.round(g.morale), injuries: g.injuries.map(function (x) { return { id: x.id, perm: x.perm ? 1 : 0 }; }) }, c: team[i].c, r: team[i].r });
     }
-    return { v: 1, run: s.seed, tier: s.tier, stage: s.stage, day: s.day, pw: Math.round(Game.teamPower(team) * 10) / 10, team: out };
+    return { v: 1, run: s.seed, tier: s.tier, stage: s.stage, day: s.day, pw: Math.round(Game.teamPower(team) * 10) / 10, team: out };   // pw: sức mạnh đã tính cả tinh thần và thương tích lúc chụp
   };
   // đổi trận phụ của hôm nay thành trận với một đội trong kho (nếu trường đang có người và kho có đội hợp)
   Game.prototype.ghostSide = function (fight) {
@@ -513,7 +516,8 @@
     var snap = fight.ghost, out = [], i;
     for (i = 0; i < snap.team.length; i++) {
       var o = snap.team[i], g = JSON.parse(JSON.stringify(o.g));
-      g.id = 'foe' + i; g.foe = true; g.xp = 0; g.morale = 60; g.fame = 0; g.wins = 0; g.kills = 0; g.fights = 0; g.injuries = []; g.pending = 0;
+      g.id = 'foe' + i; g.foe = true; g.xp = 0; g.fame = 0; g.wins = 0; g.kills = 0; g.fights = 0; g.pending = 0;
+      if (g.morale == null) g.morale = 60; if (!g.injuries) g.injuries = [];   // đội ra sân mang đúng tinh thần và thương tích lúc được chụp
       for (var sl in g.gear) g.gear[sl].uid = 'gh' + i + sl;
       if (!g.look) g.look = G.genLook(new G.Rng(G.hashStr(g.name) + i * 977), g.origin);
       out.push({ g: g, c: o.c, r: o.r });

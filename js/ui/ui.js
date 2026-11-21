@@ -603,17 +603,33 @@
   }
   // ---------------------------------------------------------------- HƯỚNG DẪN NGÀY 1
   // Bảy bước, suy ra từ trạng thái ván (không khóa người chơi): thanh gợi ý nói bước kế tiếp, vòng sáng chỉ vào thứ cần bấm.
-  // Chỉ chạy ở ngày 1 của ván vừa tạo; xong một lần thì tự tắt (nút "Hướng dẫn" ở màn hình đầu bật lại được).
+  // Chạy ở ngày 1 (vòng chơi cơ bản) và ngày 2 (mua thêm người, chọn trận) của ván vừa tạo; xong một lần thì tự tắt (nút "Hướng dẫn" ở màn hình đầu bật lại được).
   var TUT_KEY = 'lanista_tut';
   function tutOff() { try { return localStorage.getItem(TUT_KEY) === 'off'; } catch (e) { return false; } }
   function tutSet(off) { try { if (off) localStorage.setItem(TUT_KEY, 'off'); else localStorage.removeItem(TUT_KEY); } catch (e) { } }
-  function tutOn() { var g = UI.game; return !!g && g.s.tut === 1 && g.s.day === 1 && !tutOff(); }
+  function tutOn() { var g = UI.game; return !!g && g.s.tut === 1 && g.s.day <= 2 && !tutOff(); }
   function tutStep() {
     if (!tutOn()) return null;
     var gm = UI.game, s = gm.s;
     function q(root, sel) { return root ? [].slice.call(root.querySelectorAll(sel)) : []; }
     function tab(id) { return q(elTop, '.tab[data-tab="' + id + '"]'); }
     function byText(root, re) { return q(root, 'button').filter(function (b) { return re.test(b.textContent); }); }
+    if (s.day === 2) {   // ---- ngày 2: mua thêm người cho đủ chỗ ra sân, rồi chọn trận
+      if (UI.state !== 'hub') return null;
+      var lim = gm.fieldLimit(), tag2 = function (n, text, els) { return { label: 'Hướng dẫn ngày 2 · ' + n + '/4', text: text, els: els }; };
+      if (UI.tab === 'ready' && UI.deploy) return tag2(4, 'Xếp chỗ cho cả đội: người cận chiến đứng trước, người đánh xa đứng sau. Rồi bấm Chiến đấu.', byText(elBottom, /CHIẾN ĐẤU/));
+      if (s.roster.length < lim) {
+        var buyable = s.market.slaves.some(function (o) { return !o.sold && o.price <= s.gold; });
+        if (buyable) return tag2(1, 'Đấu trường này cho ra sân ' + lim + ' người. Sang Chợ nô lệ mua thêm một nô lệ.', UI.tab === 'market' ? q(elTags, '.tag3d .btn.price').filter(function (b) { return !b.classList.contains('off') && !b.disabled; }) : tab('market'));
+        if (!s.tut2skip) {
+          var loanB = byText(elTop, /^Vay tiền$/);
+          if (loanB.length) return tag2(1, 'Đấu trường này cho ra sân ' + lim + ' người nhưng anh chưa đủ tiền mua thêm. Có thể bấm Vay tiền, hoặc cứ đánh tiếp để kiếm tiền.', loanB.concat(UI.tab === 'ready' ? [] : tab('ready')));
+        }
+      }
+      if (UI.tab !== 'ready') return tag2(2, 'Vào Phòng chờ để xếp người ra trận.', tab('ready'));
+      if (gm.fielded() < Math.min(lim, s.roster.length)) return tag2(2, 'Bấm nút Dự bị cạnh tên người mới để cho hắn ra trận. Bấm vào tên để trang bị cho hắn.', q(elLeft, '.btn.toggle').filter(function (b) { return !b.classList.contains('on'); }));
+      return tag2(3, 'Chọn trận ở thanh dưới: Trận chính để tiến lên, Trận phụ để kiếm tiền và kinh nghiệm. Rồi bấm Ra đấu trường.', q(elBottom, '.fbtn').concat(byText(elBottom, /RA ĐẤU TRƯỜNG/)));
+    }
     if (UI.state === 'fight') return { n: 6, text: 'Trên cát họ tự đánh. Anh chỉ có một quyền: xin thua.', els: [] };
     if (UI.state === 'result') return { n: 7, text: 'Tiền thưởng và thương tích của trận nằm trong bảng này. Bấm Qua ngày để sang ngày mới.', els: byText(root.querySelector('.panel.result'), /^Qua ngày/) };
     if (UI.state !== 'hub') return null;
@@ -640,7 +656,7 @@
     elHint.classList.toggle('tut', !!st);
     if (!st) return false;
     clear(elHint);
-    add(elHint, h('b', null, 'Hướng dẫn ' + st.n + '/7'), document.createTextNode(' · ' + st.text + ' '));
+    add(elHint, h('b', null, st.label || ('Hướng dẫn ' + st.n + '/7')), document.createTextNode(' · ' + st.text + ' '));
     var sk = h('button', 'tut-skip', 'Bỏ hướng dẫn');
     sk.addEventListener('click', function (ev) { ev.stopPropagation(); tutSet(true); tutApply(); if (UI.state === 'hub') UI.refresh(); else show(elHint, false); });
     add(elHint, sk);
@@ -1396,9 +1412,9 @@
   function nextDay() {
     var gm = UI.game;
     closePop();
-    var tutEnd = gm.s.tut === 1 && !tutOff();
+    var tutEnd = gm.s.tut === 1 && !tutOff() && gm.s.day >= 2;   // hướng dẫn kéo hết ngày 2
     var news = gm.nextDay();
-    if (gm.s.tut) { gm.s.tut = 0; if (tutEnd) tutSet(true); gm.save(); }
+    if (gm.s.tut && gm.s.day > 2) { gm.s.tut = 0; if (tutEnd) tutSet(true); gm.save(); }
     show(elHint, false);
     snd('day');
     UI.fightKind = gm.mainFight() ? 'main' : 'side1';
