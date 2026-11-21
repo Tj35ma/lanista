@@ -210,7 +210,6 @@
   }
 
   var EXTRA = [
-    ['block', function (v) { return 'Chặn ' + pct(v) + ' đòn trước mặt'; }],
     ['hpMul', function (v) { return '+' + pct(v) + ' máu'; }],
     ['aspd', function (v) { return '+' + pct(v) + ' tốc độ đánh'; }],
     ['resist', function (v) { return '+' + pct(v) + ' kháng hiệu ứng (choáng, lưới, chậm, chảy máu ngắn lại)'; }],
@@ -244,7 +243,7 @@
     if (inst && inst.aff) inst.aff.forEach(function (a) { if (G.AFFIX[a]) afx.push(G.AFFIX[a]); });
     afx.forEach(function (a) { rch += a.reach || 0; pn += a.pen || 0; });
     H.push('<div class="tt-h rr' + rr + '">' + esc(inst ? G.instName(inst) : it.name) + '</div>');
-    H.push('<div class="tt-sub">' + G.SLOT_NAME[it.slot] + (it.id !== 'fist' ? ' · <span class="rr' + rr + '">Độ hiếm ' + RR.name + '</span>' + (inst && inst.q ? ' · chất lượng ×' + num(inst.q, 2) : '') + ' · kiểu ' + ((inst && inst.m || 0) + 1) + '/3' : '') + '</div>');
+    H.push('<div class="tt-sub">' + G.SLOT_NAME[it.slot] + (it.id !== 'fist' ? ' · <span class="rr' + rr + '">Độ hiếm ' + RR.name + '</span>' : '') + '</div>');
     if (it.slot === 'weapon') {
       var K = G.WKIND[it.kind];
       H.push('<div class="tt-grid">' +
@@ -959,8 +958,8 @@
   // Cột chỉ số luôn hiện bên trái một nô lệ trên bục: icon + con số, rê chuột lên từng dòng để xem nó làm gì.
   var STAT_ROWS = [
     ['str', 'Sức mạnh', 'Mỗi điểm: +5% sát thương gốc của vũ khí. +1 mỗi cấp.'],
-    ['agi', 'Nhanh nhẹn', 'Mỗi điểm: +4% tốc độ đánh, +1,5% né (tối đa 30%), +1,5% tốc chạy. +0,5 mỗi cấp. Mang nặng làm mất Nhanh nhẹn: từ 20% Thể lực −1, 35% −2, 50% −4, 65% −6, 80% −8, 90% −10.'],
-    ['sta', 'Thể lực', 'Sức mang: tổng trọng lượng đồ không được vượt Thể lực. +8 mỗi cấp.'],
+    ['agi', 'Nhanh nhẹn', 'Mỗi điểm: +4% tốc độ đánh, +1,5% né (tối đa 30%), +1,5% tốc chạy. +0,5 mỗi cấp.'],
+    ['sta', 'Thể lực', 'Tổng trọng lượng đồ mang được. +8 mỗi cấp.'],
     ['hp', 'Máu', 'Hết máu là gục. +6 mỗi cấp.'],
     ['move', 'Tốc chạy', 'Mét mỗi giây. Đồ nặng làm chậm lại.'],
     ['aspd', 'Tốc đánh', 'Số giây giữa hai đòn với thứ đang cầm — càng nhỏ càng nhanh.']

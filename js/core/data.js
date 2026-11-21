@@ -29,67 +29,67 @@
     },
     caestus: {
       name: 'Găng Caestus', reach: 1.05, interval: 0.78, windup: 0.22, recover: 0.2, hands: 2, ai: 'brawl', pen: 0.3, len: 0,
-      role: 'Đấu tay đôi', strength: 'Dồn đòn: mỗi cú trúng liên tiếp vào cùng một địch thủ +8% sát thương (tối đa +40%). Đấm trong tầm khiên: khiên địch chỉ còn 60% tác dụng. Móc hàm làm choáng.',
+      role: 'Đấu tay đôi', strength: 'Mỗi cú trúng liên tiếp vào cùng một địch thủ: +8% sát thương (tối đa +40%). Khiên địch chỉ còn 60% tác dụng.',
       behave: 'Bám dính mục tiêu gần nhất, đấm liên tục, không buông.',
       special: { id: 'hook', name: 'Móc hàm', cd: 7, desc: 'Cú móc ×1,6 sát thương, làm choáng 1,3 giây.' }
     },
     gladius: {
       name: 'Đoản kiếm Gladius', reach: 1.35, interval: 1.15, windup: 0.34, recover: 0.28, hands: 1, ai: 'line', pen: 0, len: 0.62,
-      role: 'Khắc chế kẻ không giáp', strength: 'Mạnh trước kẻ không giáp: tới +35% sát thương vào chỗ không có giáp (giảm dần, hết khi giáp từ 6). +15% chí mạng. Không xuyên được giáp.',
+      role: 'Khắc chế kẻ không giáp', strength: 'Tới +35% sát thương vào chỗ không có giáp (giảm dần, hết khi giáp từ 6). +15% chí mạng.',
       behave: 'Tiến đều, đánh kẻ địch gần nhất, không rời đồng đội quá xa.',
       special: { id: 'triple', name: 'Đâm liên hoàn', cd: 8, desc: 'Ba nhát đâm chớp nhoáng, mỗi nhát 70% sát thương.' }
     },
     sica: {
       name: 'Đao cong Sica', reach: 1.35, interval: 1.2, windup: 0.38, recover: 0.3, hands: 1, ai: 'flank', pen: 0.1, len: 0.6,
-      role: 'Kẻ vòng sườn, gây chảy máu', strength: 'Nhát nào trúng cũng rỉ máu (thêm khoảng 24% sát thương trong 4 giây, chí mạng gấp đôi); máu chảy bỏ qua giáp.',
+      role: 'Kẻ vòng sườn, gây chảy máu', strength: 'Nhát nào trúng cũng gây chảy máu: thêm 24% sát thương trong 4 giây (chí mạng gấp đôi), bỏ qua giáp.',
       behave: 'Tìm kẻ địch đang bận đánh người khác rồi vòng ra sau lưng.',
       special: { id: 'hookshield', name: 'Móc khiên', cd: 10, desc: 'Giật khiên sang bên: đòn không thể chặn, gây chảy máu, địch mất khả năng chặn 3 giây.' }
     },
     mace: {
       name: 'Chùy', reach: 1.4, interval: 1.45, windup: 0.5, recover: 0.4, hands: 1, ai: 'breaker', pen: 0.6, len: 0.7,
-      role: 'Chuyên phá giáp', strength: 'Bỏ qua 60% giáp, và mỗi đòn trúng làm móp giáp của địch thêm 15% (tối đa 60%) cho cả đội cùng hưởng tới hết trận.',
+      role: 'Chuyên phá giáp', strength: 'Mỗi đòn trúng làm móp giáp địch 15% (tối đa 60%) tới hết trận, cả đội cùng hưởng.',
       behave: 'Bỏ qua kẻ yếu, tìm đến kẻ địch mặc giáp dày nhất.',
       special: { id: 'stun', name: 'Đập choáng', cd: 9, desc: 'Cú bổ từ trên xuống làm choáng 2 giây.' }
     },
     hasta: {
       name: 'Giáo Hasta', reach: 2.25, interval: 1.5, windup: 0.44, recover: 0.4, hands: 1, ai: 'support', pen: 0.2, len: 2.0,
-      role: 'Tấn công tầm trung', strength: 'Tầm 2,25 m: đâm qua vai đồng đội. Đón đầu: nhát đầu tiên vào mỗi kẻ địch +60% sát thương. Chặn được ngựa đang xông tới.',
+      role: 'Tấn công tầm trung', strength: 'Đâm qua vai đồng đội. Nhát đầu tiên vào mỗi kẻ địch +60% sát thương. Chặn được ngựa đang xông tới.',
       behave: 'Nấp sau đồng đội đứng trước và đâm qua vai họ; giữ kẻ địch ở cuối tầm giáo.',
       special: { id: 'pierce', name: 'Xuyên giáp', cd: 8.5, desc: 'Nhát đâm dồn cả người: ×1,6 sát thương, bỏ qua toàn bộ giáp, đẩy lùi địch.' }
     },
     trident: {
       name: 'Đinh ba & lưới', reach: 2.4, interval: 1.7, windup: 0.5, recover: 0.44, hands: 2, ai: 'kite', pen: 0.15, len: 2.1,
-      role: 'Chuyên khống chế', strength: 'Đòn nào trúng cũng làm địch chậm 25% trong 2 giây (trúng chân: chậm 45%). Lưới giữ chân 3 giây. Tầm xa nhất trong vũ khí cận chiến.',
+      role: 'Chuyên khống chế', strength: 'Đòn nào trúng cũng làm địch chậm 25% trong 2 giây (trúng chân: 45%).',
       behave: 'Giữ khoảng cách, lùi khi bị áp sát, quăng lưới vào kẻ nguy hiểm nhất.',
       special: { id: 'net', name: 'Quăng lưới', cd: 9.5, desc: 'Trùm lưới một kẻ địch trong 5 m: 3 giây không di chuyển, không né, đánh chậm một nửa.' }
     },
     twin: {
       name: 'Song đao', reach: 1.2, interval: 1.0, windup: 0.28, recover: 0.24, hands: 2, ai: 'hunt', pen: 0.35, len: 0.42,
-      role: 'Áp sát tuyến sau', strength: 'Chạy nhanh hơn 30% cho tới nhát chém đầu tiên, ưu tiên lao vào kẻ đánh xa và kẻ ít giáp, +25% sát thương lên kẻ cầm vũ khí tầm xa. Mỗi lượt hai nhát; từ sau lưng +50%. Yếu trước giáp dày.',
+      role: 'Áp sát tuyến sau', strength: 'Mỗi lượt hai nhát. Chạy nhanh hơn 30% tới nhát chém đầu tiên. +25% sát thương lên kẻ đánh xa; từ sau lưng +50%.',
       behave: 'Lao vòng qua hàng đầu để săn cung thủ, lính lao và kẻ mặc ít giáp ở phía sau.',
       special: { id: 'flurry', name: 'Bão thép', cd: 8, desc: 'Bốn nhát chém liên tiếp, mỗi nhát 65% sát thương.' }
     },
     axe: {
       name: 'Rìu hai tay', reach: 1.75, interval: 2.2, windup: 0.66, recover: 0.52, hands: 2, ai: 'charge', pen: 0.3, len: 1.25,
-      role: 'Sát thương lan', strength: 'Đòn nào cũng chém lan: mọi kẻ địch đứng cạnh mục tiêu, phía trước mặt, ăn 70% sát thương. Khiên chỉ chặn được một nửa lực. Chậm.',
+      role: 'Sát thương lan', strength: 'Đòn nào cũng chém lan: kẻ địch đứng cạnh mục tiêu ăn 70% sát thương. Khiên chỉ chặn được nửa lực.',
       behave: 'Xông thẳng vào kẻ địch gần nhất, không phòng thủ.',
       special: { id: 'sweep', name: 'Quét vòng', cd: 9, desc: 'Quét ngang trúng mọi kẻ địch trước mặt (85% sát thương) và hất chúng ra xa.' }
     },
     javelin: {
       name: 'Lao', reach: 5.5, interval: 2.4, windup: 0.64, recover: 0.56, hands: 1, ai: 'ranged', pen: 0.4, len: 1.5, ranged: true, meleeReach: 1.6, meleeMul: 0.7, proj: 'javelin', projSpeed: 16,
-      role: 'Khắc chế khiên', strength: 'Lao nặng xuyên khiên: khiên chỉ còn một phần tư tác dụng trước lao, +50% sát thương vào kẻ cầm khiên; mỗi cây lao trúng làm khiên nứt, −12% chặn tới hết trận cho cả đội cùng hưởng (tối đa 3 lần). Ném xa 5,5 m, chậm.',
+      role: 'Khắc chế khiên', strength: 'Khiên chỉ còn 1/4 tác dụng trước lao. +50% sát thương vào kẻ cầm khiên. Mỗi cây lao trúng làm nứt khiên: −12% chặn tới hết trận (tối đa 3 lần).',
       behave: 'Giữ khoảng cách mà ném, lùi khi địch tới gần. Một tay nên vẫn cầm được khiên.',
       special: { id: 'pin', name: 'Lao ghim khiên', cd: 9, desc: 'Cây lao nặng cắm vào khiên làm khiên vô dụng đến hết trận (nhà vô địch thì giật ra được sau 5 giây); nếu địch không có khiên: ×1,6 sát thương.' }
     },
     bow: {
       name: 'Cung', reach: 10, interval: 0.85, windup: 0.36, recover: 0.16, hands: 2, ai: 'ranged', pen: 0, len: 1.2, ranged: true, meleeReach: 1.15, meleeMul: 0.5, proj: 'arrow', projSpeed: 28,
-      role: 'Khắc chế tầm xa', strength: 'Bắn xa nhất (10 m) và nhanh nhất. +40% sát thương vào kẻ cầm vũ khí tầm xa, và luôn bắn chúng trước. Mũi tên nhẹ: giáp dày gần như chặn hết.',
+      role: 'Khắc chế tầm xa', strength: '+40% sát thương vào kẻ đánh xa, và luôn bắn chúng trước. Yếu trước giáp dày.',
       behave: 'Đứng thật xa mà bắn, vừa lùi vừa bắn khi địch tới gần. Ưu tiên bắn kẻ đánh xa của địch, rồi tới kẻ mặc ít giáp. Cần cả hai tay.',
       special: { id: 'volley', name: 'Ba mũi liên tiếp', cd: 9, desc: 'Bắn liền ba mũi tên vào cùng một mục tiêu, mỗi mũi 75% sát thương.' }
     },
     crossbow: {
       name: 'Nỏ', reach: 9, interval: 1.8, windup: 0.4, recover: 0.5, hands: 2, ai: 'ranged', pen: 0.65, len: 0.75, ranged: true, meleeReach: 1.15, meleeMul: 0.5, proj: 'bolt', projSpeed: 32,
-      role: 'Khắc chế giáp dày', strength: 'Bỏ qua 65% giáp, và giáp chỗ trúng càng dày càng đau: +2,5% sát thương mỗi điểm giáp (tối đa +25%). Bắn xa 9 m nhưng lên dây lâu.',
+      role: 'Khắc chế giáp dày', strength: 'Giáp chỗ trúng càng dày càng đau: +2,5% sát thương mỗi điểm giáp (tối đa +25%).',
       behave: 'Đứng xa mà bắn, lùi khi địch tới gần. Cần cả hai tay.',
       special: { id: 'pierce', name: 'Phát bắn xuyên giáp', cd: 9, desc: 'Một phát căng hết dây: ×1,6 sát thương, bỏ qua toàn bộ giáp, đẩy lùi địch.' }
     },
@@ -182,11 +182,11 @@
   // Khiên
   // Khiên chia hai loại: khiên lớn (cls 'big') chặn nhiều nhưng nặng; khiên nhỏ (cls 'small') chặn bằng 1/3, nặng bằng 1/2
   // khiên lớn cùng kiểu, nhưng có đỡ gạt: chặn được một đòn thì đòn đánh kế tiếp +70% sát thương.
-  A('s_plank', 'shield', 1, 'Khiên ván ọp ẹp', 0, 2.75, 11, { block: 0.067, cls: 'small' }, { m: 'buckler', v: 'wood' }, 'Khiên tròn nhỏ bằng gỗ, núm sắt. Chặn 7%; khiên nhỏ: có đỡ gạt — chặn được một đòn thì đòn đánh kế tiếp +70% sát thương.');
-  A('s_parma', 'shield', 3, 'Khiên tròn Parma', 0, 4.25, 80, { block: 0.1, cls: 'small' }, { m: 'buckler' }, 'Khiên tròn nhỏ viền đồng, tay khiên thoải mái. Chặn 10%; khiên nhỏ: có đỡ gạt — chặn được một đòn thì đòn đánh kế tiếp +70% sát thương.');
-  A('s_hoplon', 'shield', 2, 'Khiên đồng Hoplon', 0, 7, 95, { block: 0.25, cls: 'big' }, { m: 'hoplon' }, 'Khiên tròn lớn bọc đồng. Chặn 25%. Nặng.');
-  A('s_scutum', 'shield', 3, 'Khiên lớn Scutum', 0, 8.5, 150, { block: 0.3, missileBlock: 0.2, cls: 'big' }, { m: 'scutum' }, 'Che từ vai đến gối. Chặn 30%, thêm 20% trước lao. Rất nặng.');
-  A('s_tower', 'shield', 4, 'Scutum bọc sắt', 0, 10.5, 380, { block: 0.35, missileBlock: 0.25, cls: 'big' }, { m: 'tower' }, 'Một cánh cửa biết đi. Chặn 35%, thêm 25% trước lao. Rất nặng.');
+  A('s_plank', 'shield', 1, 'Khiên ván ọp ẹp', 0, 2.75, 11, { block: 0.067, cls: 'small' }, { m: 'buckler', v: 'wood' }, 'Đỡ gạt: chặn được một đòn thì đòn kế tiếp +70% sát thương.');
+  A('s_parma', 'shield', 3, 'Khiên tròn Parma', 0, 4.25, 80, { block: 0.1, cls: 'small' }, { m: 'buckler' }, 'Đỡ gạt: chặn được một đòn thì đòn kế tiếp +70% sát thương.');
+  A('s_hoplon', 'shield', 2, 'Khiên đồng Hoplon', 0, 7, 95, { block: 0.25, cls: 'big' }, { m: 'hoplon' }, '');
+  A('s_scutum', 'shield', 3, 'Khiên lớn Scutum', 0, 8.5, 150, { block: 0.3, missileBlock: 0.2, cls: 'big' }, { m: 'scutum' }, '');
+  A('s_tower', 'shield', 4, 'Scutum bọc sắt', 0, 10.5, 380, { block: 0.35, missileBlock: 0.25, cls: 'big' }, { m: 'tower' }, '');
   // Phụ kiện
   A('t_belt', 'trinket', 1, 'Thắt lưng Balteus', 0, 0.5, 22, { sta: 24 }, { m: 'belt' }, 'Đai da bản rộng đỡ lưng: +24 Thể lực.');
   A('t_oil', 'trinket', 1, 'Dầu ô-liu xoa mình', 0, 0, 26, { dodge: 0.06 }, { m: 'oil' }, 'Trơn như lươn: +6% né.');
@@ -242,10 +242,10 @@
   A('l_boot', 'legs', 2, 'Ủng da cao', 2.5, 1.5, 34, { moveMul: 0.03 }, { m: 'caliga', re: [[0x6b4a2f, 0x4a3322]] }, 'Ôm chân, đi nhanh: +3% tốc độ.');
   A('l_greave1', 'legs', 2, 'Giáp ống một chân', 3, 1.6, 48, null, { m: 'ocrea', v: 'single' }, 'Chỉ che chân trước: nhẹ bằng nửa.');
   A('l_pteryg', 'legs', 3, 'Ocrea sắt và đệm gối', 6.5, 3.8, 115, { steady: 0.15 }, { m: 'ocrea', re: [[0xa8824a, 0x7d7f82]] }, 'Đứng vững hơn: −15% thời gian choáng và quãng bị đẩy lùi.');
-  A('s_hide', 'shield', 2, 'Khiên da bò', 0, 3.5, 30, { block: 0.083, cls: 'small' }, { m: 'buckler', v: 'hide' }, 'Khiên tròn nhỏ, da bò căng trên khung liễu, rất nhẹ. Chặn 8%; khiên nhỏ: có đỡ gạt — chặn được một đòn thì đòn đánh kế tiếp +70% sát thương.');
-  A('s_pelta', 'shield', 4, 'Khiên Pelta bán nguyệt', 0, 5.25, 220, { block: 0.117, dodge: 0.02, cls: 'small' }, { m: 'pelta' }, 'Khiên tròn khuyết hình trăng lưỡi liềm, không vướng chân (+2% né). Chặn 12%; khiên nhỏ: có đỡ gạt — chặn được một đòn thì đòn đánh kế tiếp +70% sát thương.');
-  A('s_thureos', 'shield', 1, 'Khiên bầu dục Thureos', 0, 5.5, 40, { block: 0.2, missileBlock: 0.1, cls: 'big' }, { m: 'parma', v: 'oval' }, 'Khiên lớn che từ vai xuống hông. Chặn 20%, thêm 10% trước lao. Nặng.');
-  A('s_clipeus', 'shield', 4, 'Clipeus đồng mạ vàng', 0, 9.5, 340, { block: 0.33, appeal: 1, cls: 'big' }, { m: 'hoplon', re: [[0xa8824a, 0xdcb040], [0xc9a25e, 0xf2d060]] }, 'Khiên tròn lớn sáng như mặt trời. Chặn 33%, +1 sức hút. Nặng.');
+  A('s_hide', 'shield', 2, 'Khiên da bò', 0, 3.5, 30, { block: 0.083, cls: 'small' }, { m: 'buckler', v: 'hide' }, 'Đỡ gạt: chặn được một đòn thì đòn kế tiếp +70% sát thương.');
+  A('s_pelta', 'shield', 4, 'Khiên Pelta bán nguyệt', 0, 5.25, 220, { block: 0.117, dodge: 0.02, cls: 'small' }, { m: 'pelta' }, 'Đỡ gạt: chặn được một đòn thì đòn kế tiếp +70% sát thương.');
+  A('s_thureos', 'shield', 1, 'Khiên bầu dục Thureos', 0, 5.5, 40, { block: 0.2, missileBlock: 0.1, cls: 'big' }, { m: 'parma', v: 'oval' }, '');
+  A('s_clipeus', 'shield', 4, 'Clipeus đồng mạ vàng', 0, 9.5, 340, { block: 0.33, appeal: 1, cls: 'big' }, { m: 'hoplon', re: [[0xa8824a, 0xdcb040], [0xc9a25e, 0xf2d060]] }, '');
   A('t_fascinum', 'trinket', 1, 'Bùa Fascinum', 0, 0.1, 24, { moraleFight: 2, crit: 0.02 }, { m: 'pouch' }, 'Đeo cho đỡ sợ: +2 tinh thần mỗi lần ra sân, +2% chí mạng.');
   A('t_strigil', 'trinket', 1, 'Dao cạo Strigil', 0, 0.2, 28, { appeal: 1 }, { m: 'pouch' }, 'Sạch sẽ thì khán giả ưa: +1 sức hút.');
   A('t_sponge', 'trinket', 2, 'Bọt biển và giấm', 0, 0.4, 55, { hpMul: 0.06 }, { m: 'flask' }, 'Lau vết thương giữa trận: +6% máu.');
