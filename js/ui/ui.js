@@ -1563,7 +1563,7 @@
     res.fates.forEach(function (f) {
       var txt, cls;
       if (f.fate === 'dead') { txt = 'ĐÃ CHẾT'; cls = 'dead'; }
-      else if (f.fate === 'injury') { var I = G.INJURIES[f.injury]; txt = 'bị thương: ' + I.name + ' — ' + I.desc; cls = 'hurt'; }
+      else if (f.fate === 'injury') { var I = G.INJURIES[f.injury]; txt = (f.down ? 'gục, bị thương: ' : 'bị thương: ') + I.name + ' — ' + I.desc; cls = 'hurt'; }
       else if (f.down) { txt = 'gục nhưng không sao'; cls = 'meh'; }
       else { txt = 'đứng vững'; cls = 'fine'; }
       add(p, ln(f.name, txt, cls));

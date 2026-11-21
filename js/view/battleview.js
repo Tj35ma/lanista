@@ -185,7 +185,7 @@
     else if (ev.type === 'survive') this.float(fig, 'Chưa chịu chết', 'sp', 0.15);
     else if (ev.type === 'guard') this.float(fig, 'Tỉnh đòn', 'sp', 0.15);
     else if (ev.type === 'howl') { this.float(fig, (this.b.f[ev.id].st.beast ? 'HÚ' : 'GẦM THÉT') + ' +' + ev.pct + '%', 'crit', 0.25); snd('enrage'); if (fig.roar) fig.roar(); else A.react(fig, 'flinch', { power: 0.6 }); if (this.onShake) this.onShake(0.08); this.cheer(0.6); }
-    else if (ev.type === 'sunder') this.float(fig, 'Móp giáp −' + ev.n * 15 + '%', 'bad', 0.15);
+    else if (ev.type === 'sunder') this.float(fig, 'Móp giáp −' + ev.n * 5 + '%', 'bad', 0.15);
     else if (ev.type === 'crack') this.float(fig, 'Nứt khiên −' + ev.n * 12 + '%', 'bad', 0.15);
     else if (ev.type === 'cover') this.float(fig, 'Đỡ thay', 'small', 0.15);
     else if (ev.type === 'slip') this.float(fig, 'Tuột lưới', 'sp', 0.15);

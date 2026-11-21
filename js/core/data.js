@@ -47,7 +47,7 @@
     },
     mace: {
       name: 'Chùy', reach: 1.4, interval: 1.45, windup: 0.5, recover: 0.4, hands: 1, ai: 'breaker', pen: 0.6, len: 0.7,
-      role: 'Chuyên phá giáp', strength: 'Mỗi đòn trúng làm móp giáp địch 15% (tối đa 60%) tới hết trận, cả đội cùng hưởng.',
+      role: 'Chuyên phá giáp', strength: 'Mỗi đòn trúng làm móp giáp địch 5% (tối đa 30%) tới hết trận, cả đội cùng hưởng.',
       behave: 'Bỏ qua kẻ yếu, tìm đến kẻ địch mặc giáp dày nhất.',
       special: { id: 'stun', name: 'Đập choáng', cd: 9, desc: 'Cú bổ từ trên xuống làm choáng 2 giây.' }
     },

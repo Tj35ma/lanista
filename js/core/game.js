@@ -70,7 +70,7 @@
       var opts = { tier: s.tier };
       if (i === 0 && this.has('ledger')) opts.lvl = G.TIERS[s.tier].lvl + 1;
       var g = G.makeGladiator(rng, opts);
-      slaves.push({ g: g, price: this.slavePrice(g, rng.range(0.92, 1.15)) });
+      slaves.push({ g: g, price: this.slavePrice(g, 1) });   // giá = đúng giá trị, không dao động
     }
     // cửa cứu sinh: không còn ai và không đủ tiền → một kẻ tự bán mình
     var minP = 1e9; for (i = 0; i < slaves.length; i++) minP = Math.min(minP, slaves[i].price);
@@ -118,8 +118,8 @@
     s.gold -= Game.REROLL_COST; s.market.shop = this.genShop(); s.stat.rerolls = (s.stat.rerolls || 0) + 1;
     this.save(); return { ok: true };
   };
-  Game.SLAVE_MUL = 2;   // giá mua nô lệ gấp đôi giá trị định giá (bán lại vẫn bằng nửa giá trị)
-  Game.prototype.slavePrice = function (g, f) { return Math.max(12, Math.round(G.gladValue(g) * Game.SLAVE_MUL * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
+  Game.SLAVE_MUL = 1;   // giá mua nô lệ bằng đúng giá trị định giá (bán lại bằng nửa giá trị)
+  Game.prototype.slavePrice = function (g, f) { return Math.max(8, Math.round(G.gladValue(g) * Game.SLAVE_MUL * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
   Game.prototype.hasTalent = function (t) { return this.s.roster.some(function (g) { return g.talent === t; }); };
   Game.prototype.itemPrice = function (it, f) { return Math.max(2, Math.round(it.price * (f || 1) * (this.has('anvil') ? 0.85 : 1) * (this.hasTalent('merchant') ? 0.9 : 1))); };
   Game.prototype.itemSellValue = function (inst) { return Math.round(G.instPrice(inst) * 0.5 * (this.hasTalent('merchant') ? 1.2 : 1)); };
@@ -331,6 +331,8 @@
   Game.REWARD_GOLD = 10; Game.REWARD_MORALE = 10;
   Game.MORALE = { win: 10, kill: 3, lose: -20, death: -20, injury: -10, permTeam: -10, permSelf: -30, unpaid: -5 };
   Game.INJ_WIN = 0.4; Game.INJ_LOSS = 0.6;   // khả năng bị thương khi gục (đội thắng / đội thua)
+  Game.INJ_STAND = 0.2;                       // còn đứng mà kết trận dưới 35% máu: 20% bị thương
+  Game.INJ_STAND_HP = 0.35;
   Game.TREAT_MUL = 1.25;                       // thầy thuốc đắt hơn
   Game.prototype.rewardCost = function () { return Math.max(Game.REWARD_GOLD, Math.round(Game.REWARD_GOLD * this.tierDef().upkeepMul)); };
   Game.prototype.reward = function (gid) {
@@ -416,7 +418,19 @@
     s.gold += earned; s.stat.earned += earned;
     if (win) s.stat.wins++; else { s.stat.losses++; if (fight.main) s.stat.mainLosses++; }
     if (fight.side) s.sideRun = (s.sideRun || 0) + 1; else if (win) s.sideRun = 0;
-    // số phận người gục
+    // gán một vết thương (tạm hoặc vĩnh viễn) ở chỗ loc
+    function hurt(g, f, fate, loc, perm) {
+      if (g.injuries.filter(function (x) { return x.perm; }).length >= Game.MAX_PERM) perm = false;   // một người chỉ mang tối đa hai thương tật
+      var list = perm ? G.INJ_PERM[loc] : G.INJ_TEMP[loc];
+      var have = g.injuries.map(function (x) { return x.id; });
+      var cand = list.filter(function (x) { return have.indexOf(x) < 0; });
+      if (!cand.length && perm) { perm = false; cand = G.INJ_TEMP[loc].filter(function (x) { return have.indexOf(x) < 0; }); }
+      if (!cand.length) return;
+      var iid = rng.pick(cand), I = G.INJURIES[iid];
+      g.injuries.push({ id: iid, days: perm ? -1 : Math.max(1, I.days - (this.has('surgeon') ? 1 : 0)), perm: perm ? 1 : 0 });
+      fate.fate = 'injury'; fate.injury = iid;
+    }
+    // số phận từng người ra sân
     for (i = 0; i < mine.length; i++) {
       f = mine[i]; var g = f.g;
       g.fights++; if (win) g.wins++; g.kills += f.stats.kills;
@@ -432,21 +446,10 @@
         if (g.talent === 'survivor' && win) pDeath = 0;
         if (died) pDeath *= 0.4;   // khán giả đã thấy đủ máu: sau cái chết đầu tiên trong một trận, những kẻ gục còn lại dễ được tha hơn
         if (rng.chance(pDeath)) { fate.fate = 'dead'; died++; }
-        else if (rng.chance(Math.min(0.95, (win ? Game.INJ_WIN : Game.INJ_LOSS) * st.injuryMul))) {
-          var loc = f.downLoc || 'body';
-          var perm = rng.chance(0.1 + Math.min(0.12, f.overkill * 0.25));
-          if (g.injuries.filter(function (x) { return x.perm; }).length >= Game.MAX_PERM) perm = false;   // một người chỉ mang tối đa hai thương tật
-          var list = perm ? G.INJ_PERM[loc] : G.INJ_TEMP[loc];
-          var have = g.injuries.map(function (x) { return x.id; });
-          var cand = list.filter(function (x) { return have.indexOf(x) < 0; });
-          if (!cand.length && perm) { perm = false; cand = G.INJ_TEMP[loc].filter(function (x) { return have.indexOf(x) < 0; }); }
-          if (cand.length) {
-            var iid = rng.pick(cand), I = G.INJURIES[iid];
-            var days = perm ? -1 : Math.max(1, I.days - (this.has('surgeon') ? 1 : 0));
-            g.injuries.push({ id: iid, days: days, perm: perm ? 1 : 0 });
-            fate.fate = 'injury'; fate.injury = iid;
-          }
-        }
+        else if (rng.chance(Math.min(0.95, (win ? Game.INJ_WIN : Game.INJ_LOSS) * st.injuryMul))) hurt.call(this, g, f, fate, f.downLoc || 'body', rng.chance(0.1 + Math.min(0.12, f.overkill * 0.25)));
+      } else {
+        // còn đứng tới hết trận nhưng kết trận dưới 35% máu: 20% mang một vết thương tạm
+        if (f.hp < f.maxHp * Game.INJ_STAND_HP && rng.chance(Math.min(0.6, Game.INJ_STAND * f.st.injuryMul))) hurt.call(this, g, f, fate, rng.pick(['body', 'body', 'arms', 'legs', 'head']), false);
       }
       res.fates.push(fate);
     }

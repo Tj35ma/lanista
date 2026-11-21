@@ -775,7 +775,7 @@
 
     if (f.kind === 'twin' && t.K.ranged) base *= 1.25;                                                                 // song đao: xử kẻ đánh xa
                                 // lao: khắc chế kẻ cầm khiên
-    var aLoc = t.st.armor[h.loc] * (1 - 0.15 * (t.sunder || 0));
+    var aLoc = t.st.armor[h.loc] * (1 - 0.05 * (t.sunder || 0));
     if (f.kind === 'gladius') base *= 1 + 0.35 * Math.max(0, 1 - aLoc / 6);                                            // kiếm: mạnh trước kẻ không giáp
     if (f.kind === 'crossbow' && viaProj) base *= 1 + Math.min(0.25, aLoc * 0.025);                                    // nỏ: giáp càng dày càng đau
     // giáo đón ngựa: kỵ binh đang xông tới ăn trọn mũi giáo và khựng lại
@@ -805,7 +805,7 @@
     }
     // giáp
     var pen = h.pen != null ? h.pen : f.st.pen;
-    var arm = t.st.armor[h.loc] * (1 - 0.15 * (t.sunder || 0)) * (1 - pen);   // giáp đã bị chùy đập móp
+    var arm = t.st.armor[h.loc] * (1 - 0.05 * (t.sunder || 0)) * (1 - pen);   // giáp đã bị chùy đập móp
     var dmg = (arm > 0 ? base * base / (base + arm * G.ARMOR_K) : base) * G.DMG_SCALE;   // giáp ăn đòn nhẹ nhiều hơn đòn nặng
     base *= G.DMG_SCALE;
     // giảm sát thương phía mục tiêu
@@ -842,7 +842,7 @@
     if (h.drag && t.alive && !t.st.boss && !t.st.mounted && t.st.beast !== 'bear' && t.g.talent !== 'slippery') { t.dragBy = f; t.dragT = 1.4 * rs; t.stun = Math.max(t.stun, 0.2); if (t.atk) { t.atk = null; this.emit({ e: 'cancel', id: t.id }); t.state = 'stun'; } this.emit({ e: 'effect', id: t.id, type: 'drag', by: f.id, dur: t.dragT }); }
     if (h.hook) { t.noBlock = 3 * rs; if (!nb) { t.bleed.push({ t: 5 * rs, dps: base * 0.14, src: f }); this.emit({ e: 'effect', id: t.id, type: 'bleed', dur: 5 * rs, by: f.id }); } }
     else if (f.kind === 'sica' && !nb) { t.bleed.push({ t: 4 * rs, dps: dmg * (crit ? 0.12 : 0.06), src: f }); if (crit) this.emit({ e: 'effect', id: t.id, type: 'bleed', dur: 4 * rs, by: f.id }); }   // đao cong: nhát nào cũng rỉ máu
-    if (f.kind === 'mace' && (t.sunder || 0) < 4 && t.st.armor[h.loc] > 0) { t.sunder = (t.sunder || 0) + 1; this.emit({ e: 'effect', id: t.id, type: 'sunder', n: t.sunder }); }   // chùy: mỗi đòn làm móp giáp −15%, tối đa −60%
+    if (f.kind === 'mace' && (t.sunder || 0) < 6 && t.st.armor[h.loc] > 0) { t.sunder = (t.sunder || 0) + 1; this.emit({ e: 'effect', id: t.id, type: 'sunder', n: t.sunder }); }   // chùy: mỗi đòn làm móp giáp −5%, tối đa −30%
     if (f.kind === 'trident' && !nb && !t.st.perks.unslowed) { t.slowT = 2 * rs; t.slowF = h.loc === 'legs' ? 0.55 : 0.75; this.emit({ e: 'effect', id: t.id, type: 'slow', dur: 2 * rs, by: f.id }); }
     this.emit({ e: 'hit', a: f.id, d: t.id, out: out === 'block' ? 'hit' : out, through: out === 'block', loc: h.loc, dmg: dmg, fl: fl, hand: h.hand, proj: !!viaProj, notes: notes, sweep: !!h.sweep, kb: kb });
     // hiệu ứng của đồ hiếm
