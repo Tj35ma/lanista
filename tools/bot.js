@@ -253,7 +253,7 @@ function runCampaign(seed, opt) {
       if (opt.trace) console.log(`  d${s.day} ${s.tier + 1}.${s.stage + 1} vàng ${s.gold} nuôi ${gm.upkeep()} p=${pm.toFixed(2)}${pm2 !== pm ? '→' + pm2.toFixed(2) : ''} kẹt ${stuck} | ` + s.roster.map(g => (s.form[g.id] ? '*' : '') + g.name.slice(0, 6) + ' L' + g.lvl + ' ' + G.weaponOf(g).id + (g.injuries.length ? ' inj' + g.injuries.length : '') + ' m' + g.morale).join(', '));
       if (pm2 >= 0.55 || (stuck > 6 && pm2 >= 0.4) || (stuck > 30 && pm2 >= 0.3)) kind = 'main';
       else if (!opt.noside) {
-        const p1 = gm.trial('side1', TRIALS), p0 = gm.trial('side0', TRIALS);
+        const p1 = gm.trial('side1', TRIALS), p0 = opt.light ? gm.trial('side0', TRIALS) : 0;   // game chỉ còn một trận phụ; opt.light cho bot dùng lại trận nhẹ (khi tạo kho đội mẫu)
         if (p1 >= 0.75) kind = 'side1';
         else if (p0 >= 0.7) kind = 'side0';
         else if (s.gold < gm.upkeep() * 3) {

@@ -33,6 +33,7 @@
 
   // ---------------------------------------------------------------- Ngoại hình
   var CLOTH = [0x8c6a4a, 0x9a7b55, 0x7d6a58, 0xa08a6a, 0x6e5a48, 0x8f7f6a];
+  G.genLook = function (rng, originId) { return genLook(rng, originId); };
   function genLook(rng, originId) {
     var o = G.ORIGINS[originId];
     return {

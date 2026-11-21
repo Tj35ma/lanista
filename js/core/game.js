@@ -87,7 +87,7 @@
     if (rk.length && rng.chance(0.4)) { var id = rng.pick(rk); relic = { id: id, price: G.RELICS[id].price }; }
     s.market = { slaves: slaves, shop: shop, relic: relic };
     // trận phụ
-    s.side = [this.genSide(0), this.genSide(1)];
+    s.side = [this.genSide(0), this.ghostSide(this.genSide(1))];
     s.fought = false; s.feasted = false;
   };
   Game.REROLL_COST = 5;
@@ -112,6 +112,21 @@
     return shop;
   };
   // Trả 5 vàng để lò rèn bày một lượt hàng mới (vật của lanista giữ nguyên).
+  // ---------------------------------------------------------------- Vay tiền
+  // Khoản vay = 150% túi thưởng trận chính đang chờ; trả góp 5 ngày, lãi 20% (mỗi ngày 24% tiền gốc). Mỗi lúc chỉ một khoản.
+  Game.LOAN_MUL = 1.5; Game.LOAN_DAYS = 5; Game.LOAN_INTEREST = 0.2;
+  Game.prototype.loanOffer = function () {
+    var f = this.mainFight(); if (!f) return null;
+    var amt = Math.round(f.gold * Game.LOAN_MUL), owed = Math.round(amt * (1 + Game.LOAN_INTEREST));
+    return { amount: amt, owed: owed, daily: Math.ceil(owed / Game.LOAN_DAYS), days: Game.LOAN_DAYS };
+  };
+  Game.prototype.takeLoan = function () {
+    var s = this.s, o = this.loanOffer();
+    if (s.loan) return { ok: false, msg: 'Còn nợ ' + s.loan.owed + ' vàng chưa trả xong.' };
+    if (!o) return { ok: false, msg: 'Không ai cho vay nữa.' };
+    s.gold += o.amount; s.loan = { owed: o.owed, daily: o.daily };
+    this.save(); return { ok: true, amount: o.amount };
+  };
   Game.prototype.reroll = function () {
     var s = this.s;
     if (s.gold < Game.REROLL_COST) return { ok: false, msg: 'Không đủ ' + Game.REROLL_COST + ' vàng.' };
@@ -171,7 +186,7 @@
     }
     var base = T.reward * (1 + 0.08 * st), bored = this.boredMul();
     return {
-      side: true, hard: !!hard, name: nm[0] + (hard ? ' (nặng)' : ' (nhẹ)'), desc: nm[1], foes: foes,
+      side: true, hard: !!hard, name: nm[0], desc: nm[1], foes: foes,
       bored: bored < 1 ? { n: s.sideRun || 0, pct: Math.round((1 - bored) * 100) } : null,
       gold: Math.round(Game.PURSE * base * (hard ? 0.6 : 0.3) * bored), xp: Math.round((40 + s.tier * 25 + st * 4) * (hard ? 0.8 : 0.55)), seed: rng.int(1, 1e9)
     };
@@ -207,6 +222,7 @@
   Game.prototype.fight = function (kind) { return kind === 'main' ? this.mainFight() : this.s.side[kind === 'side1' ? 1 : 0]; };
   Game.prototype.foeTeam = function (fight) {
     var out = [];
+    if (fight.ghost) return this.ghostTeam(fight);
     var T = G.TIERS[fight.tier != null ? fight.tier : this.s.tier];
     // trận phụ ăn một phần hệ số của đấu trường (nặng 40%, nhẹ 20%), kẻo ở Biên giới và Colosseum chúng yếu hẳn so với trận chính
     if (fight.side) { var k = fight.hard ? 0.4 : 0.2; T = { foe: [1 + (T.foe[0] - 1) * k, 1 + (T.foe[1] - 1) * k], boss: [1, 1] }; }
@@ -370,9 +386,141 @@
   };
 
   // ---------------------------------------------------------------- Ra trận
+  // ---------------------------------------------------------------- Kho đội hình (đối thủ trận phụ là đội thật của người chơi)
+  // Mỗi lần ra trận, đội hình đang ra sân được chụp lại đầy đủ (chỉ số, tính cách, thiên phú, thẻ, đồ, vị trí, sức mạnh).
+  // Kho = đội mẫu đi kèm game (G.GHOST_SEED, lấy từ các chiến dịch chơi thử) + đội đã lưu trên máy này (localStorage).
+  var GHOST_KEY = 'lanista_ghosts_v1', GHOST_CAP = 60;
+  var Ghosts = G.Ghosts = { local: null, remote: null };
+  // Địa chỉ kho chung (Google Apps Script, xem tools/ghost_server.gs). Để trống = chỉ dùng đội mẫu và đội lưu trên máy.
+  Ghosts.url = '';
+  var REMOTE_KEY = 'lanista_ghosts_remote_v1';
+  // Mọi đội đến từ bên ngoài đều được dựng lại từ các trường hợp lệ: thứ gì game không biết thì bỏ, số nào quá khoảng thì kẹp lại.
+  Ghosts.clean = function (x) {
+    try {
+      if (!x || !x.team || !x.team.length || x.team.length > 6) return null;
+      var num = function (v, lo, hi, d) { v = Number(v); return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; };
+      var team = [];
+      for (var i = 0; i < x.team.length; i++) {
+        var o = x.team[i] || {}, g = o.g || {}, gear = {};
+        if (!G.BODY[g.body]) return null;
+        for (var sl in (g.gear || {})) {
+          var it = g.gear[sl], I = it && G.ITEMS[it.id];
+          if (!I || I.slot !== sl) continue;
+          var r = Math.floor(num(it.r, 0, 6, 0)), R = G.RAR[r], q = { id: it.id };
+          if (r) q.r = r; q.q = num(it.q, R.qLo, R.qHi, (R.qLo + R.qHi) / 2); q.m = Math.floor(num(it.m, 0, 2, 0));
+          if (it.aff && it.aff.length) q.aff = it.aff.filter(function (a) { return !!G.AFFIX[a]; }).slice(0, R.aff);
+          if (it.fx && G.EFFECT[it.fx] && R.fx) q.fx = it.fx;
+          gear[sl] = q;
+        }
+        var lvl = Math.floor(num(g.lvl, 1, G.MAX_LVL || 20, 1));
+        team.push({ c: Math.floor(num(o.c, 0, 2, 0)), r: Math.floor(num(o.r, 0, 4, 2)), g: {
+          name: String(g.name || 'Vô danh').replace(/[<>&"']/g, '').slice(0, 22), origin: G.ORIGINS[g.origin] ? g.origin : Object.keys(G.ORIGINS)[0], body: g.body, lvl: lvl,
+          str: num(g.str, 1, 40, 4.5), agi: num(g.agi, 1, 40, 4.5), hp: Math.round(num(g.hp, 70, 500, 110)), sta: Math.round(num(g.sta, 60, 300, 90)),
+          traits: (g.traits || []).filter(function (t) { return !!G.TRAITS[t]; }).slice(0, 6), talent: G.TALENTS[g.talent] ? g.talent : null,
+          cards: (g.cards || []).filter(function (c) { return !!G.CARDS[c]; }).slice(0, lvl - 1), gear: gear } });
+      }
+      var snap = { v: 1, run: Math.floor(num(x.run, 0, 2147483647, 0)), tier: Math.floor(num(x.tier, 0, G.TIERS.length - 1, 0)), stage: Math.floor(num(x.stage, 0, 6, 0)), day: Math.floor(num(x.day, 1, 9999, 1)), team: team };
+      // sức mạnh không tin con số gửi tới: tính lại
+      var tmp = team.map(function (o, i) { var c = JSON.parse(JSON.stringify(o.g)); c.id = 'chk' + i; c.injuries = []; c.morale = 60; for (var k in c.gear) c.gear[k].uid = 'c' + i + k; return { g: c }; });
+      snap.pw = Math.round(Game.teamPower(tmp) * 10) / 10;
+      return snap.pw > 0 ? snap : null;
+    } catch (e) { return null; }
+  };
+  Ghosts.loadRemote = function () {
+    if (this.remote) return this.remote;
+    this.remote = [];
+    try { if (typeof localStorage !== 'undefined' && localStorage) { var a = JSON.parse(localStorage.getItem(REMOTE_KEY) || '[]'); for (var i = 0; i < a.length; i++) { var c = this.clean(a[i]); if (c) this.remote.push(c); } } } catch (e) { }
+    return this.remote;
+  };
+  // tải một lô đội từ kho chung (gọi một lần lúc mở game); lỗi mạng thì dùng lô đã tải lần trước
+  Ghosts.fetchRemote = function () {
+    var self = this;
+    if (!this.url || typeof fetch === 'undefined') return;
+    try {
+      fetch(this.url + '?n=200').then(function (r) { return r.json(); }).then(function (d) {
+        if (!d || !d.teams) return;
+        var out = []; for (var i = 0; i < d.teams.length; i++) { var c = self.clean(d.teams[i]); if (c) out.push(c); }
+        if (!out.length) return;
+        self.remote = out;
+        try { localStorage.setItem(REMOTE_KEY, JSON.stringify(out)); } catch (e) { }
+      }).catch(function () { });
+    } catch (e) { }
+  };
+  // gửi một đội lên kho chung (không chờ, không báo lỗi; thân là text/plain để khỏi vướng CORS)
+  Ghosts.send = function (snap) {
+    if (!this.url || typeof fetch === 'undefined') return;
+    try { var c = JSON.parse(JSON.stringify(snap)); c.team.forEach(function (o) { delete o.g.look; }); fetch(this.url, { method: 'POST', mode: 'no-cors', body: JSON.stringify(c) }).catch(function () { }); } catch (e) { }
+  };
+  Ghosts.loadLocal = function () {
+    if (this.local) return this.local;
+    this.local = [];
+    try { if (typeof localStorage !== 'undefined' && localStorage) { var a = JSON.parse(localStorage.getItem(GHOST_KEY) || '[]'); if (a && a.length) this.local = a; } } catch (e) { }
+    return this.local;
+  };
+  Ghosts.all = function () { return (G.GHOST_SEED || []).concat(this.loadRemote(), this.loadLocal()); };
+  Ghosts.record = function (snap) {
+    if (!snap || !snap.team.length) return;
+    var L = this.loadLocal(), key = snap.run + ':' + snap.tier + ':' + snap.stage;
+    for (var i = L.length - 1; i >= 0; i--) if (L[i].run + ':' + L[i].tier + ':' + L[i].stage === key) L.splice(i, 1);   // mỗi chặng của một ván chỉ giữ đội mới nhất
+    L.push(snap); while (L.length > GHOST_CAP) L.shift();
+    try { if (typeof localStorage !== 'undefined' && localStorage) localStorage.setItem(GHOST_KEY, JSON.stringify(L)); } catch (e) { }
+    this.send(snap);
+  };
+  // chọn một đội: không phải của chính ván này, không đông hơn maxN; ưu tiên đội có sức mạnh trong ±10%, không có thì lấy mấy đội gần nhất
+  Ghosts.pick = function (rng, power, maxN, run) {
+    var A = this.all().filter(function (x) { return x.run !== run && x.team.length <= maxN && x.pw > 0; });
+    if (!A.length || !(power > 0)) return null;
+    var near = A.filter(function (x) { return Math.abs(x.pw / power - 1) <= 0.1; });
+    if (!near.length) { A.sort(function (a, b) { return Math.abs(Math.log(a.pw / power)) - Math.abs(Math.log(b.pw / power)); }); near = A.slice(0, 4); }
+    return near[Math.floor(rng.next() * near.length)];
+  };
+  Game.teamPower = function (team) { var p = 0; for (var i = 0; i < team.length; i++) { try { p += G.power(team[i].g); } catch (e) { } } return p; };
+  Game.prototype.snapshot = function () {
+    var s = this.s, team = this.playerTeam(), out = [];
+    for (var i = 0; i < team.length; i++) {
+      var g = team[i].g, gear = {};
+      for (var sl in g.gear) if (g.gear[sl]) { var it = g.gear[sl], o = { id: it.id }; if (it.r) o.r = it.r; if (it.q) o.q = it.q; if (it.m) o.m = it.m; if (it.aff) o.aff = it.aff; if (it.fx) o.fx = it.fx; gear[sl] = o; }
+      out.push({ g: { name: g.name, origin: g.origin, body: g.body, lvl: g.lvl, str: g.str, agi: g.agi, hp: g.hp, sta: g.sta, traits: g.traits.slice(), talent: g.talent || null, cards: g.cards.slice(), gear: gear, look: g.look }, c: team[i].c, r: team[i].r });
+    }
+    return { v: 1, run: s.seed, tier: s.tier, stage: s.stage, day: s.day, pw: Math.round(Game.teamPower(team) * 10) / 10, team: out };
+  };
+  // đổi trận phụ của hôm nay thành trận với một đội trong kho (nếu trường đang có người và kho có đội hợp)
+  Game.prototype.ghostSide = function (fight) {
+    var s = this.s, T = G.TIERS[s.tier];
+    var mine = this.playerTeam();
+    if (!mine.length) {   // chưa xếp ai: lấy những người mạnh nhất, vừa số chỗ ra sân
+      mine = s.roster.map(function (g) { return { g: g }; }).sort(function (a, b) { return G.power(b.g) - G.power(a.g); }).slice(0, T.field);
+    }
+    if (!mine.length) return fight;
+    var snap = Ghosts.pick(this.rng, Game.teamPower(mine), T.field + 1, s.seed);
+    if (!snap) return fight;
+    fight.ghost = snap; fight.foes = snap.team;
+    fight.name = 'Trường đấu của một lanista khác';
+    fight.desc = 'Đội hình thật của một người chơi khác: ngày ' + snap.day + ' của hắn, ở ' + G.TIERS[Math.min(G.TIERS.length - 1, snap.tier)].name + '.';
+    fight.hint = null;
+    return fight;
+  };
+  Game.prototype.ghostTeam = function (fight) {
+    var snap = fight.ghost, out = [], i;
+    for (i = 0; i < snap.team.length; i++) {
+      var o = snap.team[i], g = JSON.parse(JSON.stringify(o.g));
+      g.id = 'foe' + i; g.foe = true; g.xp = 0; g.morale = 60; g.fame = 0; g.wins = 0; g.kills = 0; g.fights = 0; g.injuries = []; g.pending = 0;
+      for (var sl in g.gear) g.gear[sl].uid = 'gh' + i + sl;
+      if (!g.look) g.look = G.genLook(new G.Rng(G.hashStr(g.name) + i * 977), g.origin);
+      out.push({ g: g, c: o.c, r: o.r });
+    }
+    // sức mạnh luôn nằm trong ±10% so với đội đang ra sân của người chơi: đội lệch xa hơn thì được nắn máu và sát thương về mép khoảng đó
+    var P = Game.teamPower(this.playerTeam()), Pg = Game.teamPower(out);
+    if (P > 0 && Pg > 0) {
+      var target = Math.max(0.9 * P, Math.min(1.1 * P, Pg)), k = target / Pg;
+      if (Math.abs(k - 1) > 0.005) for (i = 0; i < out.length; i++) out[i].g.x = { hpMul: k, dmgMul: k };
+    }
+    return out;
+  };
   Game.prototype.makeBattle = function (kind, seedOverride) {
     var fight = this.fight(kind); if (!fight) return null;
     var team = this.playerTeam(); if (!team.length) return null;
+    if (seedOverride == null) Ghosts.record(this.snapshot());   // ra trận thật: chụp lại đội hình
     var seed = seedOverride != null ? seedOverride : this.rng.int(1, 1e9);
     var b = new G.Battle(team, this.foeTeam(fight), { seed: seed, radius: 9 });
     b.fight = fight; b.kind = kind;
@@ -542,10 +690,20 @@
     var up = this.upkeep(), paid = true;
     if (s.gold >= up) s.gold -= up; else { paid = false; s.gold = 0; }
     news.push(paid ? 'Trả ' + up + ' vàng tiền nuôi người.' : 'Không đủ ' + up + ' vàng tiền nuôi: cả trường nhịn đói: −5 tinh thần mỗi người.');
+    // trả góp khoản vay (sau tiền nuôi): thiếu thì chủ nợ lấy hết số đang có, phần còn lại vẫn nợ, cả trường mất tinh thần
+    var debtMiss = false;
+    if (s.loan) {
+      var due = Math.min(s.loan.daily, s.loan.owed), pay = Math.min(due, s.gold);
+      s.gold -= pay; s.loan.owed -= pay;
+      if (pay < due) { debtMiss = true; news.push('Chủ nợ đến đòi ' + due + ' vàng, anh chỉ có ' + pay + ': còn nợ ' + s.loan.owed + ' vàng. Cả trường thấy chủ nợ đứng ở cổng: −5 tinh thần mỗi người.'); }
+      else if (s.loan.owed <= 0) { news.push('Trả ' + pay + ' vàng: hết nợ.'); s.loan = null; }
+      else news.push('Trả góp ' + pay + ' vàng, còn nợ ' + s.loan.owed + ' vàng.');
+    }
     var medicus = s.roster.some(function (x) { return x.talent === 'medicus'; }), warden = this.hasTalent('warden');
     for (i = s.roster.length - 1; i >= 0; i--) {
       g = s.roster[i];
       if (!paid) this.addMorale(g, Game.MORALE.unpaid);
+      if (debtMiss) this.addMorale(g, Game.MORALE.unpaid);
       if (!s.fought) this.addMorale(g, 2);
       if (G.hasTrait(g, 'sullen')) this.addMorale(g, -1);
       if (G.hasTrait(g, 'unruly') && g.foughtDay !== s.day) this.addMorale(g, -3);

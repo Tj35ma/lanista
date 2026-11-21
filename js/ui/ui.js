@@ -414,7 +414,7 @@
     var gm = UI.game;
     UI.state = 'hub'; UI.battle = null;
     show(elTitle, false); show(elHud, false); clear(elHud);
-    UI.fightKind = gm.mainFight() ? 'main' : 'side0';
+    UI.fightKind = gm.mainFight() ? 'main' : 'side1';
     fixSel();
     goldShown = gm.s.gold;
     showHub(true);
@@ -456,12 +456,13 @@
   var foeCache = { key: '', foes: null };
   function currentFight() {
     var gm = UI.game, f = gm.fight(UI.fightKind);
-    if (!f) { UI.fightKind = gm.mainFight() ? 'main' : 'side0'; f = gm.fight(UI.fightKind); }
+    if (!f) { UI.fightKind = gm.mainFight() ? 'main' : 'side1'; f = gm.fight(UI.fightKind); }
     return f;
   }
   function currentFoes() {
     var gm = UI.game, f = currentFight(); if (!f) return null;
     var key = gm.s.day + '|' + UI.fightKind + '|' + gm.s.tier + '|' + gm.s.stage + '|' + (f.seed || 0);
+    if (f.ghost) key += '|' + Math.round(G.Game.teamPower(gm.playerTeam()));   // đội thật được nắn theo sức đội mình: đổi đội hình thì tính lại
     if (foeCache.key !== key) { foeCache.key = key; foeCache.foes = gm.foeTeam(f); }
     return foeCache.foes;
   }
@@ -545,6 +546,24 @@
       return H.join('');
     });
     add(elTop, i1, i2, ig, i3);
+    // vay tiền / đang nợ
+    if (s.loan) {
+      var i4 = h('div', 'info'); i4.innerHTML = 'Nợ <b class="warn">' + s.loan.owed + '</b>';
+      bindTip(i4, function () { return '<div class="tt-h">Khoản vay</div><div>Còn nợ ' + s.loan.owed + ' vàng. Mỗi lần qua ngày trả ' + Math.min(s.loan.daily, s.loan.owed) + ' vàng (sau tiền nuôi), còn khoảng ' + Math.ceil(s.loan.owed / s.loan.daily) + ' ngày.</div><div class="tt-sec">Thiếu tiền trả: chủ nợ lấy hết số đang có, phần còn lại vẫn nợ, và cả trường −5 tinh thần.</div>'; });
+      add(elTop, i4);
+    } else {
+      var lo = gm.loanOffer();
+      if (lo) {
+        var lb = btn('Vay tiền', 'small', function () {
+          confirmBox('Vay tiền', 'Vay ' + lo.amount + ' vàng (bằng 150% túi thưởng trận chính đang chờ). Trả góp trong ' + lo.days + ' ngày, mỗi ngày ' + lo.daily + ' vàng — tổng ' + lo.owed + ' vàng, lãi 20%. Thiếu tiền trả thì cả trường mất tinh thần. Chưa trả hết thì không vay thêm được.', 'Vay ' + lo.amount + ' vàng', function () {
+            var res = gm.takeLoan();
+            if (res.ok) { snd('coin'); toast('Đã vay ' + res.amount + ' vàng.'); UI.refresh(); } else fail(res);
+          });
+        });
+        bindTip(lb, function () { return '<div class="tt-h">Vay tiền</div><div>Vay ' + lo.amount + ' vàng ngay bây giờ; trả ' + lo.daily + ' vàng mỗi ngày trong ' + lo.days + ' ngày (tổng ' + lo.owed + ', lãi 20%).</div>'; });
+        add(elTop, lb);
+      }
+    }
     var tabs = h('div', 'tabs');
     var defs = [['market', 'Chợ nô lệ'], ['shop', 'Lò rèn'], ['ready', 'Phòng chờ']];
     var pend = s.roster.some(function (g) { return g.pending > 0; });
@@ -805,17 +824,12 @@
     vgo('ready', { tier: gm.s.tier }); UI.refresh();
   }
   function backLobby() { UI.deploy = false; tipHide(); vgo('lobby', { tier: UI.game.s.tier }); UI.refresh(); }
-  function teamPower(list) { var p = 0; list.forEach(function (g) { try { p += G.power(g); } catch (e) { } }); return Math.round(p); }
   // cột phải: đối thủ của trận đang chọn, so sánh sức mạnh
   function renderFoes(el) {
     var gm = UI.game, f = currentFight(), foes = currentFoes();
     var hd = h('h3', null, f ? (f.main ? 'Đối thủ · trận chính ' + (f.stage + 1) + '/7' : 'Đối thủ · trận phụ') : 'Đối thủ'); add(el, hd);
     if (!f || !foes) { add(el, h('div', 'note', 'Không có trận nào.')); return; }
     add(el, h('div', 'foe-name', (f.boss ? '☠ ' : '') + f.name));
-    var mine = teamPower(gm.playerTeam().map(function (p) { return p.g; })), theirs = teamPower(foes.map(function (o) { return o.g; }));
-    var pw = h('div', 'power'); pw.innerHTML = 'Sức mạnh: ta <b class="' + (mine >= theirs ? 'ok' : 'warn') + '">' + mine + '</b> vs địch <b>' + theirs + '</b>';
-    bindTip(pw, function () { return '<div class="tt-h">Sức mạnh ước lượng</div><div>Tổng sức của người ra trận (sát thương × sức chịu đòn). Chỉ để tham khảo: khắc chế vũ khí, giáp, đội hình và kỹ năng trùm mới quyết định trận.</div>'; });
-    add(el, pw);
     foes.forEach(function (o, i) {
       var g = o.g, w = G.weaponOf(g), r = h('div', 'row');
       add(r, h('span', 'nm', (g.boss ? '☠ ' : '') + g.name), h('small', null, 'cấp ' + g.lvl + ' · ' + (g.x && g.x.beast ? '' : w.name)));
@@ -894,8 +908,7 @@
     }
     if (mf) fb('main', mf, (mf.boss ? '☠ ' : '') + 'Trận chính ' + (s.stage + 1) + '/7: ' + mf.name);
     else { var won = h('span', 'fbtn on'); won.textContent = 'Đã vô địch Colosseum'; won.style.cursor = 'default'; fights.appendChild(won); }
-    if (s.side[0]) fb('side0', s.side[0], 'Trận phụ nhẹ');
-    if (s.side[1]) fb('side1', s.side[1], 'Trận phụ nặng');
+    if (s.side[1]) fb('side1', s.side[1], 'Trận phụ');
     var line = h('div', 'go-line'), nF = gm.fielded();
     if (s.streak > 0) {
       var sb = gm.streakBonus(), chip = h('span', 'streak' + (sb >= G.Game.STREAK_STEP * G.Game.STREAK_MAX ? ' max' : ''), 'Chuỗi thắng ' + s.streak + ' · +' + Math.round(sb * 100) + '%');
@@ -1388,7 +1401,7 @@
     if (gm.s.tut) { gm.s.tut = 0; if (tutEnd) tutSet(true); gm.save(); }
     show(elHint, false);
     snd('day');
-    UI.fightKind = gm.mainFight() ? 'main' : 'side0';
+    UI.fightKind = gm.mainFight() ? 'main' : 'side1';
     foeCache.key = '';
     setTab('market', true);
     var d = h('div'), m;
@@ -1686,6 +1699,7 @@
       if (s && !s.won && (s.day > 1 || s.roster.length)) { e.preventDefault(); e.returnValue = ''; }
     });
     build();
+    if (G.Ghosts) G.Ghosts.fetchRemote();   // kho đội hình chung cho trận phụ
     if (/[?&]debug\b/.test(window.location.search)) {
       UI.debugGold = function (n) { if (!UI.game) return; UI.game.s.gold += (n || 1000); UI.game.save(); UI.refresh(); return UI.game.s.gold; };
     }
