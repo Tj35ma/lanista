@@ -958,8 +958,8 @@
   }
   // Cột chỉ số luôn hiện bên trái một nô lệ trên bục: icon + con số, rê chuột lên từng dòng để xem nó làm gì.
   var STAT_ROWS = [
-    ['str', 'Sức mạnh', 'Mỗi điểm trên 10: +5% sát thương. +1 mỗi cấp.'],
-    ['agi', 'Nhanh nhẹn', 'Mỗi điểm trên 10: +3% tốc độ đánh, +2% né (tối đa 30%), chạy nhanh hơn một chút. +0,5 mỗi cấp. Mang nặng làm mất Nhanh nhẹn: từ 20% Thể lực −1, 35% −2, 50% −4, 65% −6, 80% −8, 90% −10.'],
+    ['str', 'Sức mạnh', 'Mỗi điểm: +5% sát thương gốc của vũ khí. +1 mỗi cấp.'],
+    ['agi', 'Nhanh nhẹn', 'Mỗi điểm: +4% tốc độ đánh, +1,5% né (tối đa 30%), +1,5% tốc chạy. +0,5 mỗi cấp. Mang nặng làm mất Nhanh nhẹn: từ 20% Thể lực −1, 35% −2, 50% −4, 65% −6, 80% −8, 90% −10.'],
     ['sta', 'Thể lực', 'Sức mang: tổng trọng lượng đồ không được vượt Thể lực. +8 mỗi cấp.'],
     ['hp', 'Máu', 'Hết máu là gục. +6 mỗi cấp.'],
     ['move', 'Tốc chạy', 'Mét mỗi giây. Đồ nặng làm chậm lại.'],

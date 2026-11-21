@@ -10,7 +10,7 @@
   Game.create = function (seed) {
     seed = seed || (Date.now() & 0x7fffffff);
     var s = {
-      v: 5, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
+      v: 6, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
       roster: [], inv: [], relics: [], market: null, side: [], form: {}, fought: false, feasted: false, streak: 0,
       stat: { wins: 0, losses: 0, deaths: 0, deserted: 0, earned: 0, mainLosses: 0 }, news: [], seenIntro: false
     };
@@ -26,7 +26,7 @@
     try {
       var st = store(); if (!st) return null;
       var raw = st.getItem(SAVE_KEY); if (!raw) return null;
-      var s = JSON.parse(raw); if (!s || !(s.v >= 1 && s.v <= 5)) return null;
+      var s = JSON.parse(raw); if (!s || !(s.v >= 1 && s.v <= 6)) return null;
       // bản lưu trước khi có Doanh trại biên giới: Colosseum từ hạng 3 thành hạng 4
       if (s.v === 1) { if (s.tier >= 3) s.tier++; s.v = 2; }
       // bản lưu trước 4 chỉ số: đổi Sức mạnh / Nhanh nhẹn / Thể chất cũ sang thang mới
@@ -36,7 +36,13 @@
         s.v = 3;
       }
       // bản lưu thời có giải chính / giải phụ: quay về trận lẻ (trận chính giữ nguyên tiến độ, sinh lại hai trận phụ)
-      if (s.v < 5) { delete s.mainT; delete s.sideT; s.stage = Math.max(0, Math.min(6, s.stage || 0)); s.v = 5; var gm0 = new Game(s); if (!s.side || !s.side.length || !s.side[0]) s.side = [gm0.genSide(0), gm0.genSide(1)]; return gm0; }
+      if (s.v < 5) { delete s.mainT; delete s.sideT; s.stage = Math.max(0, Math.min(6, s.stage || 0)); s.v = 5; }
+      // v6: Sức mạnh / Nhanh nhẹn tính từ 0 (nô lệ trung bình 4,5 thay vì 10): hạ chỉ số của người cũ xuống thang mới, sinh lại chợ và trận phụ
+      if (s.v === 5) {
+        var dn = function (g) { if (!g) return; g.str = Math.max(1, Math.round((g.str - 5.5) * 2) / 2); g.agi = Math.max(1, Math.round((g.agi - 5.5) * 2) / 2); };
+        (s.roster || []).forEach(dn); if (s.market && s.market.slaves) s.market.slaves.forEach(function (o) { dn(o.g); });
+        s.v = 6; var gm0 = new Game(s); s.side = [gm0.genSide(0), gm0.genSide(1)]; return gm0;
+      }
       return new Game(s);
     } catch (e) { return null; }
   };

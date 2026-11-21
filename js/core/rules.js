@@ -71,9 +71,16 @@
   };
 
   // Bốn chỉ số (như bản Unity): giá trị cấp 1 của thân Cân đối và mức tăng mỗi cấp
-  G.STAT0 = { str: 10, agi: 10, hp: 110, sta: 90 };
+  G.STAT0 = { str: 4.5, agi: 4.5, hp: 110, sta: 90 };   // nô lệ trung bình: 9 điểm chia đôi cho Sức mạnh và Nhanh nhẹn
+  G.STAT_SUM = [6, 12];                                  // tổng Sức mạnh + Nhanh nhẹn lúc sinh
+  G.STAT_SPLIT = { big: 0.64, bal: 0.5, agi: 0.36 };     // phần của Sức mạnh trong tổng đó, theo thể hình
   G.STAT_LV = { str: 1, agi: 0.5, hp: 6, sta: 8 };
   // mang nặng (tổng trọng lượng ÷ Thể lực) làm mất Nhanh nhẹn theo bậc
+  // Chỉ số cộng thẳng: MỖI điểm (tính từ 0) cho một lượng cố định, không còn mốc 10.
+  //   Sức mạnh:   +str sát thương mỗi điểm
+  //   Nhanh nhẹn: +aspd tốc độ đánh, +dodge né, +move tốc chạy mỗi điểm
+  // Các mẫu số (1 + k × chỉ số chuẩn) giữ cho nô lệ trung bình (4,5 / 4,5) đánh và chạy đúng mức gốc của vũ khí.
+  G.STATK = { str: 0.05, aspd: 0.04, dodge: 0.015, move: 0.015 };
   G.LOAD_AGI = [[0.9, 10], [0.8, 8], [0.65, 6], [0.5, 4], [0.35, 2], [0.2, 1]];
   G.loadAgiLoss = function (load) { for (var i = 0; i < G.LOAD_AGI.length; i++) if (load >= G.LOAD_AGI[i][0]) return G.LOAD_AGI[i][1]; return 0; };
 
@@ -86,12 +93,13 @@
     var body = ['big', 'bal', 'agi'][rng.weighted(o.body)];
     var B = G.BODY[body];
     var q = opts.quality != null ? opts.quality : rng.range(-1.2, 1.2) + tier * 0.25;
-    // chỉ số lúc sinh (cấp 1): Sức mạnh / Nhanh nhẹn 10 ± chút, Máu 110, Thể lực 90 (−10%…+15%), lệch theo thể hình và chất lượng
-    function st(off) { return Math.max(5, Math.round((10 + off + rng.pick([-1, -0.5, 0, 0.5, 1, 1.5]) + q * 0.4) * 2) / 2); }
+    // chỉ số lúc sinh (cấp 1): tổng 6–12 điểm chia cho Sức mạnh và Nhanh nhẹn (người tốt thì tổng cao; thể hình quyết định nghiêng về bên nào); Máu 110, Thể lực 90 (−10%…+15%)
+    var sum = Math.max(G.STAT_SUM[0], Math.min(G.STAT_SUM[1], Math.round(8.7 + q * 1.8 + rng.range(-1.2, 1.2))));
+    var s0 = Math.max(1, Math.min(sum - 1, Math.round(sum * (G.STAT_SPLIT[body] + rng.range(-0.1, 0.1)))));
     function big(base, mul) { return Math.round(base * mul * rng.range(0.9, 1.15) * (1 + q * 0.04)); }
     var g = {
       id: G.newUid(rng), name: rng.pick(o.names), origin: originId, body: body,
-      lvl: 1, xp: 0, str: st(B.str), agi: st(B.agi), hp: big(G.STAT0.hp, B.hp), sta: big(G.STAT0.sta, B.sta),
+      lvl: 1, xp: 0, str: s0, agi: sum - s0, hp: big(G.STAT0.hp, B.hp), sta: big(G.STAT0.sta, B.sta),
       traits: [], talent: null, cards: [], morale: rng.int(50, 70), fame: 0, wins: 0, kills: 0, fights: 0,
       injuries: [], gear: {}, look: genLook(rng, originId), pending: 0, cardSeed: Math.floor(rng.next() * 1e9)
     };
@@ -298,10 +306,10 @@
     var st = {
       str: str, agi: agi, agiRaw: agiRaw, sta: sta, cap: cap, weight: weight, load: load,
       hp: Math.round(hpBase * (1 + m.hpMul) * (x.hpMul || 1)),
-      dmgMul: (1 + (str - 10) * 0.05) * (1 + m.dmgMul) * mor * (x.dmgMul || 1) * (g.talent === 'venator' && (w.kind === 'javelin' || w.kind === 'hasta') ? 1.15 : 1) * (perks.heavy && (w.kind === 'axe' || w.kind === 'trident') ? 1.18 : 1),
-      aspd: Math.max(0.5, 1 + 0.03 * (agi - 10) + m.aspd),
-      move: 3.3 * (1 + 0.015 * (agi - 10)) * (1 + m.moveMul) * (1 - 0.4 * Math.max(0, Math.min(1, (load - 0.25) / 0.75))) * (x.moveMul || 1),
-      dodge: Math.max(0, Math.min(0.30, 0.02 * (agi - 10) + m.dodge)),
+      dmgMul: (1 + G.STATK.str * str) / (1 + G.STATK.str * G.STAT0.str) * (1 + m.dmgMul) * mor * (x.dmgMul || 1) * (g.talent === 'venator' && (w.kind === 'javelin' || w.kind === 'hasta') ? 1.15 : 1) * (perks.heavy && (w.kind === 'axe' || w.kind === 'trident') ? 1.18 : 1),
+      aspd: Math.max(0.5, (1 + G.STATK.aspd * Math.max(0, agi)) / (1 + G.STATK.aspd * G.STAT0.agi) + m.aspd),
+      move: 3.3 * (1 + G.STATK.move * Math.max(0, agi)) / (1 + G.STATK.move * G.STAT0.agi) * (1 + m.moveMul) * (1 - 0.4 * Math.max(0, Math.min(1, (load - 0.25) / 0.75))) * (x.moveMul || 1),
+      dodge: Math.max(0, Math.min(0.30, G.STATK.dodge * Math.max(0, agi) + m.dodge)),
       block: block > 0 ? block + (perks.wall ? 0.12 : 0) : 0,
       deflect: m.deflect, missileBlock: m.missileBlock, antiBlock: m.antiBlock,
       crit: Math.max(0, 0.05 + m.crit + (w.kind === 'gladius' ? 0.15 : 0)),
@@ -318,7 +326,7 @@
       crush: x.crush || 0      // phần lực vẫn xuyên qua khi bị khiên chặn
     };
     // Kỵ binh: ngựa chạy nhanh gấp đôi, thân to khó né, khó bị đẩy lùi, chở được giáp nặng.
-    if (x.mount) { st.cap += 120; st.load = Math.min(1.3, weight / Math.max(1, st.cap)); st.move = 3.3 * (1 + 0.015 * (agiRaw - 10)) * (1 + m.moveMul) * (x.moveMul || 1); }   // con thú gánh giáp, người không bị chậm vì nặng
+    if (x.mount) { st.cap += 120; st.load = Math.min(1.3, weight / Math.max(1, st.cap)); st.move = 3.3 * (1 + G.STATK.move * Math.max(0, agiRaw)) / (1 + G.STATK.move * G.STAT0.agi) * (1 + m.moveMul) * (x.moveMul || 1); }   // con thú gánh giáp, người không bị chậm vì nặng
     if (x.mount === 'elephant') {   // voi chiến: chậm hơn ngựa, to như bức tường, giẫm nát mọi thứ trên đường
       st.move *= 1.0; st.radius = 1.05; st.dodge = 0; st.hp = Math.round(st.hp * 2.6); st.steady = 0.92; st.resist = Math.max(st.resist, 0.4); st.mounted = 'elephant';
     } else if (x.mount) {
@@ -365,7 +373,7 @@
   //  • Kinh tế: vàng hắn làm ra / tốn đi trong thời gian thường được giữ (phí nuôi, sức hút, kinh nghiệm,
   //    chấn thương, cái chết, bỏ trốn), đo từ bot chơi trọn chiến dịch (tools/bot.js).
   G.VAL = {
-    STAT: { str: 1.0, agi: 0.5, hp: 3.85, sta: 0.2 },   // ĐCT mỗi điểm Sức mạnh / Nhanh nhẹn, mỗi 30 Máu, mỗi 10 Thể lực
+    STAT: { str: 1.0, agi: 1.0, hp: 3.85, sta: 0.2 },   // ĐCT mỗi điểm Sức mạnh / Nhanh nhẹn, mỗi 30 Máu, mỗi 10 Thể lực
     REF: 0.5,         // ĐCT chỉ số của nô lệ chuẩn (thân cân đối 5,3/5,3/5,3 ≈ 16), chọn để giá trung bình ở chợ giữ gần như cũ
     LVL: 3.8,          // một cấp = chỉ số tăng theo cấp (≈2,4) + một thẻ trung bình (≈1,6) ĐCT; 1 ĐCT = sức của +1 Sức mạnh
     CARD: 1.6,         // ĐCT của thẻ trung bình (thẻ thật được tính theo 'esp' của nó)
@@ -387,7 +395,7 @@
   G.gladValueParts = function (g) {
     var V = G.VAL, i, t = G.lvlTier(g.lvl), H = V.H[t];
     // --- chiến đấu
-    var espStat = (g.str - 10) * V.STAT.str + (g.agi - 10) * V.STAT.agi + (g.hp - 110) / 30 * V.STAT.hp + (g.sta - 90) / 10 * V.STAT.sta - V.REF;
+    var espStat = (g.str - G.STAT0.str) * V.STAT.str + (g.agi - G.STAT0.agi) * V.STAT.agi + (g.hp - 110) / 30 * V.STAT.hp + (g.sta - 90) / 10 * V.STAT.sta - V.REF;
     var espTrait = 0, espTalent = g.talent ? (G.TALENTS[g.talent].esp || 0) : 0, espCard = 0;
     for (i = 0; i < g.traits.length; i++) espTrait += G.TRAITS[g.traits[i]].esp || 0;
     for (i = 0; i < g.cards.length; i++) espCard += (G.CARDS[g.cards[i]].esp || 0) - V.CARD;

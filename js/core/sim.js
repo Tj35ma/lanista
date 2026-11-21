@@ -31,7 +31,7 @@
   }
   G.Battle = Battle;
   // sát thương vũ khí (thang của bản web) nhân hệ số này để hợp với lượng Máu kiểu bản Unity (110 ở cấp 1, +6 mỗi cấp)
-  G.DMG_SCALE = 0.62;
+  G.DMG_SCALE = 0.62 / (1 - 0.0675);   // nô lệ trung bình có sẵn 6,75% né (1,5% mỗi điểm Nhanh nhẹn): bù lại để trận không dài ra
   Battle.OT_AT = 30;
 
   Battle.prototype.mk = function (team, spec) {

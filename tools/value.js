@@ -49,6 +49,7 @@ WK['tp venator'] = ['javelin', 'hasta']; WK['tp fistmaster'] = ['caestus']; WK['
 const PRE = {};
 for (const c in G.CARDS) { V['thẻ ' + c] = g => g.cards.push(c); if (G.CARDS[c].uniq) PRE['thẻ ' + c] = g => { g.cards = g.cards.filter(x => x !== c); }; }
 WK['thẻ heavy'] = ['axe', 'trident'];
+if (process.argv[3]) { const re = new RegExp(process.argv[3]); for (const k in V) if (k !== 'str+2' && !re.test(k)) delete V[k]; }   // tham số 2: chỉ đo các biến thể khớp regex
 const N = +process.argv[2] || 2500, LV = [[1, 2], [3, 3], [6, 4], [9, 5]], out = {};
 for (const [L, size] of LV) {
   out[L] = {};
