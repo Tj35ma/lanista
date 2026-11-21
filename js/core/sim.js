@@ -48,7 +48,7 @@
       stats: { dealt: 0, taken: 0, blocked: 0, dodged: 0, absorbed: 0, kills: 0, hits: 0, crits: 0, swings: 0, specials: 0, flank: 0, blockedBy: 0, dodgedBy: 0 },
       downBy: -1, downLoc: null, overkill: 0, downT: 0,
       hd: team === 0 ? PI / 2 : -PI / 2, ride: st.mounted ? { mode: 'circle', dir: rng.next() < 0.5 ? 1 : -1, passT: 2 + rng.next() * 2, t: null } : null,
-      pila: (g.x && g.x.pila) || 0, howlN: 0, howlT: g.x && g.x.howl ? g.x.howl.every : 0, chT: g.x && g.x.charge ? g.x.charge.every * 0.6 : 0, rush: null, sumT: g.x && g.x.summon && g.x.summon.every ? g.x.summon.every : 0, sumAt: 0, sumN: 0, roarT: g.x && g.x.roar ? 3 + rng.next() * 2 : 0, form: null, slot: null, dragBy: null, dragT: 0
+      pila: (g.x && g.x.pila) || 0, howlN: 0, howlT: g.x && g.x.howl ? g.x.howl.every : 0, chT: g.x && g.x.charge ? (g.x.charge.first != null ? g.x.charge.first : g.x.charge.every * 0.6) : 0, rush: null, sumT: g.x && g.x.summon && g.x.summon.every ? g.x.summon.every : 0, sumAt: 0, sumN: 0, roarT: g.x && g.x.roar ? 3 + rng.next() * 2 : 0, form: null, slot: null, dragBy: null, dragT: 0
     };
   };
 
@@ -490,7 +490,8 @@
     var melee = false;
     if (ai === 'ranged' && dn < 1.9) { t = near; melee = true; reach = f.K.meleeReach; }
     // đánh xa: mục tiêu đã chọn ngoài tầm mà có kẻ khác trong tầm thì ném / bắn luôn kẻ đó (kẻ gần nhất trong tầm)
-    if (ai === 'ranged' && !melee && f.cd <= 0.3 && dist(f, t) > reach) {
+    // (cung thì khác: cung chủ đích bắn hàng sau, nên chỉ bắn tạm kẻ khác khi mục tiêu ưu tiên còn ở xa quá tầm hơn 4 m)
+    if (ai === 'ranged' && !melee && f.cd <= 0.3 && dist(f, t) > reach && (f.kind !== 'bow' || dist(f, t) > reach + 4)) {
       var fs = this.foesOf(f), alt = null, ad = 1e9;
       for (var q = 0; q < fs.length; q++) { var dq = dist(f, fs[q]); if (dq <= reach && dq >= 1.9 && dq < ad) { ad = dq; alt = fs[q]; } }
       if (alt) { t = f.target = alt; f.retT = 0.8; }
