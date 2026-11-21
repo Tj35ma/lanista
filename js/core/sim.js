@@ -787,8 +787,9 @@
     if (h.pin) {
       if (t.st.hasShield && !t.shieldOff) {
         // cây lao cắm vào khiên: khiên vô dụng 3 giây, rồi giật ra được
-        t.noBlock = Math.max(t.noBlock, 3); base *= 0.5;
-        this.emit({ e: 'effect', id: t.id, type: 'shieldoff', by: f.id, dur: 3 });
+        var pd = (f.st.weapon && f.st.weapon.pinDur) || 3;   // pilum: cọng sắt cong lại, giữ khiên lâu hơn
+        t.noBlock = Math.max(t.noBlock, pd); base *= 0.5;
+        this.emit({ e: 'effect', id: t.id, type: 'shieldoff', by: f.id, dur: pd });
       } else base *= 1.6;
     }
     // giáp

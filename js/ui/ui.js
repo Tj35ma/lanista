@@ -1490,7 +1490,7 @@
         else if (ev.type === 'bleed') logLine(nm(d) + ' chảy máu');
         else if (ev.type === 'poison') logLine(nm(d) + ' trúng độc');
         else if (ev.type === 'skull') logLine(nm(d) + ' bị đập sọ, choáng');
-        else if (ev.type === 'shieldoff') logLine('Khiên của ' + nm(d) + ' bị lao ghim — vô dụng 3 giây', 'big');
+        else if (ev.type === 'shieldoff') logLine('Khiên của ' + nm(d) + ' bị lao ghim — vô dụng ' + (ev.dur || 3) + ' giây', 'big');
         else if (ev.type === 'enrage') logLine(nm(d) + ' NỔI ĐIÊN!', 'big crit');
         else if (ev.type === 'heal') logLine(nm(d) + ' gượng lại, hồi sức');
         else if (ev.type === 'survive') logLine(nm(d) + ' đứng dậy sau đòn chí tử!', 'big');

@@ -200,7 +200,7 @@
       var t = tiers[i], b = items[kind + t], id = prefix + t;
       var it = { id: id, slot: 'weapon', kind: kind, tier: t, name: names[i], dmg: Math.round(b.dmg * (o.dmg || 1) * 10) / 10, wt: Math.round(b.wt * (o.wt || 1) * 10) / 10,
         price: Math.round(b.price * (o.price || 1)), look: { q: t - 1, v: o.v, dl: o.dl || 0 }, desc: o.desc };
-      if (o.spd) it.spd = o.spd; if (o.reach) it.reach = o.reach; if (o.pen) it.pen = o.pen; if (o.crit) it.crit = o.crit;
+      if (o.spd) it.spd = o.spd; if (o.reach) it.reach = o.reach; if (o.pen) it.pen = o.pen; if (o.crit) it.crit = o.crit; if (o.pinDur) it.pinDur = o.pinDur;
       items[id] = it;
     }
   }
@@ -219,7 +219,7 @@
   WV('dolabra', 'axe', [1, 2], ['Rìu cuốc Dolabra', 'Dolabra lê dương'], { dmg: 0.9, spd: 0.9, wt: 0.85, v: 'dolabra', desc: 'Nhẹ hơn rìu chiến: vung nhanh hơn, đòn nhẹ hơn.' });
   WV('maul', 'axe', [2, 3, 4], ['Búa tạ', 'Búa tạ đầu sắt', 'Búa tạ Vulcanus'], { dmg: 0.96, pen: 0.3, v: 'maul', desc: 'Búa hai tay: bỏ qua 60% giáp.' });
   WV('labrys', 'axe', [3, 4], ['Rìu đôi Labrys', 'Labrys xứ Crete'], { dmg: 1.1, spd: 1.08, wt: 1.15, v: 'labrys', desc: 'Hai lưỡi: nặng và tàn bạo hơn, vung chậm hơn.' });
-  WV('dart', 'javelin', [2, 3, 4], ['Pilum nhẹ', 'Pilum lê dương', 'Pilum nặng gắn chì'], { dmg: 1.1, spd: 1.1, reach: -0.5, wt: 1.15, pen: 0.15, v: 'pilum', dl: 0.09, desc: 'Cọng sắt dài, mảnh: +15% xuyên giáp. Nặng: ném thưa hơn 10%, tầm gần hơn 0,5 m.' });   // id giữ tiền tố cũ (dart) để bản lưu không hỏng
+  WV('dart', 'javelin', [2, 3, 4], ['Pilum nhẹ', 'Pilum lê dương', 'Pilum nặng gắn chì'], { dmg: 1.1, spd: 1.1, reach: -0.5, wt: 1.15, pen: -0.1, pinDur: 5, v: 'pilum', dl: 0.09, desc: 'Cọng sắt mềm cong lại trong khiên: Lao ghim khiên giữ 5 giây thay vì 3. Xuyên giáp −10%, ném thưa hơn 10%, tầm gần hơn 0,5 m.' });   // id giữ tiền tố cũ (dart) để bản lưu không hỏng
   WV('venab', 'javelin', [1, 2, 3], ['Lao săn Venabulum', 'Venabulum lưỡi rộng', 'Venabulum thép'], { dmg: 1.2, spd: 1.15, wt: 1.25, v: 'venab', desc: 'Lao săn thú lớn: nặng tay hơn, ném thưa hơn.' });
   WV('spiked', 'caestus', [2, 3], ['Găng gai', 'Găng gai sắt'], { dmg: 1.1, pen: 0.12, v: 'spike', desc: 'Gai nhọn trên khớp tay: +12% xuyên giáp.' });
 
