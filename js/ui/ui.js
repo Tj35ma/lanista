@@ -668,19 +668,14 @@
     add(elLeft, h('h3', null, 'Lò rèn'));
     s.market.shop.forEach(function (o, i) {
       var it = G.ITEMS[o.id];
-      var r = h('div', 'row' + (o.sold ? ' sold' : '')); r.setAttribute('data-i', i);
-      add(r, h('span', 'nm rr' + (o.r || 0), G.instName(o)));
       var buy = function () {
         var res = gm.buyItem(i);
         if (res.ok) { snd('buy'); toast(it.name + ' đã vào kho. Sang Phòng chờ để trang bị.'); UI.refresh(); } else fail(res);
       };
-      add(r, priceBtn(o.price, s.gold >= o.price, 'Mua', buy));
       if (!o.sold) {
-        bindTip(r, function () { return itemTip(it, { price: o.price, g: selG, inst: o }); }, function () { vhl('shop', i); }, function () { vhl('shop', -1); });
         addTag('shop', i, null, 'rr' + (o.r || 0), o.price, s.gold >= o.price, '', buy, function () { return itemTip(it, { price: o.price, g: selG, inst: o }); });
         addItemStats('shop', i, o);
       }
-      elLeft.appendChild(r);
     });
     var rc = G.Game.REROLL_COST, rb = btn('Đổi lượt hàng ' + coin(rc), 'small' + (s.gold >= rc ? '' : ' off'), function () {
       var res = gm.reroll();
@@ -688,31 +683,24 @@
     }, true);
     bindTip(rb, function () { return '<div class="tt-h">Đổi lượt hàng</div><div>Trả ' + rc + ' vàng để thợ rèn dọn hết hàng đang bày và bày một lượt mới — độ hiếm cũng gieo lại. Bấm bao nhiêu lần cũng được.</div><div class="tt-sec tt-desc">Vật riêng cho lanista không đổi.</div>'; });
     var ra = h('div', 'acts'); add(ra, rb); add(elLeft, ra);
-    add(elLeft, h('h3', null, 'Của riêng cho lanista'));
     var rl = s.market.relic;
     if (rl) {
       var R = G.RELICS[rl.id];
-      var rr = h('div', 'row' + (rl.sold ? ' sold' : '')); rr.setAttribute('data-i', 'relic');
-      add(rr, h('span', 'nm tal', R.name));
       var buyR = function () {
         var res = gm.buyRelic();
         if (res.ok) { snd('buy'); toast(R.name + ' giờ là của anh.'); UI.refresh(); } else fail(res);
       };
-      add(rr, priceBtn(rl.price, s.gold >= rl.price, 'Mua', buyR));
       if (!rl.sold) {
-        bindTip(rr, function () { return relicTip(rl.id, rl.price); }, function () { vhl('shop', 'relic'); }, function () { vhl('shop', -1); });
         addTag('shop', 'relic', null, 'tal', rl.price, s.gold >= rl.price, '', buyR, function () { return relicTip(rl.id, rl.price); });
       }
-      elLeft.appendChild(rr);
-    } else add(elLeft, h('div', 'note', 'Hôm nay không có gì.'));
+    }
     renderStash();
-    if (selG) add(elLeft, h('div', 'note', 'Tooltip đang so với ' + selG.name + '.'));
   }
   // Thanh kho ở đáy Lò rèn: mọi món chưa mặc, kèm giá bán; bấm là bán, bán nhầm thì lấy lại được.
   function renderStash() {
     var gm = UI.game, s = gm.s, selG = gm.glad(UI.sel), inv = sortedInv(), total = 0, ls = UI.lastSold;
     if (ls && ls.day !== s.day) ls = UI.lastSold = null;
-    clear(elStash); show(elStash, true);
+    clear(elStash); show(elStash, true); elStash.style.top = (elLeft.offsetTop + elLeft.offsetHeight + 8) + 'px';   // kho là một ô riêng ngay dưới nút đổi hàng
     inv.forEach(function (inst) { total += UI.game.itemSellValue(inst); });
     var hd = h('div', 'st-head'), ttl = h('h3', null, 'Bán đồ trong kho');
     add(ttl, h('small', null, inv.length ? inv.length + ' món · bán hết được ' + total + ' vàng' : 'kho trống'));
@@ -1612,7 +1600,7 @@
       p.appendChild(tb);
     });
     var foot = h('div', 'foot');
-    add(foot, btn(res.final ? 'Chơi tiếp ▸' : 'Về trường ▸', 'big', function () { afterResult(p); }));
+    add(foot, btn(res.final ? 'Chơi tiếp ▸' : 'Qua ngày ▸', 'big', function () { afterResult(p); }));
     p.appendChild(foot);
     root.appendChild(p);
   }
@@ -1624,7 +1612,7 @@
     UI.battle = null;
     foeCache.key = '';
     enterHub('ready');
-    cardChain(function () { UI.refresh(); });
+    cardChain(function () { if (UI.game.s.fought) nextDay(); else UI.refresh(); });   // đấu xong (và chọn thẻ lên cấp xong) là tự sang ngày mới
   }
 
   // ---------------------------------------------------------------- khởi động

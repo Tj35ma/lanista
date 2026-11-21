@@ -844,7 +844,7 @@
     if (f.st.perks.skull && !h.stun && rng.next() < 0.2) { this.stunOn(t, 1.0, f); this.emit({ e: 'effect', id: t.id, type: 'skull', by: f.id }); }   // Đập sọ (chùy Thần khí)
     if (f.st.perks.leech && f.alive && dmg > 0 && f.hp < f.maxHp) { var lh = Math.min(f.maxHp - f.hp, dmg * 0.15); f.hp += lh; f.leechAcc = (f.leechAcc || 0) + lh; if (f.leechAcc >= f.maxHp * 0.04) { this.emit({ e: 'effect', id: f.id, type: 'heal', amount: f.leechAcc }); f.leechAcc = 0; } }   // Hút máu (song đao Thần khí)
     if (f.g.talent === 'poisoner' && dmg > 0 && t.alive) {   // Độc sư: trúng độc 2 giây, không cộng dồn — đòn sau làm mới
-      var fresh = !t.poison; t.poison = { t: 2 * rs, dps: Math.max(dmg * 0.15, t.poison ? t.poison.dps * 0 : 0), src: f, acc: t.poison ? t.poison.acc : 0 };
+      var fresh = !t.poison; t.poison = { t: 2 * rs, dps: f.g.lvl, src: f, acc: t.poison ? t.poison.acc : 0 };
       if (fresh) this.emit({ e: 'effect', id: t.id, type: 'poison', dur: 2 * rs, by: f.id });
     }
     this.damage(f, t, dmg, h.loc, false);

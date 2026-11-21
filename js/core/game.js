@@ -112,7 +112,8 @@
     s.gold -= Game.REROLL_COST; s.market.shop = this.genShop(); s.stat.rerolls = (s.stat.rerolls || 0) + 1;
     this.save(); return { ok: true };
   };
-  Game.prototype.slavePrice = function (g, f) { return Math.max(6, Math.round(G.gladValue(g) * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
+  Game.SLAVE_MUL = 2;   // giá mua nô lệ gấp đôi giá trị định giá (bán lại vẫn bằng nửa giá trị)
+  Game.prototype.slavePrice = function (g, f) { return Math.max(12, Math.round(G.gladValue(g) * Game.SLAVE_MUL * (f || 1) * (this.has('scale') ? 0.85 : 1))); };
   Game.prototype.hasTalent = function (t) { return this.s.roster.some(function (g) { return g.talent === t; }); };
   Game.prototype.itemPrice = function (it, f) { return Math.max(2, Math.round(it.price * (f || 1) * (this.has('anvil') ? 0.85 : 1) * (this.hasTalent('merchant') ? 0.9 : 1))); };
   Game.prototype.itemSellValue = function (inst) { return Math.round(G.instPrice(inst) * 0.5 * (this.hasTalent('merchant') ? 1.2 : 1)); };

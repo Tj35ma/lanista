@@ -483,7 +483,7 @@
     merchant: { name: 'Lái buôn', esp: 0, desc: 'Khi hắn ở trong trường: đồ ở lò rèn rẻ hơn 10%, bán đồ được thêm 20%.' },
     twohand: { name: 'Thông thạo vũ khí hai tay', esp: 1.45, desc: 'Mọi vũ khí cầm hai tay (rìu, song đao, đinh ba, cung, nỏ, găng Caestus): +15% sát thương.' },
     fistmaster: { name: 'Thông thạo găng đấm', esp: 1.5, desc: 'Găng Caestus và tay không: +15% sát thương, +5% né.' },
-    poisoner: { name: 'Độc sư', esp: 2.0, desc: 'Đòn đánh trúng làm địch trúng độc 2 giây: mỗi giây mất máu bằng 15% sát thương của đòn đó, bỏ qua giáp. Không cộng dồn: đòn sau chỉ làm mới thời gian.' },
+    poisoner: { name: 'Độc sư', esp: 2.0, desc: 'Đòn đánh trúng làm địch trúng độc 2 giây: mỗi giây mất máu bằng cấp của Độc sư, bỏ qua giáp. Không cộng dồn: đòn sau chỉ làm mới thời gian.' },
     veteran: { name: 'Bách chiến', esp: 0.77, desc: 'Chiêu đặc biệt sẵn sàng ngay từ đầu trận và hồi nhanh hơn 25%.' }
   };
 
@@ -579,13 +579,13 @@
     [
       { name: 'Hai tên trộm gà', desc: 'Bị bắt quả tang ở chuồng gà nhà quan coi chợ. Tay không, và sợ.',
         hint: 'Chúng không có gì trong tay. Bất kỳ vũ khí nào cũng hơn nắm đấm.',
-        foes: [e('Tên trộm gầy', 'agi', 1, null, [], 0, 1, { hpMul: 0.6 }), e('Tên trộm lùn', 'bal', 1, null, [], 0, 3, { hpMul: 0.6 })] },
+        foes: [e('Tên trộm gầy', 'agi', 1, null, [], 0, 1, { hpMul: 0.85, dmgMul: 1.2 }), e('Tên trộm lùn', 'bal', 1, null, [], 0, 3, { hpMul: 0.85, dmgMul: 1.2 })] },
       { name: 'Anh em thợ thuộc da', desc: 'Hai gã hôi mùi vôi và nước tiểu, mỗi gã một cây gậy sồi.',
         hint: 'Gậy chậm nhưng nặng. Kẻ nhanh tay sẽ đánh được hai đòn trước mỗi cú vung của chúng.',
-        foes: [e('Thợ thuộc da anh', 'big', 1, 'mace1', [], 0, 1, { hpMul: 0.85 }), e('Thợ thuộc da em', 'bal', 1, 'mace1', ['a_wrap'], 0, 3, { hpMul: 0.85 })] },
+        foes: [e('Thợ thuộc da anh', 'big', 1, 'mace1', [], 0, 1, { hpMul: 1.05, dmgMul: 1.1 }), e('Thợ thuộc da em', 'bal', 1, 'mace1', ['a_wrap'], 0, 3, { hpMul: 1.05, dmgMul: 1.1 })] },
       { name: 'Gã say và con dao', desc: 'Một lão lính già giữ khiên, và thằng cháu của lão lẩn phía sau với đôi dao găm.',
         hint: 'Thằng cầm dao sẽ vòng ra sau lưng người của anh. Đừng để ai đứng một mình.',
-        foes: [e('Lão lính say', 'big', 2, 'gladius1', ['s_plank', 'b_harness'], 0, 2), e('Thằng cháu', 'agi', 1, 'twin1', [], 1, 3, { hpMul: 0.75, dmgMul: 0.8 })] },
+        foes: [e('Lão lính say', 'big', 2, 'gladius1', ['s_plank', 'b_harness'], 0, 2, { hpMul: 1.2, dmgMul: 1.1 }), e('Thằng cháu', 'agi', 1, 'twin1', [], 1, 3, { hpMul: 0.95, dmgMul: 1.0 })] },
       { name: 'Phường săn thỏ', desc: 'Ba thợ săn nghèo. Họ chưa giết người bao giờ, nhưng ném thì trúng.',
         hint: 'Lao bay 5,5 m. Khiên chặn được lao; chân nhanh thì tới nơi trước cây lao thứ hai.',
         foes: [e('Thợ săn già', 'bal', 2, 'javelin1', [], 1, 0, { hpMul: 0.58, dmgMul: 0.68 }), e('Thợ săn trẻ', 'agi', 1, 'javelin1', [], 1, 4, { hpMul: 0.58, dmgMul: 0.68 }), e('Gã đánh bẫy', 'bal', 1, 'mace1', ['l_wraps'], 0, 2, { hpMul: 0.75 })] },

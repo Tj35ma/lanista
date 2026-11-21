@@ -94,9 +94,12 @@
 
   // =================================================================== CHỢ NÔ LỆ
   var market = V.market = V.spaces.market = { shiftX: 0.07, figs: [], key: '', hi: -1, onHover: null, onClick: null, slaves: null };
-  market.build = function () {
-    if (this.scene) return;
-    var env = V.getEnv('market', 0, function () {
+  market.build = function (tier) {
+    tier = tier == null ? (this.tier == null ? 0 : this.tier) : tier;
+    if (this.scene && this.tier === tier) return;
+    for (var q = 0; q < this.figs.length; q++) if (this.figs[q]) this.figs[q].dispose();   // sang khu vực khác: dựng chợ kiểu khác
+    this.figs = []; this.key = ''; this.tier = tier;
+    var env = V.getEnv('market', tier, function () {
       return V.fallbackEnv({ pos: [0, 2.3, 8.4], look: [0, 1.4, 0], fov: 40 }, { slots: [{ x: -2.4, y: 0, z: 0, ry: 0 }, { x: -0.8, y: 0, z: 0, ry: 0 }, { x: 0.8, y: 0, z: 0, ry: 0 }, { x: 2.4, y: 0, z: 0, ry: 0 }] });
     });
     var fill = new T.DirectionalLight(0xffe2bd, 1.1); fill.position.set(3, 3.5, 9); env.group.add(fill);   // hắt sáng vào người đứng dưới mái che
@@ -123,7 +126,7 @@
     }
     this.highlight(this.hi);
   };
-  market.enter = function () { this.build(); this.sync(); };
+  market.enter = function (opts) { this.build(opts && opts.tier != null ? opts.tier : null); this.sync(); };
   market.update = function (dt) {
     if (this.env.update) this.env.update(V.time, dt);
     for (var i = 0; i < this.figs.length; i++) {
@@ -153,9 +156,12 @@
   // trục của mô hình vũ khí khi nằm: bề dày (x) → lên trên, chiều dài (y) → vào trong (−z), bề rộng lưỡi (z) → ngang (−x)
   var FLAT = new T.Matrix4().makeBasis(new T.Vector3(0, 1, 0), new T.Vector3(0, 0, -1), new T.Vector3(-1, 0, 0));
   var shop = V.shop = V.spaces.shop = { shiftX: 0.1, objs: [], key: '', hi: -1, onHover: null, onClick: null, list: null, relic: null };
-  shop.build = function () {
-    if (this.scene) return;
-    var env = V.getEnv('shop', 0, function () {
+  shop.build = function (tier) {
+    tier = tier == null ? (this.tier == null ? 0 : this.tier) : tier;
+    if (this.scene && this.tier === tier) return;
+    for (var q = 0; q < this.objs.length; q++) this.objs[q].grp.traverse(function (m) { if (m.geometry) m.geometry.dispose(); });   // sang khu vực khác: dựng lò rèn kiểu khác
+    this.objs = []; this.key = ''; this.tier = tier;
+    var env = V.getEnv('shop', tier, function () {
       var sl = { weapon: [], armor: [], trinket: [{ x: 3.45, y: 0.81, z: -0.5 }], relic: { x: -2.95, y: 1.05, z: -0.55 } };
       for (var i = 0; i < 5; i++) { sl.weapon.push({ x: 0.3 + (i - 2) * 0.72, y: 0.852, z: 2.74, flat: true, len: 1.9, tz: 0.36, sz: 0.3 }); sl.armor.push({ x: 0.3 + (i - 2) * 0.86, y: 0.95, z: -0.62, sx: 0.43, sy: 1.05 }); }
       return V.fallbackEnv({ pos: [0.3, 5.05, 7.65], look: [0.3, 0.9, 1.9], fov: 40 }, { slots: sl });
@@ -211,7 +217,7 @@
     if (relic && !relic.sold) put(V.relicMesh(relic.id), sl.relic, false, 'relic');
     this.highlight(this.hi);
   };
-  shop.enter = function () { this.build(); this.sync(); };
+  shop.enter = function (opts) { this.build(opts && opts.tier != null ? opts.tier : null); this.sync(); };
   shop.update = function (dt) {
     if (this.env.update) this.env.update(V.time, dt);
     for (var i = 0; i < this.objs.length; i++) {

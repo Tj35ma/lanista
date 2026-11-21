@@ -696,12 +696,74 @@
   };
 
   // ---------------------------------------------------------------- CHỢ NÔ LỆ
-  V.Env.market = function () {
-    sd = 31; V.jseed(999);
-    var env = base({ sunDir: [-0.75, 0.42, 0.38], sunInt: 2.3, hemi: [0xc4d0dc, 0x8a6a48, 0.85], shadow: [13, 9], center: [0, 0, 0.5], fog: { color: 0xd8bf9c, near: 30, far: 110 }, bg: 0xd8bf9c, birds: 4 });
+  // Mỗi khu vực một kiểu chợ: bãi gia súc (Chợ), sân làng (Làng), phố có hàng cột (Thành phố), trong lũy doanh trại (Biên giới), quảng trường cẩm thạch (Colosseum)
+  var MARKET_T = [
+    { sunDir: [-0.85, 0.3, 0.38], sunCol: 0xffc890, sunInt: 2.2, hemi: [0xd2c8b0, 0x8a6a48, 0.85], fog: 0xdcc39a, skyHor: 0xecd2a0, skyTop: 0x9fb4c0, floor: 0x8a6e4c, awn: [0xb8a888, 0x8a7458] },
+    { sunDir: [-0.6, 0.5, 0.45], sunCol: 0xffe0b0, sunInt: 2.3, hemi: [0xc8d4d8, 0x7a6a44, 0.85], fog: 0xd4c8a4, skyHor: 0xe2d8b4, skyTop: 0x86b0d0, floor: 0xa98a5e, awn: [0xb58a3c, 0xcfc4a6] },
+    { sunDir: [-0.75, 0.42, 0.38], sunCol: 0xffd7a6, sunInt: 2.3, hemi: [0xc4d0dc, 0x8a6a48, 0.85], fog: 0xd8bf9c, skyHor: 0xe6cfa6, skyTop: 0x8fb0c8, floor: 0x9a8f7e, awn: [0x9a3b28, 0xcfc4a6] },
+    { sunDir: [-0.5, 0.36, 0.6], sunCol: 0xd8dce0, sunInt: 1.7, hemi: [0xb4bcc4, 0x5f5444, 0.95], fog: 0xaeb2b0, skyHor: 0xbcc0bc, skyTop: 0x7c8a98, floor: 0x80694a, awn: [0x6b4a2f, 0x7e2a1e] },
+    { sunDir: [-0.7, 0.62, 0.4], sunCol: 0xfff0d0, sunInt: 2.6, hemi: [0xd0dcec, 0xa89878, 0.9], fog: 0xe4d8c0, skyHor: 0xf0e2c4, skyTop: 0x78a8d8, floor: 0xc4b8a2, awn: [0x5e2a62, 0xe0d6c0] }
+  ];
+  function pine(k, x, z, s) { k.m.cyl(0.12 * s, 0.16 * s, 1.4 * s, 5, P.woodDark, { x: x, y: 0.7 * s, z: z }); k.m.cone(1.1 * s, 2.2 * s, 6, PINE, { x: x, y: 2.2 * s, z: z }); k.m.cone(0.8 * s, 1.9 * s, 6, PINE, { x: x, y: 3.5 * s, z: z }); }
+  function marketBack(tier, env, k) {
+    var i, x;
+    if (tier === 0) {            // bãi chợ gia súc: rào gỗ, bò, xe, rơm, chòi tranh
+      for (i = -14; i <= 14; i++) k.m.box(0.13, 1.25 + rr(0, 0.2), 0.13, pick(WOODS), { x: i * 1.15, y: 0.65, z: -5.2 + rr(-0.05, 0.05), ry: rr(0, 0.4) });
+      k.m.box(33, 0.09, 0.07, P.wood, { x: 0, y: 1.05, z: -5.14 }); k.m.box(33, 0.09, 0.07, P.woodDark, { x: 0, y: 0.58, z: -5.14 });
+      ox(k, -6.2, -7.4, 0.5); ox(k, -2.6, -8.4, -0.7); ox(k, 3.4, -7.5, 1.3); ox(k, 7.6, -9.0, 2.5); ox(k, -9.8, -9.6, 1.9);
+      cart(k, -11.2, -7.0, 0.5); cart(k, 11.0, -6.8, -0.9);
+      for (i = 0; i < 9; i++) hay(k, -1.5 + (i % 3) * 0.95, i < 6 ? (i < 3 ? 0 : 0.5) : 1.0, -6.4 - (i < 6 ? 0 : 0.1), 0.05 * i);
+      hay(k, 5.6, 0, -6.2, 0.4); hay(k, 6.5, 0, -6.5, -0.3); hay(k, -8.0, 0, -6.0, 0.2);
+      hut(k, -13.5, -13.5, 1.1); hut(k, -3.5, -15.5, 1.25); hut(k, 6.5, -14.5, 1.0); hut(k, 14.5, -12.5, 1.15);
+      tree(k, -8.5, -12.5, 1.6); tree(k, 11, -17, 1.9); tree(k, 1.5, -19, 2.1); tree(k, -18, -8, 1.5); tree(k, 18, -7.5, 1.5);
+      house(k, -17.5, -1.5, 5, 6, 3, PI / 2, 0xa89070, P.straw); house(k, 15.5, -2.5, 5, 6, 3, -PI / 2, 0x9c8462, P.straw);
+      well(k, 8.6, -3.3); barrel(k, -9.4, 0, -3.6, 1.1); crate(k, -8.3, 0, -3.9, 0.8, 0.3);
+    } else if (tier === 1) {     // sân làng: tường đá thấp, nhà gỗ mái tranh, giếng, cây
+      for (i = -7; i <= 7; i++) if (i !== 2) k.m.box(2.15, 0.62 + rr(0, 0.14), 0.42, pick([P.stone, P.stoneDark, P.stoneLight]), { x: i * 2.2, y: 0.33, z: -5.4, ry: rr(-0.02, 0.02) });
+      house(k, -10, -9.6, 6.5, 5, 3.2, 0, 0x8a6a48, P.straw); house(k, -2, -10.8, 7.5, 5.5, 4.0, 0, P.plaster, P.terracotta);
+      house(k, 6.8, -9.8, 6.5, 5, 3.4, 0, 0x94744e, P.straw); house(k, 14.8, -9.2, 5.5, 5, 3.0, 0, P.plaster, P.straw);
+      house(k, -17.5, -1.5, 6, 7, 3.6, PI / 2, 0x8a6a48, P.straw); house(k, 15.5, -2.5, 6, 7, 3.8, -PI / 2, 0xbfa888, P.terracotta);
+      well(k, 8.4, -3.3); tree(k, -6, -6.6, 1.5); tree(k, 2.6, -7.2, 1.7); tree(k, 11.6, -6.4, 1.4); tree(k, -13.5, -6.2, 1.6);
+      cart(k, -9.6, -3.4, 0.8); hay(k, -7.8, 0, -4.4, 0.2); hay(k, -7.0, 0, -4.6, -0.2); hay(k, -7.4, 0.5, -4.5, 0.5);
+      for (i = 0; i < 4; i++) amphora(k, 10.4 + i * 0.5, 0, -4.4 + rr(-0.2, 0.2), rr(0.9, 1.2));
+      k.m.beam([-6.9, 2.9, -7.1], [-2.6, 3.1, -8.0], 0.012, P.rope, 3);
+      for (i = 0; i < 4; i++) k.d.box(0.7, 0.6, 0.02, pick([P.linen, P.clothOchre, P.clothGreen, P.clothWhite]), { x: -6.3 + i * 1.0, y: 2.62 + i * 0.05, z: -7.22 - i * 0.21, ry: 0.2 });
+    } else if (tier === 3) {     // trong lũy doanh trại: hàng cọc vót nhọn, tháp canh, lều da, cờ hiệu, rừng thông
+      for (x = -16.4; x <= 16.4; x += 0.44) stake(k, x, -6.0 + rr(-0.05, 0.05), 3.0 + rr(0, 0.35), 0.2);
+      k.m.box(33, 0.14, 0.1, P.woodDark, { x: 0, y: 2.2, z: -5.78 }); k.m.box(33, 0.14, 0.1, P.woodDark, { x: 0, y: 1.0, z: -5.78 });
+      k.m.box(33, 0.14, 1.2, P.wood, { x: 0, y: 2.0, z: -6.8 });
+      tower(k, env, -9.5, -7.4, 0); tower(k, env, 9.5, -7.4, 0);
+      tent(k, -11.2, -2.6, 0.5, 1.25); tent(k, -15.2, 0.6, 0.9, 1.2); tent(k, 11.6, -3.0, -0.5, 1.25); tent(k, 15.4, 0.4, -0.9, 1.2);
+      standard(k, env, -5.3, -3.7, true); standard(k, env, 5.7, -3.7, false);
+      shieldStack(k, -7.6, -5.5, 0, 4); shieldStack(k, 7.2, -5.5, 0, 5);
+      for (i = 0; i < 6; i++) k.m.cyl(0.02, 0.02, 2.3, 4, P.woodDark, { x: 2.2 + i * 0.16, y: 1.12, z: -5.5, rx: -0.14 });   // giá giáo pilum
+      for (i = 0; i < 12; i++) pine(k, -19 + i * 3.4 + rr(-0.8, 0.8), -10.5 - rr(0, 5), rr(1.3, 2.0));
+      brazier(env, k, 8.4, 0, -3.2, 1); brazier(env, k, -8.6, 0, -3.4, 1);
+      crate(k, 9.6, 0, -4.4, 0.9, 0.2); barrel(k, 10.6, 0, -4.2, 1.1); barrel(k, -10.0, 0, -4.6, 1.0);
+    } else {                     // quảng trường Rome: hàng cột cẩm thạch, đền có trán tường, tượng, cờ tía
+      k.m.box(31, 0.3, 4.2, P.marble, { x: 0, y: 0.15, z: -7.0 }); k.m.box(31.6, 0.15, 4.8, P.stoneLight, { x: 0, y: 0.07, z: -7.0 });
+      for (i = -6; i <= 6; i++) column(k, i * 2.35, -5.7, 6.4, 0.36, P.marble, 0.3);
+      k.m.box(31, 0.9, 1.2, P.marble, { x: 0, y: 7.15, z: -5.7 }); k.x.box(31, 0.1, 1.26, P.bronzeLight, { x: 0, y: 7.62, z: -5.7 });
+      gable(k, 0, 7.7, -6.6, 3.0, 31.4, 2.4, PI / 2, P.marble);
+      k.m.box(31, 7.4, 0.4, 0xd0c4ac, { x: 0, y: 3.7, z: -8.7 }); k.m.box(31, 1.3, 0.05, 0x7a2a22, { x: 0, y: 0.95, z: -8.47 });
+      for (i = -2; i <= 2; i++) { k.m.box(1.5, 3.6, 0.1, P.bronzeDark, { x: i * 4.7, y: 2.1, z: -8.46 }); k.x.box(1.7, 0.12, 0.14, P.bronzeLight, { x: i * 4.7, y: 3.96, z: -8.44 }); }
+      for (i = -5; i <= 5; i += 2) banner(env, i * 2.35 + 1.17, 6.5, -5.5, 0, i % 4 === 1 || i % 4 === -3 ? 0x5e2a62 : 0x8c2a22, 0.95, 2.7);
+      statue(k, -8.4, 0, -3.6, 0, P.marble, 1.35); statue(k, 8.4, 0, -3.6, 0, P.marble, 1.35); statue(k, -13.2, 0, -3.2, 0.3, P.bronzeDark, 1.2); statue(k, 13.2, 0, -3.2, -0.3, P.bronzeDark, 1.2);
+      brazier(env, k, -5.6, 0, -3.9, 1.15); brazier(env, k, 5.6, 0, -3.9, 1.15);
+      cypress(k, -11.2, -4.4, 1.5); cypress(k, 11.2, -4.4, 1.5); cypress(k, -15.4, -4.8, 1.7); cypress(k, 15.4, -4.8, 1.7);
+      k.m.box(13, 11, 6, 0xcfc4ae, { x: -11, y: 5.5, z: -14 }); gable(k, -11, 11, -14, 6.6, 13.6, 2.0, PI / 2, P.terracotta);
+      k.m.box(11, 13, 6, 0xd6cdbb, { x: 10, y: 6.5, z: -14.5 }); gable(k, 10, 13, -14.5, 6.6, 11.6, 2.0, PI / 2, P.terracotta);
+      house(k, -18, -1.5, 6, 8, 6.5, PI / 2, P.marble, P.terracotta); house(k, 16, -2.5, 6, 8, 7, -PI / 2, 0xd2c2a2, P.terracotta);
+    }
+  }
+  V.Env.market = function (tier) {
+    tier = Math.max(0, Math.min(4, tier || 0)); var MT = MARKET_T[tier];
+    sd = 31 + tier * 7; V.jseed(999);
+    var env = base({ sunDir: MT.sunDir, sunCol: MT.sunCol, sunInt: MT.sunInt, hemi: MT.hemi, shadow: [13, 9], center: [0, 0, 0.5], fog: { color: MT.fog, near: 30, far: 110 }, bg: MT.fog, skyHor: MT.skyHor, skyTop: MT.skyTop, birds: tier === 3 ? 2 : 4 });
     var k = new Kit(), i, x, z, o;
     var fj = k.m.fj; k.m.fj = 0.07;
-    k.m.add(new T.PlaneGeometry(48, 32, 48, 32), P.stone, { rx: -PI / 2, z: 1 });   // nền đá cuội
+    k.m.add(new T.PlaneGeometry(48, 32, 48, 32), MT.floor, { rx: -PI / 2, z: 1 });   // nền: đất, cát, đá cuội, đất nện, đá lát sáng
+    if (tier === 4) for (i = -9; i <= 9; i++) k.m.box(0.06, 0.012, 14, 0xa89c88, { x: i * 2.4, y: 0.006, z: 1 });   // mạch đá lát
     k.m.fj = fj;
     // bục gỗ (catasta): mặt trên y = 0.6
     for (i = 0; i < 9; i++) k.m.box(0.79, 0.1, 2.2, pick(WOODS), { x: -3.2 + i * 0.8, y: 0.55, z: 0 });
@@ -719,7 +781,7 @@
     k.m.box(6.7, 0.14, 0.14, P.woodDark, { x: 0, y: 2.9, z: -0.88 });
     for (i = 0; i < 4; i++) { x = -2.15 + i * 1.6; k.x.cyl(0.015, 0.015, 0.9, 4, P.ironDark, { x: x, y: 2.4, z: -0.86 }); k.x.torus(0.06, 0.015, 4, 8, P.ironDark, { x: x, y: 1.9, z: -0.86 }); }
     // mái vải cao phía sau
-    for (i = 0; i < 8; i++) { k.d.box(1.0, 0.04, 2.9, i % 2 ? P.clothRed : P.linen, { x: -3.5 + i, y: 3.75, z: -1.7, rx: -0.14 }); k.g.box(0.99, 0.01, 2.88, i % 2 ? 0x5c2c20 : 0x8c846e, { x: -3.5 + i, y: 3.722, z: -1.7, rx: -0.14 }); }
+    for (i = 0; i < 8; i++) { k.d.box(1.0, 0.04, 2.9, i % 2 ? MT.awn[0] : MT.awn[1], { x: -3.5 + i, y: 3.75, z: -1.7, rx: -0.14 }); k.g.box(0.99, 0.01, 2.88, mute(i % 2 ? MT.awn[0] : MT.awn[1], 0.45), { x: -3.5 + i, y: 3.722, z: -1.7, rx: -0.14 }); }
     for (x = -1; x <= 1; x += 2) { k.m.cyl(0.07, 0.08, 3.6, 5, P.woodDark, { x: x * 4.05, y: 1.8, z: -3.05 }); k.m.cyl(0.06, 0.07, 3.95, 5, P.woodDark, { x: x * 4.05, y: 1.975, z: -0.3 }); }
     // bàn lái buôn: cân, rương tiền
     var tx = 5.3, tz = 1.7, tr = -0.3;
@@ -740,6 +802,7 @@
       k.x.cyl(0.02, 0.02, 1.8, 4, P.ironDark, { x: cx + o, y: 1, z: cz + 0.8 }); k.x.cyl(0.02, 0.02, 1.8, 4, P.ironDark, { x: cx + o, y: 1, z: cz - 0.8 });
       k.x.cyl(0.02, 0.02, 1.8, 4, P.ironDark, { x: cx + 0.8, y: 1, z: cz + o }); k.x.cyl(0.02, 0.02, 1.8, 4, P.ironDark, { x: cx - 0.8, y: 1, z: cz + o });
     }
+    if (tier !== 2) marketBack(tier, env, k); else {
     // hàng cột, hiên ngói, nhà phố phía sau
     for (i = -5; i <= 5; i++) column(k, i * 2.5, -5.6, 4.2, 0.28, P.stoneLight);
     k.m.box(27, 0.5, 0.9, P.stoneLight, { x: 0, y: 4.45, z: -5.6 });
@@ -753,15 +816,18 @@
     for (i = 0; i < 4; i++) k.m.box(0.6, 0.7, 0.1, P.black, { x: 3.7 + i * 2.2, y: 7.0, z: -8.68 });
     house(k, -17.5, -1.5, 6, 7, 4, PI / 2, P.plaster, P.terracotta); house(k, 15, -2.5, 6, 8, 6, -PI / 2, 0xd2c2a2, P.brick);
     statue(k, 8.4, 0, -3.5, 0); cypress(k, -10.8, -4, 1.3); cypress(k, 11.4, -4.4, 1.5);
+    }
     // dân chợ đứng xem, lái buôn cạnh bàn, sạp hàng hai bên, dây phơi, chim đậu mái hiên, xích chân
     var cr = new Crowd(), PP = [[-8.6, -4.6], [-7.3, -5.0], [-5.7, -5.05], [5.4, -5.0], [6.2, -4.7], [9.3, -4.9], [-9.5, 0.9], [-8.7, 1.9], [9.9, 2.6], [10.8, 1.6], [8.3, -2.2], [-11.5, -2.4], [12.4, -1.2], [-6.7, -6.4], [-13.2, -4.2], [-12.2, 2.4], [7.6, 3.3]];
     for (i = 0; i < PP.length; i++) cr.add(PP[i][0], 0, PP[i][1], rr(0.92, 1.06));
     cr.add(4.5, 0, 1.2, 1.08, 0x7a5a2e);
     k.m.cyl(0.02, 0.02, 1.75, 4, P.woodDark, { x: 4.2, y: 0.87, z: 1.3, rz: 0.08 });
-    stall(k, -10.4, -1.2, PI / 2, AWN[1]); stall(k, 11.0, -0.6, -PI / 2, AWN[4]); stall(k, 12.8, 3.4, -PI / 2 - 0.3, AWN[3]);
+    if (tier !== 3) { stall(k, -10.4, -1.2, PI / 2, tier === 4 ? 0x5e2a62 : AWN[1]); stall(k, 11.0, -0.6, -PI / 2, AWN[4]); stall(k, 12.8, 3.4, -PI / 2 - 0.3, AWN[3]); }
+    if (tier === 2) {
     k.m.beam([-10.6, 6.62, -8.62], [-0.4, 6.34, -8.62], 0.012, P.rope, 3);
     for (i = 0; i < 7; i++) k.d.box(rr(0.5, 0.9), rr(0.5, 0.8), 0.02, pick([P.linen, P.clothWhite, P.clothOchre, 0x8a4a34, P.clothBlue]), { x: -9.7 + i * 1.32, y: 6.2 - i * 0.04, z: -8.6, rz: rr(-0.05, 0.05) });
     for (i = 0; i < 7; i++) { x = -9 + i * 0.55 + rr(-0.12, 0.12) + (i > 3 ? 9 : 0); k.m.box(0.09, 0.09, 0.17, 0x2e2822, { x: x, y: 4.79, z: -5.5, ry: rr(-0.6, 0.6) }); k.m.box(0.05, 0.05, 0.06, 0x2e2822, { x: x, y: 4.86, z: -5.42 }); }
+    }
     for (i = 0; i < 4; i++) { x = -2.4 + i * 1.6; k.x.beam([x + 0.22, 0.61, -0.25], [x + 0.8 - (i % 2 ? 1.6 : 0), 0.66, -0.86], 0.012, P.ironDark, 3); k.x.torus(0.05, 0.014, 4, 6, P.ironDark, { x: x + 0.22, y: 0.615, z: -0.25, rx: PI / 2 }); }
     amphora(k, 6.5, 0, 2.6, 1.1); amphora(k, 6.95, 0, 2.3, 0.9); hay(k, -8.2, 0, 3.4, 0.5); hay(k, -8.3, 0.5, 3.45, 0.7); barrel(k, -7.4, 0, 2.7, 1);
     cr.build(env);
@@ -773,27 +839,76 @@
   };
 
   // ---------------------------------------------------------------- LÒ RÈN / CỬA HÀNG
-  V.Env.shop = function () {
-    sd = 57; V.jseed(555);
-    var env = base({ sunDir: [0.35, 0.3, 0.9], sunCol: 0xffc890, sunInt: 2.0, hemi: [0xb8a890, 0x6a4a30, 0.8], shadow: [9, 7], center: [0, 1.2, 0.5], fog: { color: 0x4a3a2c, near: 22, far: 70 }, bg: 0x2e241b });
-    var k = new Kit(), i, x, CX = 0.3, AZ = -0.62, WZ = 1.9;   // tâm phòng; bàn giáp kê sát tường sau, bàn vũ khí ở phía trước
-    k.m.add(new T.PlaneGeometry(30, 22, 20, 14), P.dirt, { rx: -PI / 2, z: 4 });
-    // tường, mái, cột
+  // Mỗi khu vực một kiểu lò rèn: sạp ngoài trời (Chợ), xưởng ván gỗ (Làng), tiệm tường vôi (Thành phố), xưởng fabrica trong lũy cọc (Biên giới), tiệm cẩm thạch (Colosseum)
+  var SHOP_T = [
+    { sunCol: 0xffd9a8, sunInt: 2.3, hemi: [0xc8c0a8, 0x7a5a38, 0.95], fog: 0x9c8460, bg: 0x8a7454, floor: 0x8a6e4c, armC: [0xb8a888, 0xa39274], wepC: [0x6b5a44, 0x5a4a38], top: P.woodLight, awn: [0xb8a888, 0x8a7458] },
+    { sunCol: 0xffc890, sunInt: 2.0, hemi: [0xb8a890, 0x6a4a30, 0.8], fog: 0x4a3a2c, bg: 0x2e241b, floor: 0x9a7c54, armC: [0xb58a3c, 0x9c7430], wepC: [0x4f5c3c, 0x424e32], top: P.wood, awn: [0xb58a3c, 0xcfc4a6] },
+    { sunCol: 0xffc890, sunInt: 2.0, hemi: [0xb8a890, 0x6a4a30, 0.8], fog: 0x4a3a2c, bg: 0x2e241b, floor: 0x8a6e4c, armC: [0x8a4a34, 0x7d4230], wepC: [0x2f4252, 0x273846], top: P.wood, awn: [0xb58a3c, 0xcfc4a6] },
+    { sunCol: 0xd8dce0, sunInt: 1.7, hemi: [0xa8acb0, 0x54483a, 0.85], fog: 0x45423c, bg: 0x2a2824, floor: 0x6c5a40, armC: [0x7e2a1e, 0x6a2218], wepC: [0x4a3322, 0x3c2a1c], top: P.woodDark, awn: [0x6b4a2f, 0x7e2a1e] },
+    { sunCol: 0xfff0d8, sunInt: 2.3, hemi: [0xd0c8c0, 0x8a7a64, 0.9], fog: 0x6a5c50, bg: 0x40362e, floor: 0xb8ad9a, armC: [0x5e2a62, 0x4e2252], wepC: [0x7a1f24, 0x66181c], top: P.marble, awn: [0x5e2a62, 0xe0d6c0] }
+  ];
+  function shopWalls(tier, env, k) {
+    var i, x;
+    if (tier === 0) {            // sạp ngoài trời giữa chợ: không tường, rào gỗ thấp, rơm, bãi đất và chòi tranh phía xa
+      for (i = -6; i <= 6; i++) k.m.box(0.13, 1.15 + rr(0, 0.15), 0.13, pick(WOODS), { x: i * 1.1, y: 0.6, z: -1.35, ry: rr(0, 0.4) });
+      k.m.box(13.6, 0.09, 0.07, P.wood, { x: 0, y: 1.0, z: -1.3 }); k.m.box(13.6, 0.09, 0.07, P.woodDark, { x: 0, y: 0.52, z: -1.3 });
+      for (x = -1; x <= 1; x += 2) { k.m.cyl(0.11, 0.13, 3.9, 5, P.woodDark, { x: x * 6.4, y: 1.95, z: -1.2 }); k.m.cyl(0.11, 0.13, 3.9, 5, P.woodDark, { x: x * 6.4, y: 1.95, z: 2.42 }); }
+      for (i = 0; i < 6; i++) hay(k, -3.2 + i * 1.5 + rr(-0.2, 0.2), 0, -2.3 + rr(-0.2, 0.2), rr(-0.3, 0.3));
+      hay(k, 1.4, 0.5, -2.3, 0.3); hay(k, -1.7, 0.5, -2.35, -0.2);
+      ox(k, -3.4, -4.6, 0.6); ox(k, 2.8, -5.2, -0.8); cart(k, 6.2, -4.2, 0.4); hut(k, -7, -9, 1.0); hut(k, 3, -11, 1.1); hut(k, 10.5, -8.5, 0.95); tree(k, -1.5, -9.5, 1.5);
+      return;
+    }
+    if (tier === 1) {            // xưởng ván gỗ: tường ván dọc, cột gỗ, rơm rải
+      for (i = 0; i < 34; i++) k.m.box(0.39, 4.0, 0.12, pick(WOODS), { x: -6.6 + i * 0.4, y: 2, z: -1.3 + rr(-0.012, 0.012) });
+      k.m.box(13.4, 0.16, 0.08, P.woodDark, { x: 0, y: 1.15, z: -1.21 }); k.m.box(13.4, 0.16, 0.08, P.woodDark, { x: 0, y: 2.6, z: -1.21 });
+      for (x = -1; x <= 1; x += 2) { for (i = 0; i < 10; i++) k.m.box(0.12, 4.0, 0.39, pick(WOODS), { x: x * 6.65, y: 2, z: -1.15 + i * 0.4 }); k.m.box(0.22, 3.8, 0.22, P.woodDark, { x: x * 6.38, y: 1.9, z: 2.42 }); }
+      for (i = 0; i < 3; i++) k.x.torus(0.2, 0.03, 4, 10, P.ironDark, { x: 4.6 + i * 0.5, y: 1.75, z: -1.2 });   // vành sắt bánh xe treo ở góc xa bàn
+      hay(k, 4.6, 0, -0.75, 0.2); hay(k, 5.5, 0, -0.7, -0.1);
+      return;
+    }
+    if (tier === 3) {            // fabrica của quân đoàn: lũy cọc tròn, da thuộc căng, khiên scutum, cờ hiệu
+      for (x = -6.7; x <= 6.7; x += 0.4) stake(k, x, -1.4 + rr(-0.03, 0.03), 3.3 + rr(0, 0.3), 0.19);
+      k.m.box(13.4, 0.14, 0.1, P.woodDark, { x: 0, y: 1.7, z: -1.18 });
+      for (i = 0; i < 3; i++) k.d.box(1.5, 1.2, 0.03, pick([0x8a6b48, 0x7d6042, 0x957452]), { x: 4.0 + i * 0.2 - (i === 2 ? 9.4 : 0), y: 1.5, z: -1.16, rz: rr(-0.04, 0.04) });
+      for (x = -1; x <= 1; x += 2) { for (var zz = -1.1; zz <= 2.5; zz += 0.4) stake(k, x * 6.65, zz, 3.3, 0.19); }
+      shieldStack(k, 5.0, -0.95, 0, 3); standard(k, env, -4.2, -1.0, true);
+      for (i = 0; i < 5; i++) k.m.cyl(0.02, 0.02, 2.2, 4, P.woodDark, { x: -1.9 - i * 0.14, y: 1.1, z: -1.12, rx: -0.1 });
+      return;
+    }
+    if (tier === 4) {            // tiệm vũ khí ở Rome: tường cẩm thạch, trụ ốp, viền đồng, sàn lát ô
+      k.m.box(13.6, 4.0, 0.3, P.marble, { x: 0, y: 2, z: -1.35 }); k.m.box(13.0, 0.9, 0.05, 0x7a2a22, { x: 0, y: 0.45, z: -1.18 });
+      k.x.box(13.0, 0.07, 0.07, P.bronzeLight, { x: 0, y: 0.93, z: -1.17 }); k.x.box(13.0, 0.07, 0.07, P.bronzeLight, { x: 0, y: 1.95, z: -1.17 });
+      for (i = -3; i <= 3; i++) { k.m.box(0.34, 4.0, 0.12, P.stoneLight, { x: i * 2.1 + 0.3, y: 2, z: -1.17 }); k.m.box(0.46, 0.16, 0.18, P.marble, { x: i * 2.1 + 0.3, y: 0.08, z: -1.15 }); }
+      for (x = -1; x <= 1; x += 2) { k.m.box(0.3, 4.0, 3.9, P.marble, { x: x * 6.65, y: 2, z: 0.6 }); column(k, x * 6.3, 2.42, 3.8, 0.2, P.marble); }
+      for (i = -8; i <= 8; i++) for (x = -2; x <= 5; x++) if ((i + x) & 1) k.m.box(0.98, 0.012, 0.98, 0x8c7f6c, { x: i * 1.0 + 0.3, y: 0.006, z: x * 1.0 });
+      brazier(env, k, 4.6, 0, -0.6, 0.9); statue(k, -4.1, 0, -0.75, 0, P.bronzeDark, 0.85);
+      return;
+    }
     k.m.box(13.6, 4.0, 0.3, P.plaster, { x: 0, y: 2, z: -1.35 }); k.m.box(13.0, 0.85, 0.04, P.brick, { x: 0, y: 0.43, z: -1.185 });
     for (x = -1; x <= 1; x += 2) { k.m.box(0.3, 4.0, 3.9, P.plaster, { x: x * 6.65, y: 2, z: 0.6 }); k.m.box(0.22, 3.8, 0.22, P.woodDark, { x: x * 6.38, y: 1.9, z: 2.42 }); }
+  }
+  V.Env.shop = function (tier) {
+    tier = Math.max(0, Math.min(4, tier || 0)); var ST = SHOP_T[tier];
+    sd = 57 + tier * 5; V.jseed(555);
+    var env = base({ sunDir: [0.35, tier === 0 ? 0.55 : 0.3, 0.9], sunCol: ST.sunCol, sunInt: ST.sunInt, hemi: ST.hemi, shadow: [9, 7], center: [0, 1.2, 0.5], fog: { color: ST.fog, near: 22, far: 70 }, bg: ST.bg });
+    var k = new Kit(), i, x, CX = 0.3, AZ = -0.62, WZ = 1.9;   // tâm phòng; bàn giáp kê sát tường sau, bàn vũ khí ở phía trước
+    k.m.add(new T.PlaneGeometry(30, 22, 20, 14), ST.floor, { rx: -PI / 2, z: 4 });
+    // tường, mái, cột
+    shopWalls(tier, env, k);
     k.m.box(13.6, 0.12, 3.9, P.woodDark, { x: 0, y: 3.86, z: 0.6 });
     for (i = 0; i < 3; i++) k.m.box(13.0, 0.18, 0.18, P.wood, { x: 0, y: 3.7, z: -0.7 + i * 1.35 });
-    for (i = 0; i < 8; i++) k.d.box(1.72, 0.05, 1.8, i % 2 ? P.clothOchre : P.linen, { x: -6.02 + i * 1.72, y: 4.1, z: 3.3, rx: -0.3 });
+    for (i = 0; i < 8; i++) k.d.box(1.72, 0.05, 1.8, i % 2 ? ST.awn[0] : ST.awn[1], { x: -6.02 + i * 1.72, y: 4.1, z: 3.3, rx: -0.3 });
     // ---- bàn giáp (sát tường sau): mặt bàn y = 0.9, phủ khăn đỏ; năm món giáp đứng trên giá gỗ
-    k.m.box(4.6, 0.08, 0.96, P.wood, { x: CX, y: 0.86, z: AZ });
+    k.m.box(4.6, 0.08, 0.96, ST.top, { x: CX, y: 0.86, z: AZ });
     for (i = 0; i < 4; i++) k.m.box(0.1, 0.82, 0.1, P.woodDark, { x: CX + (i % 2 ? 2.15 : -2.15), y: 0.41, z: AZ + (i < 2 ? -0.38 : 0.38) });
     k.m.box(4.3, 0.05, 0.66, P.woodDark, { x: CX, y: 0.28, z: AZ });
-    k.m.box(4.5, 0.045, 0.9, 0x8a4a34, { x: CX, y: 0.925, z: AZ }); k.d.box(4.5, 0.26, 0.02, 0x7d4230, { x: CX, y: 0.8, z: AZ + 0.46 });
+    k.m.box(4.5, 0.045, 0.9, ST.armC[0], { x: CX, y: 0.925, z: AZ }); k.d.box(4.5, 0.26, 0.02, ST.armC[1], { x: CX, y: 0.8, z: AZ + 0.46 });
+    if (tier === 4) k.x.box(4.5, 0.03, 0.022, P.bronzeLight, { x: CX, y: 0.69, z: AZ + 0.462 });   // viền chỉ vàng
     // ---- bàn vũ khí (phía trước): thấp, sâu, phủ vải lanh sáng cho lưỡi thép nổi hình; năm món nằm dọc, cán quay ra phía khách
-    k.m.box(4.0, 0.09, 2.4, P.wood, { x: CX, y: 0.775, z: WZ });
+    k.m.box(4.0, 0.09, 2.4, ST.top, { x: CX, y: 0.775, z: WZ });
     for (i = 0; i < 4; i++) k.m.box(0.12, 0.74, 0.12, P.woodDark, { x: CX + (i % 2 ? 1.85 : -1.85), y: 0.37, z: WZ + (i < 2 ? -1.05 : 1.05) });
     k.m.box(3.8, 0.06, 0.1, P.woodDark, { x: CX, y: 0.3, z: WZ - 1.05 }); k.m.box(3.8, 0.06, 0.1, P.woodDark, { x: CX, y: 0.3, z: WZ + 1.05 });
-    k.m.box(3.86, 0.03, 2.28, 0x2f4252, { x: CX, y: 0.835, z: WZ }); k.d.box(3.86, 0.2, 0.02, 0x273846, { x: CX, y: 0.74, z: WZ + 1.15 });
+    k.m.box(3.86, 0.03, 2.28, ST.wepC[0], { x: CX, y: 0.835, z: WZ }); k.d.box(3.86, 0.2, 0.02, ST.wepC[1], { x: CX, y: 0.74, z: WZ + 1.15 });
     for (i = 0; i < 4; i++) k.m.box(0.022, 0.024, 2.16, P.bronzeDark, { x: CX + (i - 1.5) * 0.72, y: 0.86, z: WZ });   // nẹp gỗ chia năm ô
     // ---- bàn tròn nhỏ cho món phụ kiện (mặt bàn y = 0.8)
     k.m.cyl(0.3, 0.3, 0.05, 8, P.wood, { x: 3.45, y: 0.78, z: -0.5 }); k.m.cyl(0.05, 0.08, 0.76, 6, P.woodDark, { x: 3.45, y: 0.38, z: -0.5 }); k.m.cyl(0.2, 0.24, 0.04, 8, P.woodDark, { x: 3.45, y: 0.02, z: -0.5 });
