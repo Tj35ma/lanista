@@ -132,7 +132,7 @@
     var K = G.WKIND[w.kind], H = [];
     H.push('<div class="tt-sec tt-w"><b>' + esc(w.name) + '</b> — ' + esc(K.role) + '</div>');
     H.push('<div>' + esc(K.strength) + '</div>');
-    if (K.behave) H.push('<div><span class="tt-desc">Trên cát:</span> ' + esc(K.behave) + '</div>');
+    if (K.behave) H.push('<div><span class="tt-desc">Hành vi:</span> ' + esc(K.behave) + '</div>');
     if (K.special) H.push('<div><span class="tal">Chiêu: ' + esc(K.special.name) + '</span> — ' + esc(K.special.desc) + '</div>');
     return H.join('');
   }

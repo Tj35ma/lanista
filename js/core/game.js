@@ -65,7 +65,7 @@
   Game.prototype.genDay = function () {
     var s = this.s, rng = this.rng, i;
     // chợ nô lệ
-    var n = 3 + (this.has('ledger') ? 1 : 0), slaves = [];
+    var n = 4, slaves = [];   // bục có bốn chỗ, ngày nào cũng bày đủ bốn người
     for (i = 0; i < n; i++) {
       var opts = { tier: s.tier };
       if (i === 0 && this.has('ledger')) opts.lvl = G.TIERS[s.tier].lvl + 1;

@@ -542,7 +542,7 @@
     cornu: { name: 'Kèn Cornu bạc', tier: 2, price: 300, desc: 'Người của anh ra sân trong tiếng kèn. Tiền thưởng khán giả +60%.' },
     nemesis: { name: 'Bàn thờ Nemesis', tier: 2, price: 240, desc: 'Đấu sĩ tin nữ thần đứng về phía họ. Mất tinh thần khi thua giảm một nửa.' },
     patron: { name: 'Thư bảo trợ của nguyên lão', tier: 3, price: 620, desc: 'Một cái tên lớn đứng sau trường của anh. Tiền thưởng mọi trận +20%.' },
-    ledger: { name: 'Sổ nợ của lái buôn', tier: 3, price: 540, desc: 'Hắn nợ anh. Chợ nô lệ mỗi ngày bày thêm một người, và luôn có ít nhất một kẻ có nghề.' },
+    ledger: { name: 'Sổ nợ của lái buôn', tier: 3, price: 540, desc: 'Hắn nợ anh. Chợ nô lệ mỗi ngày luôn có ít nhất một kẻ có nghề (cao hơn mặt bằng đấu trường một cấp).' },
     anvil: { name: 'Đe riêng trong trường', tier: 3, price: 580, desc: 'Thợ rèn làm riêng cho anh. Giá vũ khí và giáp giảm 15%.' }
   };
 
