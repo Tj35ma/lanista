@@ -462,7 +462,7 @@
   function currentFoes() {
     var gm = UI.game, f = currentFight(); if (!f) return null;
     var key = gm.s.day + '|' + UI.fightKind + '|' + gm.s.tier + '|' + gm.s.stage + '|' + (f.seed || 0);
-    if (f.ghost) key += '|' + Math.round(G.Game.teamPower(gm.playerTeam()));   // đội thật được nắn theo sức đội mình: đổi đội hình thì tính lại
+    if (f.ghost) key += '|g' + f.ghost.run + ':' + f.ghost.stage;
     if (foeCache.key !== key) { foeCache.key = key; foeCache.foes = gm.foeTeam(f); }
     return foeCache.foes;
   }

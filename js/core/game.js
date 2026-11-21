@@ -219,7 +219,13 @@
     if (s.won || s.stage >= 7) return null;
     return this.mainFightAt(s.stage);
   };
-  Game.prototype.fight = function (kind) { return kind === 'main' ? this.mainFight() : this.s.side[kind === 'side1' ? 1 : 0]; };
+  Game.prototype.fight = function (kind) {
+    if (kind === 'main') return this.mainFight();
+    var f = this.s.side[kind === 'side1' ? 1 : 0];
+    // lúc sinh ngày trường chưa có ai ra sân (ngày đầu, vừa mất hết người): bốc đội thật ngay khi có người ra sân, một lần mỗi ngày
+    if (kind === 'side1' && f && !f.ghost && !f.ghostTried && !this.s.fought && this.playerTeam().length) { f.ghostTried = true; this.ghostSide(f); }
+    return f;
+  };
   Game.prototype.foeTeam = function (fight) {
     var out = [];
     if (fight.ghost) return this.ghostTeam(fight);
@@ -392,7 +398,7 @@
   var GHOST_KEY = 'lanista_ghosts_v1', GHOST_CAP = 60;
   var Ghosts = G.Ghosts = { local: null, remote: null };
   // Địa chỉ kho chung (Google Apps Script, xem tools/ghost_server.gs). Để trống = chỉ dùng đội mẫu và đội lưu trên máy.
-  Ghosts.url = '';
+  Ghosts.url = 'https://script.google.com/macros/s/AKfycbzJe_ygtIZ6ijaRtU0vz85dbeW0gnI_duwYnnmKMrVObDnRJBgVvkVf5fX2lLwA2j84vQ/exec';
   var REMOTE_KEY = 'lanista_ghosts_remote_v1';
   // Mọi đội đến từ bên ngoài đều được dựng lại từ các trường hợp lệ: thứ gì game không biết thì bỏ, số nào quá khoảng thì kẹp lại.
   Ghosts.clean = function (x) {
@@ -457,7 +463,9 @@
     try { if (typeof localStorage !== 'undefined' && localStorage) { var a = JSON.parse(localStorage.getItem(GHOST_KEY) || '[]'); if (a && a.length) this.local = a; } } catch (e) { }
     return this.local;
   };
-  Ghosts.all = function () { return (G.GHOST_SEED || []).concat(this.loadRemote(), this.loadLocal()); };
+  // mọi đội trong kho đều đi qua clean(): sức mạnh được tính lại đúng như lúc đội ấy ra sân làm đối thủ (tinh thần 60, không thương tích)
+  Ghosts.seed = function () { if (!this._seed) { var self = this; this._seed = (G.GHOST_SEED || []).map(function (x) { return self.clean(x); }).filter(Boolean); } return this._seed; };
+  Ghosts.all = function () { var self = this; return this.seed().concat(this.loadRemote(), this.loadLocal().map(function (x) { return self.clean(x); }).filter(Boolean)); };
   Ghosts.record = function (snap) {
     if (!snap || !snap.team.length) return;
     var L = this.loadLocal(), key = snap.run + ':' + snap.tier + ':' + snap.stage;
@@ -466,12 +474,12 @@
     try { if (typeof localStorage !== 'undefined' && localStorage) localStorage.setItem(GHOST_KEY, JSON.stringify(L)); } catch (e) { }
     this.send(snap);
   };
-  // chọn một đội: không phải của chính ván này, không đông hơn maxN; ưu tiên đội có sức mạnh trong ±10%, không có thì lấy mấy đội gần nhất
+  // bốc một đội có sức mạnh trong ±10% so với đội người chơi (không phải của chính ván này, không đông hơn maxN); kho không có đội nào vừa thì trả null
   Ghosts.pick = function (rng, power, maxN, run) {
     var A = this.all().filter(function (x) { return x.run !== run && x.team.length <= maxN && x.pw > 0; });
     if (!A.length || !(power > 0)) return null;
     var near = A.filter(function (x) { return Math.abs(x.pw / power - 1) <= 0.1; });
-    if (!near.length) { A.sort(function (a, b) { return Math.abs(Math.log(a.pw / power)) - Math.abs(Math.log(b.pw / power)); }); near = A.slice(0, 4); }
+    if (!near.length) return null;
     return near[Math.floor(rng.next() * near.length)];
   };
   Game.teamPower = function (team) { var p = 0; for (var i = 0; i < team.length; i++) { try { p += G.power(team[i].g); } catch (e) { } } return p; };
@@ -492,8 +500,9 @@
       mine = s.roster.map(function (g) { return { g: g }; }).sort(function (a, b) { return G.power(b.g) - G.power(a.g); }).slice(0, T.field);
     }
     if (!mine.length) return fight;
+    fight.ghostTried = true;
     var snap = Ghosts.pick(this.rng, Game.teamPower(mine), T.field + 1, s.seed);
-    if (!snap) return fight;
+    if (!snap) return fight;   // kho không có đội vừa sức: giữ trận phụ thường
     fight.ghost = snap; fight.foes = snap.team;
     fight.name = 'Trường đấu của một lanista khác';
     fight.desc = 'Đội hình thật của một người chơi khác: ngày ' + snap.day + ' của hắn, ở ' + G.TIERS[Math.min(G.TIERS.length - 1, snap.tier)].name + '.';
@@ -508,12 +517,6 @@
       for (var sl in g.gear) g.gear[sl].uid = 'gh' + i + sl;
       if (!g.look) g.look = G.genLook(new G.Rng(G.hashStr(g.name) + i * 977), g.origin);
       out.push({ g: g, c: o.c, r: o.r });
-    }
-    // sức mạnh luôn nằm trong ±10% so với đội đang ra sân của người chơi: đội lệch xa hơn thì được nắn máu và sát thương về mép khoảng đó
-    var P = Game.teamPower(this.playerTeam()), Pg = Game.teamPower(out);
-    if (P > 0 && Pg > 0) {
-      var target = Math.max(0.9 * P, Math.min(1.1 * P, Pg)), k = target / Pg;
-      if (Math.abs(k - 1) > 0.005) for (i = 0; i < out.length; i++) out[i].g.x = { hpMul: k, dmgMul: k };
     }
     return out;
   };
