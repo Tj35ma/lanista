@@ -10,7 +10,7 @@
   Game.create = function (seed) {
     seed = seed || (Date.now() & 0x7fffffff);
     var s = {
-      v: 6, seed: seed, rs: seed, day: 1, gold: 100, tier: 0, stage: 0, won: false,
+      v: 6, seed: seed, rs: seed, day: 1, gold: 160, tier: 0, stage: 0, won: false,
       roster: [], inv: [], relics: [], market: null, side: [], form: {}, fought: false, feasted: false, streak: 0,
       stat: { wins: 0, losses: 0, deaths: 0, deserted: 0, earned: 0, mainLosses: 0 }, news: [], seenIntro: false
     };

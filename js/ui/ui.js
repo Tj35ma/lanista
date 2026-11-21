@@ -393,7 +393,7 @@
     var d = h('div'), m;
     add(d, h('h2', null, 'Trường đấu sĩ của anh'));
     var P = [
-      'Anh là một lanista — chủ một trường đấu sĩ chưa có lấy một đấu sĩ. Trong túi anh có 100 đồng vàng: vừa đủ mua một hai nô lệ rẻ tiền ở chợ Capua.',
+      'Anh là một lanista — chủ một trường đấu sĩ chưa có lấy một đấu sĩ. Trong túi anh có 160 đồng vàng: vừa đủ mua một hai nô lệ rẻ tiền ở chợ Capua.',
       'Mua người. Sắm cho họ vũ khí và giáp. Xếp họ lên ô đội hình. Rồi đứng nhìn: trên cát họ tự đánh, còn anh chỉ có đúng một quyền — xin thua.',
       'Mỗi ngày chỉ một trận. Ngày nào người của anh cũng phải ăn, kể cả ngày không đấu.',
       'Mỗi đấu trường có bảy trận chính. Trận thứ bảy là một nhà vô địch: một mình hắn đấu với cả đội của anh.',
