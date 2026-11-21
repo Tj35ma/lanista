@@ -487,6 +487,12 @@
     var dn = dist(f, near);
     var melee = false;
     if (ai === 'ranged' && dn < 1.9) { t = near; melee = true; reach = f.K.meleeReach; }
+    // đánh xa: mục tiêu đã chọn ngoài tầm mà có kẻ khác trong tầm thì ném / bắn luôn kẻ đó (kẻ gần nhất trong tầm)
+    if (ai === 'ranged' && !melee && f.cd <= 0.3 && dist(f, t) > reach) {
+      var fs = this.foesOf(f), alt = null, ad = 1e9;
+      for (var q = 0; q < fs.length; q++) { var dq = dist(f, fs[q]); if (dq <= reach && dq >= 1.9 && dq < ad) { ad = dq; alt = fs[q]; } }
+      if (alt) { t = f.target = alt; f.retT = 0.8; }
+    }
     var dx = t.x - f.x, dz = t.z - f.z, d = Math.sqrt(dx * dx + dz * dz) || 0.001;
     var ux = dx / d, uz = dz / d;
     var want = Math.atan2(dx, dz);
@@ -521,6 +527,7 @@
     if (ai === 'ranged') {
       // người cầm vũ khí tầm xa luôn muốn giữ kẻ địch gần nhất ở ngoài ~60% tầm bắn: bắn xong là lùi
       var keep = Math.max(4.0, f.st.reach * 0.6);
+      if (near.K.ranged && !near.ride) keep = Math.min(keep, 2.2);   // kẻ gần nhất cũng đánh xa: lùi chẳng ích gì, cứ áp vào tầm mà ném
       // hai chế độ: "lùi" giữ khoảng cách, "trụ" đứng đánh (bị dồn sát rào thì hết đường lùi).
       // Có trễ và giữ mỗi chế độ ít nhất 0,8 giây để không đổi qua đổi lại từng khung hình.
       if (f.modeT > 0) f.modeT -= dt;
@@ -529,7 +536,11 @@
       else if (!(f.modeT > 0)) back = back ? dn < keep + 0.6 : (dn < keep && !cornered);
       if ((back ? 'back' : 'hold') !== f.mode) { f.mode = back ? 'back' : 'hold'; f.modeT = 0.8; }
       if (back) { mx = nx; mz = nz; sp = speed * 0.9; }
-      else if ((melee || dn >= keep) && d > reach * 0.9) { mx = ux; mz = uz; }
+      else {
+        // tiến vào tầm có trễ: đã bước tới thì đi hẳn vào 75% tầm rồi mới dừng, kẻo mục tiêu nhích ra một bước là lại giật tới giật lui
+        if (d > reach * 0.92) f.adv = true; else if (d < reach * 0.75) f.adv = false;
+        if ((melee || dn >= keep) && (d > reach * 0.92 || (f.adv && !melee))) { mx = ux; mz = uz; }
+      }
     } else if (ai === 'kite') {
       if (dn < (near.net > 0 ? reach * 0.9 : reach * 0.62) && !cornered) { mx = nx; mz = nz; sp = speed * 0.7; }
       else if (d > reach * 0.9) { mx = ux; mz = uz; }
